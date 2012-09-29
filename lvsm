@@ -1,0 +1,239 @@
+#!/usr/bin/env python
+#
+# lvsm - LVS Manager
+# Khosrow Ebrahimpour - Sep 2012
+# this program is a wrapper aiming to unify the task of managing an Linux Server running LVS
+
+"""LVS Manager is a shell that simplifies management of a linux virtual server (LVS).
+    Using it without arguments will enter an interactive shell.
+    Supplying one or more command-line arguments will run lvsm for a "single-shot" use.
+    
+Usage: lvsm [-h] [commands]
+
+Options:
+  -h, --help  show this help message and exit
+
+Commands:
+  configure
+  status
+  help
+  
+Use 'lvsm help <command>' for information on a specific command.
+"""
+import getopt
+import sys
+import threading
+import cmd
+
+DEBUG = True
+CONFFILE = "./lvsm.conf"
+config = dict()
+
+class CommandPrompt(cmd.Cmd):
+    def help_help(self):
+        print
+        print "show help"
+        
+    def do_exit(self,line):
+        """exit from lvsm shell"""
+        print "goodbye."
+        sys.exit(0)
+        
+    def do_end(self,line):
+        """return to previous context"""
+        print 
+        return True
+        
+    def do_EOF(self,line):
+        print
+        return True
+
+class ConfigurePrompt(CommandPrompt):
+    prompt = "lvsm(configure) # "
+    
+    def show_config(self, configkey):
+        global config
+        lines = list()
+        try:
+            file = open(config[configkey])
+            lines = file.readlines()
+            file.close()
+        except IOError:
+            print "ERROR: Unable to read " + config[configkey]
+        for line in lines:
+            print line
+            
+    def do_show(self, line):
+        """
+Show configuration for an item. The configuration files are defined in lvsm.conf
+
+syntax: show <module>
+<module> can be one of the following
+        director                the IPVS director config file
+        fw                      the iptables firewall config file
+"""
+        global config
+        if line == "director":
+            self.show_config("director_config")
+        elif line == "fw":
+            self.show_config("firewall_config")
+        else:
+            print self.do_show.__doc__
+            
+    def do_edit(self,line):
+        """
+Edit the configuration of an item. The configuration files are defined in lvsm.conf
+
+edit <module>
+<module> can be one of the follwoing
+        director                the IPVS director config file
+        fw                      the iptables firewall config file
+"""
+        global config
+        if line == "director" or line == "fw":
+            print "Not implemented yet!"
+        else:
+            print self.do_edit.__doc__
+        
+    def do_sync(self,line):
+        """Sync all configuration files across the cluster."""
+        global config
+        if line:
+            print self.do_sync.__doc__
+        else:
+            print "cd /; svn commit "
+            print "dsh -a " + config['dsh_group'] + " cd /; svn update;"
+        
+class StatusPrompt(CommandPrompt):
+    prompt = "lvsm(status) # "
+    
+    def do_show(self, line):
+        """
+Show information about a specific item.
+        
+syntax: show <module>
+<module> can be one of the following
+        director                the running ipvs status
+        fw                      the iptables firewall status
+        virtual <vip> <port>    the status of a specific VIP
+"""
+        commands = line.split()
+        if line == "director":
+            print "ipvsadm --list"
+        elif line == "fw":
+            print "iptables -L"
+        elif len(commands) > 0 and commands[0] == "virtual":
+            if len(commands) == 3:
+                vip = commands[1]
+                try:
+                    port = int(commands[2])
+                    print "ipvsadm --list -t vip:" + str(port)
+                except ValueError, msg:
+                    print "ERROR: port number must be an integer"
+                # port = int(commands[2])
+            elif len(commands):
+                print self.do_show.__doc__    
+        else:
+            print self.do_show.__doc__
+            
+class MainPrompt(CommandPrompt):
+    prompt = "lvsm # "
+            
+    def do_configure(self,line):
+        """
+The configuration level
+
+Items related to configuration of IPVS and iptables are available here.
+"""
+        commands = line.split()
+        if not line:
+            ConfigurePrompt().cmdloop()
+        else:
+            ConfigurePrompt().onecmd(' '.join(commands[0:]))
+        
+    def do_status(self, line):
+        """
+The status level.
+
+Running status of IPVS and iptables are available here.
+"""
+        commands = line.split()
+        if not line:
+            StatusPrompt().cmdloop()
+        else:
+            StatusPrompt().onecmd(' '.join(commands[0:]))
+
+def usage(code, msg=''):
+    if code:
+        fd = sys.stderr
+    else:
+        fd = sys.stdout
+    print >> fd, __doc__
+    if msg:
+        print >> fd, msg
+    sys.exit(code)
+
+def log(msg):
+    if DEBUG:
+        print "DEBUG -- " + msg
+
+def parse_config(filename):
+    #open config file and read it
+    try:
+        file = open(filename)
+        lines = file.readlines()
+        file.close()
+    except IOError:
+        print "ERROR: Unable to read " + CONFFILE
+        sys.exit(1)
+     
+    # list of valid config keys
+    config_items = {
+                   'director_config':'',
+                   'firewall_config':'',
+                   'dsh_group':''
+                   }
+    linenum = 1
+    for line in lines:
+        linenum += 1
+        if line[0] == '#':
+            continue
+        key,sep,value = line.rstrip().partition('=')
+        if config_items.get(key.lstrip().rstrip()) is None:
+            print "ERROR: configuration file line " + str(linenum) + " : invalid variable '" + key.lstrip().rstrip() + "'"
+            sys.exit(1)
+        else:
+            config_items[key.lstrip().rstrip()] = value.lstrip().rstrip()
+            # verify that the file exists
+            try:
+                file = open(value.lstrip().rstrip())
+                file.close()
+            except IOError:
+                print "ERROR: Unable to open file \"" + value.lstrip().rstrip() + "\", mentiond in the lvsm config file line " + str(linenum)  
+                print "Please verify that the file exists and is readable."
+                sys.exit(1)        
+    return config_items        
+    
+def main():
+    #open config file and read it
+    global config 
+    config = parse_config(CONFFILE)
+    log("Parsed config file")
+    log(str(config))
+            
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "h", ["help"])
+    except getopt.error, msg:
+        usage(2, msg)
+    
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            usage(0)
+
+    if args:
+        MainPrompt().onecmd(' '.join(sys.argv[1:]))
+    else:
+        MainPrompt().cmdloop()
+                
+if __name__ == "__main__":
+    main()  
