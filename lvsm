@@ -8,10 +8,13 @@
     Using it without arguments will enter an interactive shell.
     Supplying one or more command-line arguments will run lvsm for a "single-shot" use.
     
-Usage: lvsm [-h] [commands]
+Usage: lvsm [-h] [-c <conffile>][commands]
 
 Options:
-  -h, --help  show this help message and exit
+  -h, --help            show this help message and exit
+  
+  -c <conffile>         specify which configuration file to use
+  -config=<connfile>
 
 Commands:
   configure
@@ -26,7 +29,6 @@ import threading
 import cmd
 
 DEBUG = True
-CONFFILE = "./lvsm.conf"
 config = dict()
 
 class CommandPrompt(cmd.Cmd):
@@ -184,7 +186,7 @@ def parse_config(filename):
         lines = file.readlines()
         file.close()
     except IOError:
-        print "ERROR: Unable to read " + CONFFILE
+        print "ERROR: Unable to read configuration file " + filename
         sys.exit(1)
      
     # list of valid config keys
@@ -215,20 +217,24 @@ def parse_config(filename):
     return config_items        
     
 def main():
-    #open config file and read it
+    CONFFILE = "./lvsm.conf"
     global config 
-    config = parse_config(CONFFILE)
-    log("Parsed config file")
-    log(str(config))
             
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "h", ["help"])
+        opts, args = getopt.getopt(sys.argv[1:], "hc:", ["help", "config="])
     except getopt.error, msg:
         usage(2, msg)
     
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage(0)
+        elif opt in ("-c", "--config"):
+            CONFFILE = arg
+            
+    #open config file and read it
+    config = parse_config(CONFFILE)
+    log("Parsed config file")
+    log(str(config))
 
     if args:
         MainPrompt().onecmd(' '.join(sys.argv[1:]))
