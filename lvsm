@@ -56,9 +56,11 @@ class CommandPrompt(cmd.Cmd):
         return True
 
 class ConfigurePrompt(CommandPrompt):
-    prompt = "lvsm(configure)# "
+    prompt = "lvsm(configure)# "    
+    modules = ['director', 'firewall']
     
     def show_config(self, configkey):
+        """prints out the specified configuration file"""
         global config
         lines = list()
         try:
@@ -70,21 +72,38 @@ class ConfigurePrompt(CommandPrompt):
             print "[ERROR] " + e.strerror
         for line in lines:
             print line.rstrip()
-            
+    
+    def complete_show(self, text, line, begidx, endidx):
+        """Tab completion for the show command"""
+        if not text:
+            completions = self.modules[:]
+        else:
+            completions = [m for m in self.modules if m.startswith(text)]
+        return completions
+
     def do_show(self, line):
         """Show configuration for an item. The configuration files are defined in lvsm.conf
 
 syntax: show <module>
 <module> can be one of the following
         director                the IPVS director config file
-        fw                      the iptables firewall config file"""
-        global config
+        firewall                the iptables firewall config file"""
+        global config        
         if line == "director":
             self.show_config("director_config")
         elif line == "fw":
             self.show_config("firewall_config")
         else:
             print self.do_show.__doc__
+
+    def complete_edit(self, text, line, begidx, endidx):
+        """Tab completion for the show command"""
+        if not text:
+            completions = self.modules[:]
+        else:
+            completions = [m for m in self.modules if m.startswith(text)]
+        return completions
+
             
     def do_edit(self,line):
         """Edit the configuration of an item. The configuration files are defined in lvsm.conf
@@ -92,9 +111,9 @@ syntax: show <module>
 edit <module>
 <module> can be one of the follwoing
         director                the IPVS director config file
-        fw                      the iptables firewall config file"""
+        firewall                the iptables firewall config file"""
         global config
-        if line == "director" or line == "fw":
+        if line == "director" or line == "firewall":
             print "Not implemented yet!"
         else:
             print self.do_edit.__doc__
@@ -126,6 +145,22 @@ edit <module>
                 
 class StatusPrompt(CommandPrompt):
     prompt = "lvsm(status)# "
+    modules = ['director', 'firewall', 'virtual']
+
+    def complete_show(self, text, line, begidx, endidx):
+        """Tab completion for the show command""" 
+        protocols = ['tcp', 'udp', 'fwm']
+        if line.startswith("show virtual ") and len(line) < 16:
+            if line == "show virtual ":
+                completions = protocols[:]
+            else:
+                completions = [p for p in protocols if p.startswith(text)] 
+        elif not text:
+            completions = self.modules[:]
+        else:
+            completions = [m for m in self.modules if m.startswith(text)] 
+        return completions
+
     
     def do_show(self, line):
         """Show information about a specific item.
@@ -133,13 +168,13 @@ class StatusPrompt(CommandPrompt):
 syntax: show <module>
 <module> can be one of the following
         director                the running ipvs status
-        fw                      the iptables firewall status
+        firewall                the iptables firewall status
         virtual <vip> <port>    the status of a specific VIP"""
         commands = line.split()
         if line == "director":
-            args = ['/usr/sbin/ipvsadm', '--list', '-n']
+            args = ['/sbin/ipvsadm', '--list']
             execute(args, "problem with ipvsadm")
-        elif line == "fw":
+        elif line == "firewall":
             args = ['/sbin/iptables', '-L', '-v']
             execute(args, "problem with iptables")
         elif len(commands) > 0 and commands[0] == "virtual":
@@ -147,7 +182,7 @@ syntax: show <module>
                 vip = commands[1]
                 try:
                     port = int(commands[2])
-                    args = ['/usr/sbin/ipvsadm', '--list', '-t', vip + ":" + str(port)]
+                    args = ['/sbin/ipvsadm', '--list', '-t', vip + ":" + str(port)]
                     execute(args, "problem with ipvsadm")
                 except ValueError as e:
                     print "[ERROR] port number must be an integer"
@@ -245,7 +280,7 @@ def parse_config(filename):
     
 def main():
     global DEBUG
-    CONFFILE = "./lvsm.conf"
+    CONFFILE = "/opt/lvsm/lvsm.conf"
     global config 
             
     try:
