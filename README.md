@@ -68,7 +68,14 @@ Enter configuration mode. In this mode, the configuration files can be viewed an
 control and/or cluster mode.
 
 Configure mode provides access to the director configuration as well as firewall rules. Available commands are
-* **show <module>**: will display the configuration for the specified module. Available options are *director* or *fw*
+* **show <module>**: will display the configuration for the specified module. 
+
+Usage: 
+
+    show <module>
+    
+    
+Where ```<module>``` is one of ***director*** or ***fw***
 
 example:
 
@@ -92,9 +99,20 @@ status level
 -----
 Enter status mode. In this level the status of the live setup can be viewed.
 
-* **show <module>**: show the running status of the given module. Available options are *director*, *firewall*, *virtual*.
-The *virtual* module takes additional options *VIP name or address* and *port number*. And will only show that VIP
-instead of the entire IPVS table.
+* **show <module>**: show the running status of the given module. 
+
+Usage:
+
+    show <module>
+
+Where ```<module>``` is one of ***director***, ***firewall***, ***virtual***.
+
+The ```virtual``` module takes additional options ***vip name or address*** and ***port number*** 
+and will only show that VIP instead of the entire IPVS table.
+
+Usage:
+
+    show virtual <vip> <port>
 
 examples:
 
