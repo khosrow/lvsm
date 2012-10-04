@@ -51,15 +51,15 @@ class CommandPrompt(cmd.Cmd):
         print 
         return True
         
-    def do_EOF(self,line):
-        print
-        return True
+    #def do_EOF(self,line):
+    #    print
+    #    return True
 
 class ConfigurePrompt(CommandPrompt):
     prompt = "lvsm(configure)# "    
     modules = ['director', 'firewall']
     
-    def show_config(self, configkey):
+    def print_config(self, configkey):
         """prints out the specified configuration file"""
         global config
         lines = list()
@@ -90,16 +90,19 @@ syntax: show <module>
         firewall                the iptables firewall config file"""
         global config        
         if line == "director":
-            self.show_config("director_config")
-        elif line == "fw":
-            self.show_config("firewall_config")
+            self.print_config("director_config")
+        elif line == "firewall":
+            self.print_config("firewall_config")
         else:
             print self.do_show.__doc__
 
     def complete_edit(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
-        if not text:
-            completions = self.modules[:]
+        if not text: 
+	    if len(line) < 14:
+                completions = self.modules[:]
+	    else:
+                completions = []
         else:
             completions = [m for m in self.modules if m.startswith(text)]
         return completions
@@ -114,7 +117,14 @@ edit <module>
         firewall                the iptables firewall config file"""
         global config
         if line == "director" or line == "firewall":
-            print "Not implemented yet!"
+            filename = config[ line + '_config']
+            #args = ["vi", filename]
+            args = "vi " + filename
+            log(str(args))
+            #execute(args, "problem with edittig file")
+            result = subprocess.call(args, shell=True)
+            if result != 0:
+                print "[ERROR] something happened during the edit of " + config[line]
         else:
             print self.do_edit.__doc__
         
@@ -150,11 +160,15 @@ class StatusPrompt(CommandPrompt):
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command""" 
         protocols = ['tcp', 'udp', 'fwm']
-        if line.startswith("show virtual ") and len(line) < 16:
+        if line.startswith("show virtual "):
             if line == "show virtual ":
                 completions = protocols[:]
+            elif len(line) < 16:
+                completions = [p for p in protocols if p.startswith(text)]
             else:
-                completions = [p for p in protocols if p.startswith(text)] 
+                completions = []
+        elif line.startswith("show director") or line.startswith("show firewall"):
+            completions = []
         elif not text:
             completions = self.modules[:]
         else:
@@ -169,7 +183,7 @@ syntax: show <module>
 <module> can be one of the following
         director                the running ipvs status
         firewall                the iptables firewall status
-        virtual <vip> <port>    the status of a specific VIP"""
+        virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP"""
         commands = line.split()
         if line == "director":
             args = ['/sbin/ipvsadm', '--list']
@@ -178,11 +192,19 @@ syntax: show <module>
             args = ['/sbin/iptables', '-L', '-v']
             execute(args, "problem with iptables")
         elif len(commands) > 0 and commands[0] == "virtual":
-            if len(commands) == 3:
-                vip = commands[1]
+            if len(commands) == 4:
+                vip = commands[2]
+                if commands[1] == "tcp":
+                    protocol = '-t'
+                elif commands[1] == "udp":
+                    protocol = '-u'
+                elif commands[1] == "fwm":
+                    protocol = '-f'
+                else:
+                    print self.do_show.__doc__    
                 try:
-                    port = int(commands[2])
-                    args = ['/sbin/ipvsadm', '--list', '-t', vip + ":" + str(port)]
+                    port = int(commands[3])
+                    args = ['/sbin/ipvsadm', '--list', protocol, vip + ":" + str(port)]
                     execute(args, "problem with ipvsadm")
                 except ValueError as e:
                     print "[ERROR] port number must be an integer"
@@ -230,13 +252,14 @@ def log(msg):
         print "[DEBUG] " + msg
 
 def execute(args, error):
+    """Simple wrapper for subprocess.Popen"""
     try:
         log(str(args))
-        process = subprocess.Popen(args, shell=False, stdout=subprocess.PIPE)
+        process = subprocess.Popen(args, shell=True, stdout=subprocess.PIPE)
         stdout, stderr = process.communicate()
         if stdout:
             print stdout
-        else:
+        elif stderr:
             print stderr
     except OSError as e:
         print "[ERROR] " + error + " - " + e.strerror
@@ -302,7 +325,7 @@ def main():
     log(str(config))
 
     if args:
-        MainPrompt().onecmd(' '.join(sys.argv[1:]))
+        MainPrompt().onecmd(' '.join(args[:]))
     else:
         MainPrompt().cmdloop()
                 
