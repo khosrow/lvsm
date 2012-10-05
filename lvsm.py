@@ -91,15 +91,15 @@ class ConfigurePrompt(CommandPrompt):
         for line in lines:
             print line.rstrip()
 
-    def svn_sync(filename):
-        # ask for username and passwd so user doesn't get prompted twice on each server
-        username = raw_input("Enter SVN username: ")
-        password = getpass.getpass("Enter SVN password: ")
-        args = 'svn commit --username ' + username 
-               + ' --password ' + password + ' ' + filename
+    def svn_sync(self, filename, username, password):
+        cluster_command = ''
+        if self.config['dsh_group']:
+            cluster_command = 'dsh -g ' + self.config['dsh_group'] + ' '
+        # commit code
+        args = 'svn commit --username ' + username + ' --password ' + password + ' ' + filename        
         execute(args, "problem with configuration sync")
-        args = cluster_command + 'svn update --username ' + username 
-               + ' --password ' + password + ' ' + filename
+        # now update on all the nodes in the cluster
+        args = cluster_command + 'svn update --username ' + username + ' --password ' + password + ' ' + filename        
         execute(args, "problem with configuration sync")
     
     def complete_show(self, text, line, begidx, endidx):
@@ -159,22 +159,17 @@ edit <module>
         if line:
             print self.do_sync.__doc__
         else:
-            if self.config['dsh_group']:
-                log("dsh -g " + self.config['dsh_group'])
-                cluster_command = 'dsh -g ' + self.config['dsh_group'] + ' '
-            else:
-                log("no dsh defined")
-                cluster_command = ""    
             # ask for username and passwd so user doesn't get prompted twice on each server
             username = raw_input("Enter SVN username: ")
             password = getpass.getpass("Enter SVN password: ")
             # update director config
             if self.config['director_config']:
-                svn_sync(self.config['director_config'])
-
+                print "Syncing " + self.config['director_config'] + " ..."
+                self.svn_sync(self.config['director_config'], username, password)
             # update firewall config
             if self.config['firewall_config']:
-                svn_sync(self.config]'firewall_config')
+                print "Syncing " + self.config['firewall_config'] + " ..."
+                self.svn_sync(self.config['firewall_config'], username, password)
 
                 
 class StatusPrompt(CommandPrompt):
