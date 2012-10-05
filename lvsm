@@ -59,20 +59,23 @@ def parse_config(filename):
         linenum += 1
         if line[0] == '#':
             continue
-        key,sep,value = line.rstrip().partition('=')
-        if config_items.get(key.lstrip().rstrip()) is None:
-            print "[ERROR] configuration file line " + str(linenum) + ": invalid variable '" + key.lstrip().rstrip() + "'"
+        k,sep,v = line.rstrip().partition('=')
+        key = k.lstrip().rstrip()
+        value = v.lstrip().rstrip()
+        if config_items.get(key) is None:
+            print "[ERROR] configuration file line " + str(linenum) + ": invalid variable '" + key + "'"
             sys.exit(1)
         else:
-            config_items[key.lstrip().rstrip()] = value.lstrip().rstrip()
-            # verify that the file exists
-            try:
-                file = open(value.lstrip().rstrip())
-                file.close()
-            except IOError as e:
-                print "[ERROR] in lvsm configuration file line " + str(linenum)  
-                print "[ERROR] " + e.strerror + ": '" + e.filename + "'"
-                sys.exit(1)        
+            config_items[key] = value
+            # if the item is a config file, verify that the file exists            
+            if key.endswith('_config'):
+                try:
+                    file = open(value)
+                    file.close()
+                except IOError as e:
+                    print "[ERROR] in lvsm configuration file line " + str(linenum)  
+                    print "[ERROR] " + e.strerror + ": '" + e.filename + "'"
+                    sys.exit(1)        
     return config_items        
     
 def main():
