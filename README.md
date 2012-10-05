@@ -35,7 +35,7 @@ comments and will not be parsed.
 
 Example
 -------
-```aconf
+```
 # this line is a comment
 director_config = /etc/ha.d/ldirectord.cf
 firewall_config = /etc/iptables.rules
@@ -75,7 +75,7 @@ Usage:
     show <module>
     
     
-Where ```<module>``` is one of ***director*** or ***fw***
+Where ```<module>``` is one of ***director*** or ***firewall***
 
 example:
 
@@ -93,7 +93,13 @@ example:
 ```
 lvsm(configure)# sync
 ```
-* **edit <module>**: *not implemented*
+* **edit <module>**: open the configuration file for the module using an editor. *note:* the editor is currently set to **vi**.
+
+example:
+
+```
+lvsm(configure)# edit director
+```
 
 status level
 -----
