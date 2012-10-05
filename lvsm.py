@@ -1,0 +1,238 @@
+"""Various levels of command line shells for accessing ipvs and iptables functionality form 
+one location."""
+
+import cmd
+import getpass
+import subprocess
+import sys
+
+debug = False
+
+def log(msg):
+    if debug:
+        print "[DEBUG] " + msg
+
+def execute(args, error):
+    """Simple wrapper for subprocess.Popen"""
+    try:
+        log(str(args))
+        result = subprocess.call(args, shell=True)
+    except OSError as e:
+        print "[ERROR] " + error + " - " + e.strerror
+        
+
+class CommandPrompt(cmd.Cmd):
+    def __init__(self, config):
+        # super(CommandPrompt, self).__init__()
+        cmd.Cmd.__init__(self)
+        self.config = config
+
+    def help_help(self):
+        print
+        print "show help"
+        
+    def do_exit(self,line):
+        """exit from lvsm shell"""
+        print "goodbye."
+        sys.exit(0)
+
+    def do_quit(self,line):
+        """exit from lvsm shell"""
+        print "goodbye."
+        sys.exit(0)
+        
+    def do_end(self,line):
+        """return to previous context"""
+        print 
+        return True
+
+
+class MainPrompt(CommandPrompt):
+    """Class to handle the top level prompt in lvsm"""
+    prompt = "lvsm# "
+            
+    def do_configure(self,line):
+        """The configuration level
+
+Items related to configuration of IPVS and iptables are available here."""
+        commands = line.split()
+        configshell = ConfigurePrompt(self.config)
+        if not line:
+            configshell.cmdloop()
+        else:
+            configshell.onecmd(' '.join(commands[0:]))
+        
+    def do_status(self, line):
+        """The status level.
+
+Running status of IPVS and iptables are available here."""
+        commands = line.split()
+        statshell = StatusPrompt(self.config)
+        if not line:
+            statshell.cmdloop()
+        else:
+            statshell.onecmd(' '.join(commands[0:]))
+
+
+class ConfigurePrompt(CommandPrompt):
+    prompt = "lvsm(configure)# "    
+    modules = ['director', 'firewall']
+    
+    def print_config(self, configkey):
+        """prints out the specified configuration file"""
+        lines = list()
+        try:
+            file = open(self.config[configkey])
+            lines = file.readlines()
+            file.close()
+        except IOError as e:
+            print "[ERROR] Unable to read '" + e.filename  + "'"
+            print "[ERROR] " + e.strerror
+        for line in lines:
+            print line.rstrip()
+
+    def svn_sync(filename):
+        # ask for username and passwd so user doesn't get prompted twice on each server
+        username = raw_input("Enter SVN username: ")
+        password = getpass.getpass("Enter SVN password: ")
+        args = 'svn commit --username ' + username 
+               + ' --password ' + password + ' ' + filename
+        execute(args, "problem with configuration sync")
+        args = cluster_command + 'svn update --username ' + username 
+               + ' --password ' + password + ' ' + filename
+        execute(args, "problem with configuration sync")
+    
+    def complete_show(self, text, line, begidx, endidx):
+        """Tab completion for the show command"""
+        if not text:
+            completions = self.modules[:]
+        else:
+            completions = [m for m in self.modules if m.startswith(text)]
+        return completions
+
+    def do_show(self, line):
+        """Show configuration for an item. The configuration files are defined in lvsm.conf
+
+syntax: show <module>
+<module> can be one of the following
+        director                the IPVS director config file
+        firewall                the iptables firewall config file"""        
+        if line == "director":
+            self.print_config("director_config")
+        elif line == "firewall":
+            self.print_config("firewall_config")
+        else:
+            print self.do_show.__doc__
+
+    def complete_edit(self, text, line, begidx, endidx):
+        """Tab completion for the show command"""
+        if not text: 
+	    if len(line) < 14:
+                completions = self.modules[:]
+	    else:
+                completions = []
+        else:
+            completions = [m for m in self.modules if m.startswith(text)]
+        return completions
+
+            
+    def do_edit(self,line):
+        """Edit the configuration of an item. The configuration files are defined in lvsm.conf
+
+edit <module>
+<module> can be one of the follwoing
+        director                the IPVS director config file
+        firewall                the iptables firewall config file"""
+        if line == "director" or line == "firewall":
+            filename = self.config[ line + '_config']
+            #args = ["vi", filename]
+            args = "vi " + filename
+            log(str(args))
+            result = subprocess.call(args, shell=True)
+            if result != 0:
+                print "[ERROR] something happened during the edit of " + config[line]
+        else:
+            print self.do_edit.__doc__
+        
+    def do_sync(self,line):
+        """Sync all configuration files across the cluster."""
+        if line:
+            print self.do_sync.__doc__
+        else:
+            if self.config['dsh_group']:
+                log("dsh -g " + self.config['dsh_group'])
+                cluster_command = 'dsh -g ' + self.config['dsh_group'] + ' '
+            else:
+                log("no dsh defined")
+                cluster_command = ""    
+            # ask for username and passwd so user doesn't get prompted twice on each server
+            username = raw_input("Enter SVN username: ")
+            password = getpass.getpass("Enter SVN password: ")
+            # update director config
+            if self.config['director_config']:
+                svn_sync(self.config['director_config'])
+
+            # update firewall config
+            if self.config['firewall_config']:
+                svn_sync(self.config]'firewall_config')
+
+                
+class StatusPrompt(CommandPrompt):
+    prompt = "lvsm(status)# "
+    modules = ['director', 'firewall', 'virtual']
+
+    def complete_show(self, text, line, begidx, endidx):
+        """Tab completion for the show command""" 
+        protocols = ['tcp', 'udp', 'fwm']
+        if line.startswith("show virtual "):
+            if line == "show virtual ":
+                completions = protocols[:]
+            elif len(line) < 16:
+                completions = [p for p in protocols if p.startswith(text)]
+            else:
+                completions = []
+        elif line.startswith("show director") or line.startswith("show firewall"):
+            completions = []
+        elif not text:
+            completions = self.modules[:]
+        else:
+            completions = [m for m in self.modules if m.startswith(text)] 
+        return completions
+
+    
+    def do_show(self, line):
+        """Show information about a specific item.
+        
+syntax: show <module>
+<module> can be one of the following
+        director                the running ipvs status
+        firewall                the iptables firewall status
+        virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP"""
+        commands = line.split()
+        if line == "director":
+            args = 'ipvsadm --list'
+            execute(args, "problem with ipvsadm")
+        elif line == "firewall":
+            args = 'iptables -L -v'
+            execute(args, "problem with iptables")
+        elif len(commands) > 0 and commands[0] == "virtual":
+            if len(commands) == 4:
+                vip = commands[2]
+                if commands[1] == "tcp":
+                    protocol = '-t'
+                elif commands[1] == "udp":
+                    protocol = '-u'
+                elif commands[1] == "fwm":
+                    protocol = '-f'
+                else:
+                    print self.do_show.__doc__    
+                try:
+                    port = int(commands[3])
+                    args = 'ipvsadm --list ' + protocol + ' ' + vip + ':' + str(port)
+                    execute(args, "problem with ipvsadm")
+                except ValueError as e:
+                    print "[ERROR] port number must be an integer"
+            elif len(commands):
+                print self.do_show.__doc__    
+        else:
+            print self.do_show.__doc__
