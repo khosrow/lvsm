@@ -16,6 +16,7 @@ One or more of the following software is required for correct functionality of *
 * ipvsadm
 * svn
 * dsh
+* vi
 
 Configuration
 ====
