@@ -23,9 +23,10 @@ Commands:
   
 Use 'lvsm help <command>' for information on a specific command.
 """
-import getopt
-import sys
 import cmd
+import getopt
+import getpass
+import sys
 import subprocess
 
 DEBUG = False
@@ -139,17 +140,21 @@ edit <module>
             else:
                 log("no dsh defined")
                 cluster_command = ""    
+            # ask for username and passwd so user doesn't get prompted twice on each server
+            username = raw_input("Enter SVN username: ")
+            password = getpass.getpass("Enter SVN password: ")
             # update director config
             if config['director_config']:
-                args = 'svn commit ' + config['director_config']
+                args = 'svn commit --username ' + username + ' --password ' + password + ' ' + config['director_config']
                 execute(args, "problem with configuration sync")
-                args = cluster_command + 'svn update ' + config['director_config']
+                args = cluster_command + 'svn update --username ' + username + ' --password ' + password + ' ' + config['director_config']
                 execute(args, "problem with configuration sync")
+
             # update firewall config
             if config['firewall_config']:
-                args = 'svn commit ' + config['firewall_config']
+                args = 'svn commit --username ' + username + ' --password ' + password + ' ' + config['firewall_config']
                 execute(args, "problem with configuration sync")
-                args = cluster_command + 'svn update ' + config['firewall_config']
+                args = cluster_command + 'svn update --username ' + username + ' --password ' + password + ' ' + config['firewall_config']
                 execute(args, "problem with configuration sync")
                 
 class StatusPrompt(CommandPrompt):
