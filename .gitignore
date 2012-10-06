@@ -25,3 +25,8 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+# dummy config files used for testing
+lb
+ldirectord.cf
+iptables.rules 
