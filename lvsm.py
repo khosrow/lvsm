@@ -4,7 +4,9 @@ functionality form one location."""
 import cmd
 import getpass
 import subprocess
+import os
 import sys
+import director
 
 debug = False
 
@@ -240,3 +242,63 @@ syntax: show <module>
                 print self.do_show.__doc__
         else:
             print self.do_show.__doc__
+
+    def complete_disable(self, text, line, begidx, endidx):
+        """Tab completion for disable command"""
+        servers = ['real', 'virtual']
+        if  (line.startswith("disable real") or
+             line.startswith("disable virtual")):
+            completions = []
+        elif not text:
+            completions = servers[:]
+        else:
+            completions = [s for s in servers if s.startswith(text)]
+        return completions
+
+    def do_disable(self, line):
+        """Disable a real or virtual server.
+
+syntax: disable real|virutal <host>
+"""
+        commands = line.split()
+        if len(commands) != 2:
+            print self.do_disable.__doc__
+        elif line.startswith("virtual"):
+            host = commands[1]
+            print "Not implemented yet!"
+        elif line.startswith("real"):
+            host = commands[1]
+            director.Director(self.config['director'],
+                              self.config['maintenance_dir']).disable(host)
+        else:
+            print self.do_disable.__doc__
+
+    def complete_enable(self, text, line, begidx, endidx):
+        """Tab completion for enable command"""
+        servers = ['real', 'virtual']
+        if  (line.startswith("enable real") or
+             line.startswith("enable virtual")):
+            completions = []
+        elif not text:
+            completions = servers[:]
+        else:
+            completions = [s for s in servers if s.startswith(text)]
+        return completions
+
+    def do_enable(self, line):
+        """Enable a real or virtual server.
+
+syntax: enable real|virutal <host>
+"""
+        commands = line.split()
+        if len(commands) != 2:
+            print self.do_disable.__doc__
+        elif line.startswith("virtual"):
+            host = commands[1]
+            print "Not implemented yet!"
+        elif line.startswith("real"):
+            host = commands[1]
+            director.Director(self.config['director'],
+                              self.config['maintenance_dir']).enable(host)
+        else:
+            print self.do_disable.__doc__
