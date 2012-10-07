@@ -55,7 +55,9 @@ def parse_config(filename):
     # list of valid config keys
     config_items = {'director_config': '',
                     'firewall_config': '',
-                    'dsh_group': ''
+                    'dsh_group': '',
+                    'director': '',
+                    'maintenance_dir': ''
                     }
     linenum = 0
     for line in lines:
