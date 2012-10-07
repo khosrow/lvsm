@@ -169,5 +169,5 @@ This software is released under the `MIT license`_.
 .. _crmsh: http://savannah.nongnu.org/projects/crmsh/
 .. _revision control system: http://en.wikipedia.org/wiki/Revision_control
 .. _subversion: http://subversion.tigris.org
-.. _MIT license: https://github.com/khosrow/lvsm/blob/master/LICENSE
+.. _MIT license: https://github.com/khosrow/lvsm/blob/master/LICENSE.rst
 
