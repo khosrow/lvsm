@@ -30,3 +30,6 @@ pip-log.txt
 lb
 ldirectord.cf
 iptables.rules 
+
+# project files
+*.sublime-*

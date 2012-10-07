@@ -58,7 +58,8 @@ class MainPrompt(CommandPrompt):
     def do_configure(self, line):
         """The configuration level
 
-Items related to configuration of IPVS and iptables are available here."""
+        Items related to configuration of IPVS and iptables are available here.
+        """
         commands = line.split()
         configshell = ConfigurePrompt(self.config)
         if not line:
@@ -69,7 +70,8 @@ Items related to configuration of IPVS and iptables are available here."""
     def do_status(self, line):
         """The status level.
 
-Running status of IPVS and iptables are available here."""
+        Running status of IPVS and iptables are available here.
+        """
         commands = line.split()
         statshell = StatusPrompt(self.config)
         if not line:
@@ -118,12 +120,13 @@ class ConfigurePrompt(CommandPrompt):
 
     def do_show(self, line):
         """Show configuration for an item. The configuration files are \
-defined in lvsm.conf
+        defined in lvsm.conf
 
-syntax: show <module>
-<module> can be one of the following
+        syntax: show <module>
+        <module> can be one of the following
         director                the IPVS director config file
-        firewall                the iptables firewall config file"""
+        firewall                the iptables firewall config file
+        """
         if line == "director":
             self.print_config("director_config")
         elif line == "firewall":
@@ -144,12 +147,13 @@ syntax: show <module>
 
     def do_edit(self, line):
         """Edit the configuration of an item. The configuration files are \
-defined in lvsm.conf
+        defined in lvsm.conf
 
-edit <module>
-<module> can be one of the follwoing
+        edit <module>
+        <module> can be one of the follwoing
         director                the IPVS director config file
-        firewall                the iptables firewall config file"""
+        firewall                the iptables firewall config file
+        """
         if line == "director" or line == "firewall":
             filename = self.config[line + '_config']
             #args = ["vi", filename]
@@ -208,11 +212,12 @@ class StatusPrompt(CommandPrompt):
     def do_show(self, line):
         """Show information about a specific item.
 
-syntax: show <module>
-<module> can be one of the following
+        syntax: show <module>
+        <module> can be one of the following
         director                the running ipvs status
         firewall                the iptables firewall status
-        virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP"""
+        virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP
+        """
         commands = line.split()
         if line == "director":
             args = 'ipvsadm --list'
@@ -258,8 +263,8 @@ syntax: show <module>
     def do_disable(self, line):
         """Disable a real or virtual server.
 
-syntax: disable real|virutal <host>
-"""
+        syntax: disable real|virutal <host>
+        """
         commands = line.split()
         if len(commands) != 2:
             print self.do_disable.__doc__
@@ -288,8 +293,8 @@ syntax: disable real|virutal <host>
     def do_enable(self, line):
         """Enable a real or virtual server.
 
-syntax: enable real|virutal <host>
-"""
+        syntax: enable real|virutal <host>
+        """
         commands = line.split()
         if len(commands) != 2:
             print self.do_disable.__doc__
