@@ -2,17 +2,19 @@
 #
 # lvsm - LVS Manager
 # Khosrow Ebrahimpour - Sep 2012
-# this program is a wrapper aiming to unify the task of managing an Linux Server running LVS
+# this program is a wrapper aiming to unify the task of managing a
+# a Linux Server running LVS
 
-"""LVS Manager is a shell that simplifies management of a linux virtual server (LVS).
+"""LVS Manager is a shell that eases the management of a linux virtual server.
     Using it without arguments will enter an interactive shell.
-    Supplying one or more command-line arguments will run lvsm for a "single-shot" use.
-    
+    Supplying one or more command-line arguments will run lvsm for a
+    "single-shot" use.
+
 Usage: lvsm [-h] [-c <conffile>][commands]
 
 Options:
   -h, --help            show this help message and exit
-  
+
   -c <conffile>         specify which configuration file to use
   -config=<connfile>
 
@@ -20,13 +22,14 @@ Commands:
   configure
   status
   help
-  
+
 Use 'lvsm help <command>' for information on a specific command.
 """
 
 import getopt
 import lvsm
 import sys
+
 
 def usage(code, msg=''):
     if code:
@@ -38,6 +41,7 @@ def usage(code, msg=''):
         print >> fd, msg
     sys.exit(code)
 
+
 def parse_config(filename):
     #open config file and read it
     try:
@@ -45,48 +49,52 @@ def parse_config(filename):
         lines = file.readlines()
         file.close()
     except IOError as e:
-        print "[ERROR] Unable to read configuration file:" 
+        print "[ERROR] Unable to read configuration file:"
         print "[ERROR] " + e.strerror + " '" + filename + "'"
-        sys.exit(1)  
+        sys.exit(1)
     # list of valid config keys
-    config_items = {
-                   'director_config':'',
-                   'firewall_config':'',
-                   'dsh_group':''
-                   }
+    config_items = {'director_config': '',
+                    'firewall_config': '',
+                    'dsh_group': ''
+                    }
     linenum = 0
     for line in lines:
         linenum += 1
         if line[0] == '#':
             continue
-        k,sep,v = line.rstrip().partition('=')
+        k, sep, v = line.rstrip().partition('=')
         key = k.lstrip().rstrip()
         value = v.lstrip().rstrip()
         if config_items.get(key) is None:
-            print "[ERROR] configuration file line " + str(linenum) + ": invalid variable '" + key + "'"
+            print "[ERROR] configuration file line " + str(linenum) +\
+                  ": invalid variable '" + key + "'"
             sys.exit(1)
         else:
             config_items[key] = value
-            # if the item is a config file, verify that the file exists            
+            # if the item is a config file, verify that the file exists
             if key.endswith('_config'):
                 try:
                     file = open(value)
                     file.close()
                 except IOError as e:
-                    print "[ERROR] in lvsm configuration file line " + str(linenum)  
-                    print "[ERROR] " + e.strerror + ": '" + e.filename + "'"
-                    sys.exit(1)        
-    return config_items        
-    
+                    print "[ERROR] in lvsm configuration file line " +\
+                          str(linenum)
+                    print "[ERROR] " + e.strerror + ": '" + e.filename +\
+                          "'"
+                    sys.exit(1)
+    return config_items
+
+
 def main():
     CONFFILE = "/opt/lvsm/lvsm.conf"
-    DEBUG = False 
-            
+    DEBUG = False
+
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hc:d", ["help", "config=", "debug"])
+        opts, args = getopt.getopt(sys.argv[1:], "hc:d",
+                                   ["help", "config=", "debug"])
     except getopt.error, msg:
         usage(2, msg)
-    
+
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage(0)
@@ -94,7 +102,7 @@ def main():
             CONFFILE = arg
         elif opt in ("-d", "--debug"):
             DEBUG = True
-    
+
     lvsm.debug = DEBUG
 
     #open config file and read it
@@ -107,6 +115,6 @@ def main():
         shell.onecmd(' '.join(args[:]))
     else:
         shell.cmdloop()
-                
+
 if __name__ == "__main__":
-    main()  
+    main()
