@@ -89,7 +89,7 @@ control and/or cluster mode. Configure mode provides access to the director conf
 
 Available commands are
 
-* **show <module>**: will display the configuration for the specified module. 
+* **show**: will display the configuration for the specified module. 
 
 Usage: 
 
@@ -98,14 +98,30 @@ Usage:
     show <module>
     
     
-Where ``<module>`` is one of **director** or **firewall**
+Where ``<module>`` is one of ``director`` or ``firewall``
 
 example:
 
 .. code-block::
 
     lvsm(configure)# show director
-  
+
+
+* **edit**: open the configuration file for the module using an editor. *note:* the editor is currently set to **vi**.
+
+Usage:
+
+::
+    
+    show <module>
+
+Where ``<module>`` is one of ``director`` or ``firewall``
+
+example:
+
+.. code-block::
+
+    lvsm(configure)# edit director
                                                                                                     
 * **sync**: sync all configuration files across the cluster by first commiting to a `revision control system`_. Currently only `subversion`_ is supported.
 
@@ -115,13 +131,6 @@ example:
 
     lvsm(configure)# sync
 
-* **edit <module>**: open the configuration file for the module using an editor. *note:* the editor is currently set to **vi**.
-
-example:
-
-.. code-block::
-
-    lvsm(configure)# edit director
 
 ------------
 status level
@@ -129,7 +138,7 @@ status level
 
 Enter status mode. In this level the status of the live setup can be viewed.
 
-* **show <module>**: show the running status of the given module. 
+* **show**: show the running status of the given module. 
 
 Usage:
 
@@ -137,9 +146,9 @@ Usage:
 
     show <module>
 
-Where ``<module>`` is one of **director**, **firewall**, **virtual**.
+Where ``<module>`` is one of ``director``, ``firewall``, ``virtual``.
 
-The ``virtual`` module takes additional options: **protocol**, **vip name or address** and **port number**
+The ``virtual`` module takes additional options: ``protocol``, ``vip name or address`` and ``port number``
 and will only show that VIP instead of the entire IPVS table.
 
 Usage:
