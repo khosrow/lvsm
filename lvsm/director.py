@@ -39,3 +39,21 @@ class Director():
         else:
             print ("[ERROR] no valid director defined." +
                    " Don't know how to disable servers!")
+
+    def show_real(self, host, port):
+        try:
+            portnum = int(port)
+        except ValueError as e:
+            print "[ERROR] port number must be an integer!"
+            return 1
+        lines = "ipvsadm output".split('\n')
+        virtual = ""
+        real = ""
+        for line in lines:
+            if (line.startswith("TCP") or 
+                line.startswith("UDP") or 
+                line.startswith("FWM")) :
+                virtual = line
+            if line.find("host:port"):
+                print virtual
+                print line
