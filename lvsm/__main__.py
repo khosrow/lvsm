@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-## lvsm - LVS Manager
 # Khosrow Ebrahimpour - Sep 2012
 
 """
@@ -12,10 +11,10 @@ more command-line arguments will run lvsm for a "single-shot" use.
 Usage: lvsm [-h] [-c <conffile>][commands]
 
 Options:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit
 
-  -c <conffile>         specify which configuration file to use
-  -config=<connfile>
+  -c <conffile>         Specify which configuration file to use.
+  -config=<connfile>    The default is /etc/lvsm.conf
 
 Commands:
   configure
