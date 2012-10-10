@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-#
-# lvsm - LVS Manager
+## lvsm - LVS Manager
 # Khosrow Ebrahimpour - Sep 2012
-# this program is a wrapper aiming to unify the task of managing a
-# a Linux Server running LVS
 
-"""LVS Manager is a shell that eases the management of a linux virtual server.
-    Using it without arguments will enter an interactive shell.
-    Supplying one or more command-line arguments will run lvsm for a
-    "single-shot" use.
+"""
+lvsm - LVS Manager
+LVS Manager is a shell that eases the management of a linux virtual server.
+
+Using it without arguments will enter an interactive shell. Supplying one or
+more command-line arguments will run lvsm for a "single-shot" use.
 
 Usage: lvsm [-h] [-c <conffile>][commands]
 
@@ -88,8 +87,7 @@ def parse_config(filename):
 
 
 def main():
-    CONFFILE = "/opt/lvsm/lvsm.conf"
-    DEBUG = False
+    CONFFILE = "/etc/lvsm.conf"
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hc:d",
@@ -103,9 +101,7 @@ def main():
         elif opt in ("-c", "--config"):
             CONFFILE = arg
         elif opt in ("-d", "--debug"):
-            DEBUG = True
-
-    lvsm.debug = DEBUG
+            lvsm.DEBUG = True
 
     #open config file and read it
     config = parse_config(CONFFILE)

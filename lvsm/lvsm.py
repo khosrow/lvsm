@@ -8,11 +8,11 @@ import os
 import sys
 import director
 
-debug = False
+DEBUG = False
 
 
 def log(msg):
-    if debug:
+    if DEBUG:
         print "[DEBUG] " + msg
 
 
@@ -26,7 +26,7 @@ def execute(args, error):
 
 
 class CommandPrompt(cmd.Cmd):
-    def __init__(self, config):
+    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
