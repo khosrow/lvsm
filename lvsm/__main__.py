@@ -51,7 +51,9 @@ def parse_config(filename):
         print "[ERROR] " + e.strerror + " '" + filename + "'"
         sys.exit(1)
     # list of valid config keys
-    config_items = {'director_config': '',
+    config_items = {'ipvsadm':'ipvsadm',
+                    'iptables':'iptables',
+                    'director_config': '',
                     'firewall_config': '',
                     'dsh_group': '',
                     'director': '',

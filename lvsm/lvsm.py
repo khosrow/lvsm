@@ -7,6 +7,7 @@ import subprocess
 import os
 import sys
 import director
+import socket   
 
 DEBUG = False
 
@@ -220,10 +221,10 @@ class StatusPrompt(CommandPrompt):
         """
         commands = line.split()
         if line == "director":
-            args = 'ipvsadm --list'
+            args = self.config['ipvsadm'] + ' --list'
             execute(args, "problem with ipvsadm")
         elif line == "firewall":
-            args = 'iptables -L -v'
+            args = self.config['iptables'] + ' -L -v'
             execute(args, "problem with iptables")
         elif len(commands) > 0 and commands[0] == "virtual":
             if len(commands) == 4:
@@ -238,11 +239,17 @@ class StatusPrompt(CommandPrompt):
                     print self.do_show.__doc__
                 try:
                     port = int(commands[3])
-                    args = ('ipvsadm --list ' + protocol + ' ' + vip + ':' +
+                except ValueError as e:
+                    try:
+                        port = commands[3]
+                        portnum = socket.getservbyname(port)
+                    except socket.error as e:
+                        print "[ERROR] " + e.strerror
+                        return 1
+                finally:    
+                    args = (self.config['ipvsadm'] + ' --list ' + protocol + ' ' + vip + ':' +
                             str(port))
                     execute(args, "problem with ipvsadm")
-                except ValueError as e:
-                    print "[ERROR] port number must be an integer"
             elif len(commands):
                 print self.do_show.__doc__
         else:

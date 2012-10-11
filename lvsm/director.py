@@ -1,5 +1,6 @@
 """Director specific funcationality"""
 import os
+import subprocess
 
 
 class Director():
@@ -41,19 +42,24 @@ class Director():
                    " Don't know how to disable servers!")
 
     def show_real(self, host, port):
+        """show status of real server across multiple VIPs"""
         try:
             portnum = int(port)
         except ValueError as e:
             print "[ERROR] port number must be an integer!"
             return 1
-        lines = "ipvsadm output".split('\n')
+        args = [self.config['ipvsadm'], '--list']
+        p = subprocess.Popen(args, stdout=subprocess.PIPE())
+        stdout, stderr = p.communicate()
+        lines = stdout.split('\n')
         virtual = ""
         real = ""
         for line in lines:
-            if (line.startswith("TCP") or 
-                line.startswith("UDP") or 
+            if (line.startswith("TCP") or
+                line.startswith("UDP") or
                 line.startswith("FWM")) :
-                virtual = line
-            if line.find("host:port"):
+                virtual = lin
+            hostservice = host + ":" + port
+            if line.find(hostservice):
                 print virtual
                 print line
