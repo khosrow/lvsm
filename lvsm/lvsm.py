@@ -6,7 +6,7 @@ import getpass
 import subprocess
 import os
 import sys
-import director
+import lvsdirector
 import socket   
 
 DEBUG = False
@@ -17,13 +17,23 @@ def log(msg):
         print "[DEBUG] " + msg
 
 
-def execute(args, error):
+def execute(args, error, pipe=False):
     """Simple wrapper for subprocess.Popen"""
     try:
         log(str(args))
-        result = subprocess.call(args, shell=True)
+        if pipe:
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
+        else:
+            result = subprocess.call(args, shell=True)
     except OSError as e:
         print "[ERROR] " + error + " - " + e.strerror
+    else:
+        if pipe:
+            stdout, stderr = proc.communicate()
+            if stdout:
+                print stdout
+            elif stderr:
+                print stderr
 
 
 class CommandPrompt(cmd.Cmd):
@@ -188,8 +198,14 @@ class ConfigurePrompt(CommandPrompt):
 
 
 class StatusPrompt(CommandPrompt):
-    prompt = "lvsm(status)# "
-    modules = ['director', 'firewall', 'virtual']
+    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+        # super(CommandPrompt, self).__init__()
+        cmd.Cmd.__init__(self)
+        self.config = config
+        self.prompt = "lvsm(status)# "
+        self.modules = ['director', 'firewall', 'virtual', 'real']
+        self.director = lvsdirector.Director(self.config['director'],
+                                             self.config['maintenance_dir'])
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
@@ -202,7 +218,8 @@ class StatusPrompt(CommandPrompt):
             else:
                 completions = []
         elif (line.startswith("show director") or
-              line.startswith("show firewall")):
+              line.startswith("show firewall") or
+              line.startswith("show real")):
             completions = []
         elif not text:
             completions = self.modules[:]
@@ -217,16 +234,17 @@ class StatusPrompt(CommandPrompt):
         <module> can be one of the following
         director                the running ipvs status
         firewall                the iptables firewall status
+        real <server> <port>    the status of a realserver
         virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP
         """
         commands = line.split()
         if line == "director":
             args = self.config['ipvsadm'] + ' --list'
-            execute(args, "problem with ipvsadm")
+            execute(args, "problem with ipvsadm", pipe=True)
         elif line == "firewall":
             args = self.config['iptables'] + ' -L -v'
-            execute(args, "problem with iptables")
-        elif len(commands) > 0 and commands[0] == "virtual":
+            execute(args, "problem with iptables", pipe=True)
+        elif line.startswith("virtual"):
             if len(commands) == 4:
                 vip = commands[2]
                 if commands[1] == "tcp":
@@ -236,22 +254,33 @@ class StatusPrompt(CommandPrompt):
                 elif commands[1] == "fwm":
                     protocol = '-f'
                 else:
-                    print self.do_show.__doc__
+                    print "Usage: virtual tcp|udp|fwm <vip> <port>"
+                    return
+                port = commands[3]
+                args = (self.config['ipvsadm'] + ' --list ' + protocol + ' ' + vip + ':' +
+                        str(port))
                 try:
-                    port = int(commands[3])
+                    int(port)
                 except ValueError as e:
                     try:
-                        port = commands[3]
                         portnum = socket.getservbyname(port)
-                    except socket.error as e:
-                        print "[ERROR] " + e.strerror
-                        return 1
-                finally:    
-                    args = (self.config['ipvsadm'] + ' --list ' + protocol + ' ' + vip + ':' +
-                            str(port))
-                    execute(args, "problem with ipvsadm")
-            elif len(commands):
+                    except IOError as e:
+                        #print "[ERROR] " + e.strerror
+                        print "[ERROR] " +  str(e)
+                    else:                
+                        execute(args, "problem with ipvsadm", pipe=True)
+                else:
+                    execute(args, "problem with ipvsadm", pipe=True)
+            else:
                 print self.do_show.__doc__
+        elif line.startswith("real"):
+            if len(commands) == 3:
+                host = commands[1]
+                port = commands[2]
+                self.director.show_real(host, port)
+            else:
+                print "Usage: real <server> <port>"
+            
         else:
             print self.do_show.__doc__
 
@@ -270,18 +299,21 @@ class StatusPrompt(CommandPrompt):
     def do_disable(self, line):
         """Disable a real or virtual server.
 
-        syntax: disable real|virutal <host>
+        syntax: disable real|virutal <host> [<port>]
         """
         commands = line.split()
-        if len(commands) != 2:
+        if len(commands) < 2 or len(commands) > 3:
             print self.do_disable.__doc__
         elif line.startswith("virtual"):
             host = commands[1]
             print "Not implemented yet!"
         elif line.startswith("real"):
             host = commands[1]
-            director.Director(self.config['director'],
-                              self.config['maintenance_dir']).disable(host)
+            if len(commands) == 2:
+                port = ''
+            else:                
+                port = commands[2]
+            self.director.disable(host, port)
         else:
             print self.do_disable.__doc__
 
@@ -303,14 +335,17 @@ class StatusPrompt(CommandPrompt):
         syntax: enable real|virutal <host>
         """
         commands = line.split()
-        if len(commands) != 2:
-            print self.do_disable.__doc__
+        if len(commands) < 2 or len(commands) > 3:
+            print self.do_enable.__doc__
         elif line.startswith("virtual"):
             host = commands[1]
             print "Not implemented yet!"
         elif line.startswith("real"):
             host = commands[1]
-            director.Director(self.config['director'],
-                              self.config['maintenance_dir']).enable(host)
+            if len(commands) == 2:
+                port = ''
+            else:
+                port = commands[2]            
+            self.director.enable(host, port)
         else:
-            print self.do_disable.__doc__
+            print self.do_enable.__doc__

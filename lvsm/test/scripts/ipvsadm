@@ -1,3 +1,22 @@
 #!/bin/bash
 
-echo "This is ipvsadm"
+echo "IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
+  -> lvs-test-fe02:www            Masq    1      0          0         
+  -> lvs-test-fe03:www            Masq    1      0          0         
+TCP  lvs-test-web1.cmc.ec.gc.ca:h rr persistent 300
+  -> lvs-test-fe02:https          Masq    1      0          0         
+TCP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:ssh            Masq    1      0          0         
+  -> lvs-test-fe03:ssh            Masq    1      0          0         
+TCP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:domain         Masq    1      0          0         
+TCP  lvs-test-web2.cmc.ec.gc.ca:f rr
+  -> lvs-test-fe02:ftp            Masq    1      0          0         
+  -> lvs-test-fe03:ftp            Masq    1      0          0         
+TCP  lvs-test-web2.cmc.ec.gc.ca:w rr
+  -> lvs-test-fe02:www            Masq    1      0          0         
+UDP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:domain         Masq    1      0          0 "
