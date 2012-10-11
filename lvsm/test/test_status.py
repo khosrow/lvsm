@@ -23,15 +23,41 @@ class TestStatusModule(unittest.TestCase):
     def test_showdirector(self):
       output = StringIO.StringIO()
       sys.stdout = output
-      expected_result = "This is ipvsadm\n"
+      expected_result = """IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
+  -> lvs-test-fe02:www            Masq    1      0          0         
+  -> lvs-test-fe03:www            Masq    1      0          0         
+TCP  lvs-test-web1.cmc.ec.gc.ca:h rr persistent 300
+  -> lvs-test-fe02:https          Masq    1      0          0         
+TCP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:ssh            Masq    1      0          0         
+  -> lvs-test-fe03:ssh            Masq    1      0          0         
+TCP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:domain         Masq    1      0          0         
+TCP  lvs-test-web2.cmc.ec.gc.ca:f rr
+  -> lvs-test-fe02:ftp            Masq    1      0          0         
+  -> lvs-test-fe03:ftp            Masq    1      0          0         
+TCP  lvs-test-web2.cmc.ec.gc.ca:w rr
+  -> lvs-test-fe02:www            Masq    1      0          0         
+UDP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:domain         Masq    1      0          0\n"""
       self.shell.onecmd(' show director')
       result = output.getvalue()
-      self.assertEqual(result, expected_result)
+      self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showfirewall(self):
       output = StringIO.StringIO()
       sys.stdout = output
-      expected_result = "# iptables\n"
+      expected_result = """Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination\n"""
       self.shell.onecmd(' show firewall')
       result = output.getvalue()
-      self.assertEqual(result, expected_result)
+      self.assertEqual(result.rstrip(), expected_result.rstrip())
