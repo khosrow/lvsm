@@ -7,7 +7,7 @@ setup(
     version=lvsm.__version__,
     author=lvsm.__author__,
     author_email='khosrow@khosrow.ca',
-    packages=['lvsm', 'lvsm.test'],
+    packages=['lvsm'],
     url='https://github.com/khosrow/lvsm',
     license='LICENSE.rst',
     description=lvsm.__doc__.strip(),
@@ -17,4 +17,5 @@ setup(
             'lvsm = lvsm.__main__:main',
         ],
     },
+    # test_suite="tests",
 )
