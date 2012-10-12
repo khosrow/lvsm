@@ -2,11 +2,12 @@ import unittest
 import os
 import sys
 import StringIO
-
-TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
-
 import lvsm
+
+# TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
+# sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
+
+from lvsm.lvsm import StatusPrompt
 
 
 class TestStatusModule(unittest.TestCase):
@@ -18,7 +19,8 @@ class TestStatusModule(unittest.TestCase):
             'director': 'ldirectord',
             'maintenance_dir': ''
             }
-  shell = lvsm.StatusPrompt(config)
+  # shell = lvsm.StatusPrompt(config)
+  shell = StatusPrompt(config)
 
   def test_showdirector(self):
     output = StringIO.StringIO()

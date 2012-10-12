@@ -3,10 +3,10 @@ import os
 import sys
 import StringIO
 
-TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
+# TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
+# sys.path.insert(0, os.path.realpath(os.path.join(TESTS_ROOT, '..')))
 
-import lvsm
+from lvsm.lvsm import ConfigurePrompt
 
 
 class TestConfigModule(unittest.TestCase):
@@ -16,7 +16,8 @@ class TestConfigModule(unittest.TestCase):
               'director': 'ldirectord',
               'maintenance_dir': ''
               }
-    shell = lvsm.ConfigurePrompt(config)
+    # shell = lvsm.ConfigurePrompt(config)
+    shell = ConfigurePrompt(config)
 
     def test_showdirector(self):
       output = StringIO.StringIO()
