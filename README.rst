@@ -1,6 +1,8 @@
 ************
-LVSM
+LVS Manger - a shell to manage LVS and iptables
 ************
+.. image:: https://secure.travis-ci.org/khosrow/lvsm.png
+   :target: https://travis-ci.org/#!/khosrow/lvsm
 
 *lvsm* provides a command shell to manage a `Linux Virtual Server`_ (LVS) 
 as a unified system and aims to simplify the management of such systems.
@@ -14,7 +16,7 @@ in the command line like ``lvsm configure show director``
 
 .. contents::
     :local:
-    :depth: 1
+    :depth: 2
     :backlinks: none
 
 =====================
@@ -35,7 +37,7 @@ Configuration
 
 The configuration file can be specified on the command line
 
-.. code-block:: bash
+.. code-block::
 
     $ lvsm --config=configfile
     
@@ -43,16 +45,18 @@ Otherwise the program will look in the current directory for **lvsm.conf**
 
 Valid configuration directives are as follows:
 
-* **director_config**: location of the director configuration file.
-* **firewall_config**: location of the iptables configuration file.
+* **director_config**: location of the director configuration file
+* **firewall_config**: location of the iptables configuration file
 * **dsh_group**: the name of the dsh group to use 
+* **director**: the type of director used for *ipvs*. Only ``ldirectord`` is supported at the moment
+* **maintenance_dir**: directory used by *ldirectord* for disabling servers
+* **ipvsadm**: location of the *ipvsadm* binary. Defaults to ``ipvsadm``
+* **iptables**: location of the *iptables* binary. Defaults to ``iptables``
 
 All other directives are invalid and cause an error message. Further, lines beginning with ``#`` are considered
 comments and will not be parsed.
 
--------
-Example
--------
+example:
 
 .. code-block:: conf
 
@@ -69,7 +73,7 @@ Commands are broken down into different levels, similar to shells like
 `crmsh`_, and each new level will present different commands.
 
 ---------------
-Common Commands
+common commands
 ---------------
 
 Commands below will work at all levels.
@@ -98,7 +102,15 @@ Usage:
     show <module>
     
     
-Where ``<module>`` is one of ``director`` or ``firewall``
+Where ``<module>`` is one of:
+
++------------------------------------+-------------------------------------+
+| Option                             | Result                              |
++====================================+=====================================+
+|``director``                        | show the director configuration     |
++------------------------------------+-------------------------------------+
+|``firewall``                        | show the iptables configuration     |
++------------------------------------+-------------------------------------+
 
 example:
 
@@ -115,7 +127,16 @@ Usage:
     
     show <module>
 
-Where ``<module>`` is one of ``director`` or ``firewall``
+Where ``<module>`` is one of:
+
++------------------------------------+-------------------------------------+
+| Option                             | Result                              |
++====================================+=====================================+
+|``director``                        | edit the director configuration     |
++------------------------------------+-------------------------------------+
+|``firewall``                        | edit the iptables configuration     |
++------------------------------------+-------------------------------------+
+
 
 example:
 
@@ -145,17 +166,20 @@ Usage:
 ::
 
     show <module>
+    
+``<module>`` can be one of the following
 
-Where ``<module>`` is one of ``director``, ``firewall``, ``virtual``.
-
-The ``virtual`` module takes additional options: ``protocol``, ``vip name or address`` and ``port number``
-and will only show that VIP instead of the entire IPVS table.
-
-Usage:
-
-::
-
-    show virtual fwm|tcp|udp <vip> <port>
++------------------------------------+-------------------------------------+
+| Option                             | Result                              |
++====================================+=====================================+
+|``director``                        | show the running ipvs status        |
++------------------------------------+-------------------------------------+
+|``firewall``                        | show the iptables status            |
++------------------------------------+-------------------------------------+
+|``real <server> <port>``            | show the status of a real server    |
++------------------------------------+-------------------------------------+
+|``virtual tcp|udp|fwm <vip> <port>``| show the status of virtual server   |
++------------------------------------+-------------------------------------+
 
 examples:
 
@@ -165,8 +189,29 @@ examples:
 
 ::
 
-    lvsm(status)# show virtual mysite port 80
+    lvsm(status)# show virtual mysite http
 
+::
+    
+    lvs(status)# show real fe-01 http
+
+* **enable**: enable a real server. 
+This option is dependent on the director type. Currently only **ldirectord** is supported.
+
+Usage:
+
+::
+
+    enable real <server> <port>
+
+* **disable**: disable a real server in *ipvs*. 
+This option is dependent on the director type. Currently only **ldirectord** is supported.
+
+Usage:
+
+::
+
+    disable real <server> <port>
 
 =======
 License
