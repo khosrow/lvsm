@@ -17,5 +17,5 @@ setup(
             'lvsm = lvsm.__main__:main',
         ],
     },
-    # test_suite="tests",
+    test_suite="tests",
 )

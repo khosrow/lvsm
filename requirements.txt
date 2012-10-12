@@ -1,2 +1,2 @@
 # these requirements are for testing only
-nose
+# nose

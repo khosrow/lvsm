@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+
+import sys
+import getopt
+
+full_listing="""IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
+  -> lvs-test-fe02:www            Masq    1      0          0         
+  -> lvs-test-fe03:www            Masq    1      0          0         
+TCP  lvs-test-web1.cmc.ec.gc.ca:h rr persistent 300
+  -> lvs-test-fe02:https          Masq    1      0          0         
+TCP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:ssh            Masq    1      0          0         
+  -> lvs-test-fe03:ssh            Masq    1      0          0         
+TCP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:domain         Masq    1      0          0         
+TCP  lvs-test-web2.cmc.ec.gc.ca:f rr
+  -> lvs-test-fe02:ftp            Masq    1      0          0         
+  -> lvs-test-fe03:ftp            Masq    1      0          0         
+TCP  lvs-test-web2.cmc.ec.gc.ca:w rr
+  -> lvs-test-fe02:www            Masq    1      0          0         
+UDP  lvs-test-other.cmc.ec.gc.ca: rr
+  -> lvs-test-fe02:domain         Masq    1      0          0 """
+
+def main():
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "Lt:u:f:",
+                               ["list"])
+  except getopt.error, msg:
+    print msg
+    sys.exit(1)
+  listing = True
+  tcp = False
+  udp = False
+  fwm = False
+  for opt, arg in opts:
+    if opt in ("-L", "--list"):
+      listing = True
+    elif opt == "-t":
+      if arg == "lvs-test-web1:80":
+        tcp = True
+    elif opt == "-u":
+      if arg == "lvs-test-other:53":
+        udp = True
+    elif opt == "-f":
+      fwm = True
+
+
+  list_items = full_listing.split("\n")
+  if tcp:
+    for item in list_items[:6]:
+      print item
+  elif udp:
+    for item in list_items[:3]:
+      print item
+    for item in list_items[18:]:
+      print item
+  elif listing:
+    print full_listing
+
+if __name__ == '__main__':
+  main()
