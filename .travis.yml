@@ -4,6 +4,6 @@ python:
     - "2.7"
 install: 
     - "python setup.py install"
-    - "pip install -r requirements.txt --user-mirrors"
+#    - "pip install -r requirements.txt --use-mirrors"
 # command to run tests
 script: "python -m unittest discover"
