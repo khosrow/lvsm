@@ -7,7 +7,7 @@ import subprocess
 import os
 import sys
 import lvsdirector
-import socket   
+import socket
 
 DEBUG = False
 
@@ -205,7 +205,8 @@ class StatusPrompt(CommandPrompt):
         self.prompt = "lvsm(status)# "
         self.modules = ['director', 'firewall', 'virtual', 'real']
         self.director = lvsdirector.Director(self.config['director'],
-                                             self.config['maintenance_dir'])
+                                             self.config['maintenance_dir'],
+                                             self.config['ipvsadm'])
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
@@ -257,17 +258,16 @@ class StatusPrompt(CommandPrompt):
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
                     return
                 port = commands[3]
-                args = (self.config['ipvsadm'] + ' --list ' + protocol + ' ' + vip + ':' +
-                        str(port))
+                args = (self.config['ipvsadm'] + ' --list ' + protocol +
+                        ' ' + vip + ':' + str(port))
                 try:
                     int(port)
                 except ValueError as e:
                     try:
                         portnum = socket.getservbyname(port)
                     except IOError as e:
-                        #print "[ERROR] " + e.strerror
-                        print "[ERROR] " +  str(e)
-                    else:                
+                        print "[ERROR] " + str(e)
+                    else:
                         execute(args, "problem with ipvsadm", pipe=True)
                 else:
                     execute(args, "problem with ipvsadm", pipe=True)
@@ -280,7 +280,6 @@ class StatusPrompt(CommandPrompt):
                 self.director.show_real(host, port)
             else:
                 print "Usage: real <server> <port>"
-            
         else:
             print self.do_show.__doc__
 
@@ -311,7 +310,7 @@ class StatusPrompt(CommandPrompt):
             host = commands[1]
             if len(commands) == 2:
                 port = ''
-            else:                
+            else:
                 port = commands[2]
             self.director.disable(host, port)
         else:
@@ -345,7 +344,7 @@ class StatusPrompt(CommandPrompt):
             if len(commands) == 2:
                 port = ''
             else:
-                port = commands[2]            
+                port = commands[2]
             self.director.enable(host, port)
         else:
             print self.do_enable.__doc__

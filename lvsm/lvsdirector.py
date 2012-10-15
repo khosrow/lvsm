@@ -6,7 +6,7 @@ import lvsm
 
 
 class Director():
-    def __init__(self, name='', maintenance_dir='', ipvsadm='ipvsadm'):
+    def __init__(self, name, maintenance_dir, ipvsadm):
         self.maintenance_dir = maintenance_dir
         self.name = name
         self.ipvsadm = ipvsadm
@@ -21,7 +21,7 @@ class Director():
                     portnum = socket.getservbyname(port)
                 except IOError as e:
                     print "[ERROR] " + str(e)
-                    return 1                
+                    return 1
         if self.name == 'ldirectord':
             if self.maintenance_dir:
                 if port:
@@ -75,25 +75,25 @@ class Director():
     def show_real(self, host, port):
         """show status of real server across multiple VIPs"""
         try:
-            portnum = int(port)            
+            portnum = int(port)
         except ValueError as e:
             portname = port
         else:
             portname = socket.getservbyport(portnum)
         args = [self.ipvsadm, '--list']
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)        
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
         stdout, stderr = proc.communicate()
         if stdout:
             lines = stdout.split('\n')
         else:
             lines = ""
         virtual = ""
-        real = ""        
+        real = ""
         output = list()
         for line in lines:
             if (line.startswith("TCP") or
                 line.startswith("UDP") or
-                line.startswith("FWM")) :
+                line.startswith("FWM")):
                 virtual = line
             hostservice = host + ":" + portname
             if line.find(hostservice) != -1:
@@ -110,7 +110,7 @@ class Director():
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
-                if filename == host or filename == host+":"+portname:
+                if filename == host or filename == host + ":" + portname:
                     output.append(filename)
             if output:
                 print ""
