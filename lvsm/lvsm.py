@@ -4,36 +4,13 @@ functionality form one location."""
 import cmd
 import getpass
 import subprocess
-import os
 import sys
-import lvsdirector
 import socket
 
+import lvsdirector
+import utils
+
 DEBUG = False
-
-
-def log(msg):
-    if DEBUG:
-        print "[DEBUG] " + msg
-
-
-def execute(args, error, pipe=False):
-    """Simple wrapper for subprocess.Popen"""
-    try:
-        log(str(args))
-        if pipe:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
-        else:
-            result = subprocess.call(args, shell=True)
-    except OSError as e:
-        print "[ERROR] " + error + " - " + e.strerror
-    else:
-        if pipe:
-            stdout, stderr = proc.communicate()
-            if stdout:
-                print stdout
-            elif stderr:
-                print stderr
 
 
 class CommandPrompt(cmd.Cmd):
@@ -97,14 +74,7 @@ class ConfigurePrompt(CommandPrompt):
 
     def print_config(self, configkey):
         """prints out the specified configuration file"""
-        lines = list()
-        try:
-            file = open(self.config[configkey])
-            lines = file.readlines()
-            file.close()
-        except IOError as e:
-            print "[ERROR] Unable to read '" + e.filename + "'"
-            print "[ERROR] " + e.strerror
+        lines = utils.print_file(self.config[configkey])
         for line in lines:
             print line.rstrip()
 
@@ -115,11 +85,11 @@ class ConfigurePrompt(CommandPrompt):
         # commit code
         args = ('svn commit --username ' + username + ' --password ' +
                 password + ' ' + filename)
-        execute(args, "problem with configuration sync")
+        utils.execute(args, "problem with configuration sync")
         # now update on all the nodes in the cluster
         args = (cluster_command + 'svn update --username ' + username +
                 ' --password ' + password + ' ' + filename)
-        execute(args, "problem with configuration sync")
+        utils.execute(args, "problem with configuration sync")
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
@@ -169,7 +139,7 @@ class ConfigurePrompt(CommandPrompt):
             filename = self.config[line + '_config']
             #args = ["vi", filename]
             args = "vi " + filename
-            log(str(args))
+            utils.log(str(args))
             result = subprocess.call(args, shell=True)
             if result != 0:
                 print "[ERROR] something happened during the edit of " +\
@@ -241,10 +211,10 @@ class StatusPrompt(CommandPrompt):
         commands = line.split()
         if line == "director":
             args = self.config['ipvsadm'] + ' --list'
-            execute(args, "problem with ipvsadm", pipe=True)
+            utils.execute(args, "problem with ipvsadm", pipe=True)
         elif line == "firewall":
             args = self.config['iptables'] + ' -L -v'
-            execute(args, "problem with iptables", pipe=True)
+            utils.execute(args, "problem with iptables", pipe=True)
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 vip = commands[2]
@@ -268,9 +238,9 @@ class StatusPrompt(CommandPrompt):
                     except IOError as e:
                         print "[ERROR] " + str(e)
                     else:
-                        execute(args, "problem with ipvsadm", pipe=True)
+                        utils.execute(args, "problem with ipvsadm", pipe=True)
                 else:
-                    execute(args, "problem with ipvsadm", pipe=True)
+                    utils.execute(args, "problem with ipvsadm", pipe=True)
             else:
                 print self.do_show.__doc__
         elif line.startswith("real"):

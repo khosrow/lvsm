@@ -25,8 +25,10 @@ Use 'lvsm help <command>' for information on a specific command.
 """
 
 import getopt
-import lvsm
 import sys
+
+import lvsm
+import utils
 
 
 def usage(code, msg=''):
@@ -38,53 +40,6 @@ def usage(code, msg=''):
     if msg:
         print >> fd, msg
     sys.exit(code)
-
-
-def parse_config(filename):
-    #open config file and read it
-    try:
-        file = open(filename)
-        lines = file.readlines()
-        file.close()
-    except IOError as e:
-        print "[ERROR] Unable to read configuration file:"
-        print "[ERROR] " + e.strerror + " '" + filename + "'"
-        sys.exit(1)
-    # list of valid config keys
-    config_items = {'ipvsadm':'ipvsadm',
-                    'iptables':'iptables',
-                    'director_config': '',
-                    'firewall_config': '',
-                    'dsh_group': '',
-                    'director': '',
-                    'maintenance_dir': ''
-                    }
-    linenum = 0
-    for line in lines:
-        linenum += 1
-        if line[0] == '#':
-            continue
-        k, sep, v = line.rstrip().partition('=')
-        key = k.lstrip().rstrip()
-        value = v.lstrip().rstrip()
-        if config_items.get(key) is None:
-            print "[ERROR] configuration file line " + str(linenum) +\
-                  ": invalid variable '" + key + "'"
-            sys.exit(1)
-        else:
-            config_items[key] = value
-            # if the item is a config file, verify that the file exists
-            if key.endswith('_config'):
-                try:
-                    file = open(value)
-                    file.close()
-                except IOError as e:
-                    print "[ERROR] in lvsm configuration file line " +\
-                          str(linenum)
-                    print "[ERROR] " + e.strerror + ": '" + e.filename +\
-                          "'"
-                    sys.exit(1)
-    return config_items
 
 
 def main():
@@ -102,12 +57,12 @@ def main():
         elif opt in ("-c", "--config"):
             CONFFILE = arg
         elif opt in ("-d", "--debug"):
-            lvsm.DEBUG = True
+            utils.DEBUG = True
 
     #open config file and read it
-    config = parse_config(CONFFILE)
-    lvsm.log("Parsed config file")
-    lvsm.log(str(config))
+    config = utils.parse_config(CONFFILE)
+    utils.log("Parsed config file")
+    utils.log(str(config))
 
     shell = lvsm.MainPrompt(config)
     if args:

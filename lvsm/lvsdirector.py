@@ -2,7 +2,6 @@
 import os
 import socket
 import subprocess
-import lvsm
 
 
 class Director():
@@ -122,4 +121,5 @@ class Director():
 
     def check_real(self, host, port):
         """Check a host/port to see if it's in the realserver list"""
+        # useful with show_real command
         pass
