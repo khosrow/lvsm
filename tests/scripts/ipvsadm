@@ -3,30 +3,51 @@
 import sys
 import getopt
 
-full_listing="""IP Virtual Server version 1.2.1 (size=4096)
+alpha_listing="""IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0
-  -> lvs-test-fe03:www            Masq    1      0          0
-TCP  lvs-test-web1.cmc.ec.gc.ca:h rr persistent 300
-  -> lvs-test-fe02:https          Masq    1      0          0
-TCP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:ssh            Masq    1      0          0
-  -> lvs-test-fe03:ssh            Masq    1      0          0
-TCP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:domain         Masq    1      0          0
-TCP  lvs-test-web2.cmc.ec.gc.ca:f rr
-  -> lvs-test-fe02:ftp            Masq    1      0          0
-  -> lvs-test-fe03:ftp            Masq    1      0          0
-TCP  lvs-test-web2.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0
-UDP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:domain         Masq    1      0          0"""
+TCP  www.example.com:http         rr
+  -> fe01.example.com:http        Masq    1      0          0
+  -> fe02.example.com:http        Masq    1      0          0
+TCP  www.example.com:https        rr persistent 300
+  -> fe01.example.com:https       Masq    1      0          0
+TCP  example.org:ssh              rr
+  -> secure1.example.org:ssh      Masq    1      0          0
+  -> secure2.example.org:ssh      Masq    1      0          0
+TCP  example.org:domain           rr
+  -> dns01.example.org:domain     Masq    1      0          0
+  -> dns02.example.org:domain     Masq    1      0          0
+TCP  example.com:ftp              rr
+  -> fe01.example.com:ftp         Masq    1      0          0
+  -> fe02.example.com:ftp         Masq    1      0          0
+UDP  example.org:domain           rr
+  -> dns01.example.org:domain     Masq    1      0          0
+  -> dns02.example.org:domain     Masq    1      0          0"""
+
+numeric_listing="""IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  192.0.43.10:80               rr
+  -> 10.10.1.21:80                Masq    1      0          0
+  -> 10.10.1.22:80                Masq    1      0          0
+TCP  192.0.43.10:443              rr persistent 300
+  -> 10.10.1.21:443               Masq    1      0          0
+TCP  192.0.43.10:22               rr
+  -> 10.10.1.31:22                Masq    1      0          0
+  -> 10.10.1.32:22                Masq    1      0          0
+TCP  192.0.43.10:53               rr
+  -> 10.10.1.41:53                Masq    1      0          0
+  -> 10.10.1.42:53                Masq    1      0          0
+TCP  192.0.43.10:21               rr
+  -> 10.10.1.21:21                Masq    1      0          0
+  -> 10.10.1.22:21                Masq    1      0          0
+UDP  192.0.43.10:53               rr
+  -> 10.10.1.41:53                Masq    1      0          0
+  -> 10.10.1.42:53                Masq    1      0          0"""
 
 def main():
   try:
-    opts, args = getopt.getopt(sys.argv[1:], "Lt:u:f:",
+    opts, args = getopt.getopt(sys.argv[1:], "Lnt:u:f:",
                                ["list"])
   except getopt.error, msg:
     print msg
@@ -35,17 +56,20 @@ def main():
   tcp = False
   udp = False
   fwm = False
+  full_listing = alpha_listing
   for opt, arg in opts:
     if opt in ("-L", "--list"):
       listing = True
     elif opt == "-t":
-      if arg == "lvs-test-web1:80":
+      if arg == "www.example.com:80" or arg == "192.0.43.10:80":
         tcp = True
     elif opt == "-u":
-      if arg == "lvs-test-other:53":
+      if arg == "example.org:53" or arg == "192.0.43.10:53":
         udp = True
     elif opt == "-f":
       fwm = True
+    elif opt == "-n":
+      full_listing = numeric_listing
 
 
   list_items = full_listing.split("\n")
@@ -55,7 +79,7 @@ def main():
   elif udp:
     for item in list_items[:3]:
       print item
-    for item in list_items[18:]:
+    for item in list_items[17:]:
       print item
   elif listing:
     print full_listing

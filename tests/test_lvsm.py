@@ -72,28 +72,29 @@ class TestStatus(unittest.TestCase):
     shell = lvsm.StatusPrompt(config)
 
     def test_showdirector(self):
+        self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0
-  -> lvs-test-fe03:www            Masq    1      0          0
-TCP  lvs-test-web1.cmc.ec.gc.ca:h rr persistent 300
-  -> lvs-test-fe02:https          Masq    1      0          0
-TCP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:ssh            Masq    1      0          0
-  -> lvs-test-fe03:ssh            Masq    1      0          0
-TCP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:domain         Masq    1      0          0
-TCP  lvs-test-web2.cmc.ec.gc.ca:f rr
-  -> lvs-test-fe02:ftp            Masq    1      0          0
-  -> lvs-test-fe03:ftp            Masq    1      0          0
-TCP  lvs-test-web2.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0
-UDP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:domain         Masq    1      0          0"""
+TCP  www.example.com:http         rr
+  -> fe01.example.com:http        Masq    1      0          0
+  -> fe02.example.com:http        Masq    1      0          0
+TCP  www.example.com:https        rr persistent 300
+  -> fe01.example.com:https       Masq    1      0          0
+TCP  example.org:ssh              rr
+  -> secure1.example.org:ssh      Masq    1      0          0
+  -> secure2.example.org:ssh      Masq    1      0          0
+TCP  example.org:domain           rr
+  -> dns01.example.org:domain     Masq    1      0          0
+  -> dns02.example.org:domain     Masq    1      0          0
+TCP  example.com:ftp              rr
+  -> fe01.example.com:ftp         Masq    1      0          0
+  -> fe02.example.com:ftp         Masq    1      0          0
+UDP  example.org:domain           rr
+  -> dns01.example.org:domain     Masq    1      0          0
+  -> dns02.example.org:domain     Masq    1      0          0"""
         self.shell.onecmd(' show director')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -114,41 +115,43 @@ target     prot opt source               destination"""
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showvirtualtcp(self):
+        self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0
-  -> lvs-test-fe03:www            Masq    1      0          0"""
-        self.shell.onecmd(' show virtual tcp lvs-test-web1 80')
+TCP  www.example.com:http         rr
+  -> fe01.example.com:http        Masq    1      0          0
+  -> fe02.example.com:http        Masq    1      0          0"""
+        self.shell.onecmd(' show virtual tcp www.example.com 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showvirtualudp(self):
+        self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-UDP  lvs-test-other.cmc.ec.gc.ca: rr
-  -> lvs-test-fe02:domain         Masq    1      0          0"""
-        self.shell.onecmd(' show virtual udp lvs-test-other 53')
+UDP  example.org:domain           rr
+  -> dns01.example.org:domain     Masq    1      0          0
+  -> dns02.example.org:domain     Masq    1      0          0"""
+        self.shell.onecmd(' show virtual udp example.org 53')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showrealactive(self):
+        self.shell.settings['numeric'] = True
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """
 Active servers:
 ---------------
-TCP  lvs-test-web1.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0
-TCP  lvs-test-web2.cmc.ec.gc.ca:w rr
-  -> lvs-test-fe02:www            Masq    1      0          0"""
-        self.shell.onecmd(' show real lvs-test-fe02 www')
+TCP  192.0.43.10:80
+  -> 10.10.1.21:80"""
+        self.shell.onecmd(' show real 10.10.1.21 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
