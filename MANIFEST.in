@@ -1,0 +1,5 @@
+include tests/etc/ *
+include tests/scripts/ *
+include tests/ *.py 
+include *.rst
+include *.txt
