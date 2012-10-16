@@ -3,6 +3,8 @@ import os
 import socket
 import subprocess
 
+import utils
+
 
 class Director():
     def __init__(self, name, maintenance_dir, ipvsadm):
@@ -13,18 +15,16 @@ class Director():
     def disable(self, host, port=''):
         # check that it's a valid port
         if port:
-            try:
-                int(port)
-            except ValueError as e:
-                try:
-                    portnum = socket.getservbyname(port)
-                except IOError as e:
-                    print "[ERROR] " + str(e)
-                    return 1
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return
         if self.name == 'ldirectord':
             if self.maintenance_dir:
+                hostip = utils.gethostname(host)
+                if not hostip:
+                    return
                 if port:
-                    hostport = host + ":" + port
+                    hostport = hostip + ":" + str(portnum)
                 else:
                     hostport = host
                 try:
@@ -44,19 +44,17 @@ class Director():
     def enable(self, host, port=''):
         # check that it's a valid port
         if port:
-            try:
-                int(port)
-            except ValueError as e:
-                try:
-                    portnum = socket.getservbyname(port)
-                except IOError as e:
-                    print "[ERROR] " + str(e)
-                    return
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return
+        hostip = utils.gethostname(host)
+        if not hostip:
+            return
         if self.name == 'ldirectord':
             if port:
-                hostport = host + ":" + port
+                hostport = hostip + ":" + str(portnum)
             else:
-                hostport = host
+                hostport = hostip
             if self.maintenance_dir:
                 try:
                     os.unlink(self.maintenance_dir + "/" + hostport)
@@ -71,15 +69,33 @@ class Director():
             print ("[ERROR] no valid director defined." +
                    " Don't know how to disable servers!")
 
-    def show_real(self, host, port):
-        """show status of real server across multiple VIPs"""
-        try:
-            portnum = int(port)
-        except ValueError as e:
-            portname = port
+    def show_virtual(self, host, port, prot, numeric):
+        """show status of virtual server"""
+        protocols = {'tcp': '-t', 'udp': '-u', 'fwm': '-f'}
+        protocol = protocols[prot]
+        hostip = utils.gethostname(host)
+        if not hostip:
+            return
+        portnum = utils.getportnum(port)
+        if portnum == -1:
+            return
+        if numeric:
+            display_flag = '-n'
         else:
-            portname = socket.getservbyport(portnum)
-        args = [self.ipvsadm, '--list']
+            display_flag = ''
+        args = (self.ipvsadm + ' -L ' + display_flag + ' ' + protocol + ' ' +
+                hostip + ':' + str(portnum))
+        utils.execute(args, "problem with ipvsadm", pipe=True)
+
+    def show_real(self, host, port, numeric):
+        """show status of real server across multiple VIPs"""
+        hostip = utils.gethostname(host)
+        if not hostip:
+            return
+        portnum = utils.getportnum(port)
+        if portnum == -1:
+            return
+        args = self.ipvsadm + ' -Ln'
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
         stdout, stderr = proc.communicate()
         if stdout:
@@ -94,10 +110,24 @@ class Director():
                 line.startswith("UDP") or
                 line.startswith("FWM")):
                 virtual = line
-            hostservice = host + ":" + portname
+            hostservice = hostip + ":" + str(portnum)
             if line.find(hostservice) != -1:
-                output.append(virtual)
-                output.append(line)
+                if numeric:
+                    output.append('  '.join(virtual.split()[:2]))
+                    output.append('  ' + ' '.join(line.split()[:2]))
+                else:
+                    # convert host IP and port num to names before displaying
+                    vip = virtual.split()[1].split(":")[0]
+                    (vipname, aliaslist, iplist) = socket.gethostbyaddr(vip)
+                    vipport = virtual.split()[1].split(":")[1]
+                    vipportname = socket.getservbyport(int(vipport))
+                    rip = line.split()[1].split(":")[0]
+                    (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
+                    ripport = line.split()[1].split(":")[1]
+                    ripportname = socket.getservbyport(int(ripport))
+                    output.append(virtual.split()[0] + ' ' + vipname + ':' +
+                                  vipportname)
+                    output.append('  -> ' + ripname + ':' + ripportname)
         if output:
             print ""
             print "Active servers:"
@@ -109,8 +139,18 @@ class Director():
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
-                if filename == host or filename == host + ":" + portname:
-                    output.append(filename)
+                if (filename == hostip or
+                    filename == hostip + ":" + str(portnum)):
+                    if numeric:
+                        output.append(filename)
+                    else:
+                        rip = filename.split(":")[0]
+                        ripname = socket.gethostbyaddr(rip)
+                        if len(filename.split(":")) == 2:
+                            ripport = filename.split(":")[1]
+                            ripportname = socket.getservbyport(int(ripport))
+                            ripname = ripname + ':' + ripportname
+                        output.append(ripname)
             if output:
                 print ""
                 print "Disabled servers:"

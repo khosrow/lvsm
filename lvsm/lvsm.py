@@ -14,6 +14,9 @@ DEBUG = False
 
 
 class CommandPrompt(cmd.Cmd):
+    settings = {'numeric': False}
+    variables = ['numeric']
+
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
@@ -37,6 +40,35 @@ class CommandPrompt(cmd.Cmd):
         """return to previous context"""
         print
         return True
+
+    def do_set(self, line):
+        """set or display different variables
+
+        syntax: set [<variable>] [<value>]
+        <variable> can be one of
+        numeric on|off          Toggle numeric ipvsadm display ON/OFF"""
+        if not line:
+            print self.settings
+        elif line.startswith("numeric"):
+            if line == "numeric on":
+                self.settings['numeric'] = True
+            elif line == "numeric off":
+                self.settings['numeric'] = False
+            else:
+                print "Usage: set numeric on|off"
+        else:
+            print self.do_set.__doc__
+
+    def complete_set(self, text, line, begidx, endidx):
+        """Tab completion for the set command"""
+        if len(line) < 12:
+            if not text:
+                    completions = self.variables[:]
+            else:
+                completions = [m for m in self.variables if m.startswith(text)]
+        else:
+            completions = []
+        return completions
 
 
 class MainPrompt(CommandPrompt):
@@ -93,10 +125,13 @@ class ConfigurePrompt(CommandPrompt):
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
-        if not text:
-            completions = self.modules[:]
+        if len(line) < 14:
+            if not text:
+                completions = self.modules[:]
+            else:
+                completions = [m for m in self.modules if m.startswith(text)]
         else:
-            completions = [m for m in self.modules if m.startswith(text)]
+            completions = []
         return completions
 
     def do_show(self, line):
@@ -117,13 +152,13 @@ class ConfigurePrompt(CommandPrompt):
 
     def complete_edit(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
-        if not text:
-            if len(line) < 14:
+        if len(line) < 14:
+            if not text:
                 completions = self.modules[:]
             else:
-                completions = []
+                completions = [m for m in self.modules if m.startswith(text)]
         else:
-            completions = [m for m in self.modules if m.startswith(text)]
+            completions = []
         return completions
 
     def do_edit(self, line):
@@ -174,18 +209,18 @@ class StatusPrompt(CommandPrompt):
         self.config = config
         self.prompt = "lvsm(status)# "
         self.modules = ['director', 'firewall', 'virtual', 'real']
+        self.protocols = ['tcp', 'udp', 'fwm']
         self.director = lvsdirector.Director(self.config['director'],
                                              self.config['maintenance_dir'],
                                              self.config['ipvsadm'])
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
-        protocols = ['tcp', 'udp', 'fwm']
         if line.startswith("show virtual "):
             if line == "show virtual ":
-                completions = protocols[:]
+                completions = self.protocols[:]
             elif len(line) < 16:
-                completions = [p for p in protocols if p.startswith(text)]
+                completions = [p for p in self.protocols if p.startswith(text)]
             else:
                 completions = []
         elif (line.startswith("show director") or
@@ -209,45 +244,33 @@ class StatusPrompt(CommandPrompt):
         virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP
         """
         commands = line.split()
+        if self.settings['numeric']:
+            display_flag = '-n'
+        else:
+            display_flag = ''
         if line == "director":
-            args = self.config['ipvsadm'] + ' --list'
+            args = self.config['ipvsadm'] + ' -L ' + display_flag
             utils.execute(args, "problem with ipvsadm", pipe=True)
         elif line == "firewall":
             args = self.config['iptables'] + ' -L -v'
             utils.execute(args, "problem with iptables", pipe=True)
         elif line.startswith("virtual"):
             if len(commands) == 4:
+                protocol = commands[1]
                 vip = commands[2]
-                if commands[1] == "tcp":
-                    protocol = '-t'
-                elif commands[1] == "udp":
-                    protocol = '-u'
-                elif commands[1] == "fwm":
-                    protocol = '-f'
-                else:
+                port = commands[3]
+                self.director.show_virtual(vip, port, protocol,
+                                           self.settings['numeric'])
+                if protocol not in self.protocols:
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
                     return
-                port = commands[3]
-                args = (self.config['ipvsadm'] + ' --list ' + protocol +
-                        ' ' + vip + ':' + str(port))
-                try:
-                    int(port)
-                except ValueError as e:
-                    try:
-                        portnum = socket.getservbyname(port)
-                    except IOError as e:
-                        print "[ERROR] " + str(e)
-                    else:
-                        utils.execute(args, "problem with ipvsadm", pipe=True)
-                else:
-                    utils.execute(args, "problem with ipvsadm", pipe=True)
             else:
                 print self.do_show.__doc__
         elif line.startswith("real"):
             if len(commands) == 3:
                 host = commands[1]
                 port = commands[2]
-                self.director.show_real(host, port)
+                self.director.show_real(host, port, self.settings['numeric'])
             else:
                 print "Usage: real <server> <port>"
         else:

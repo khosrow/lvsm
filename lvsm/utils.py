@@ -1,4 +1,5 @@
 """Common utility functions used by lvsm"""
+import socket
 import subprocess
 import sys
 
@@ -13,7 +14,7 @@ def log(msg):
 def execute(args, error, pipe=False):
     """Simple wrapper for subprocess.Popen"""
     try:
-        log(str(args))
+        # log(str(args))
         if pipe:
             proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
         else:
@@ -25,8 +26,10 @@ def execute(args, error, pipe=False):
             stdout, stderr = proc.communicate()
             if stdout:
                 print stdout
+                return stdout
             elif stderr:
                 print stderr
+                return stderr
 
 
 def parse_config(filename):
@@ -80,3 +83,31 @@ def print_file(filename):
         print "[ERROR] Unable to read '" + e.filename + "'"
         print "[ERROR] " + e.strerror + ": '" + e.filename + "'"
     return lines
+
+
+def getportnum(port):
+    """accepts a port name or number and returns the port number as an int.
+    returns -1 in case of invalid port name"""
+    try:
+        portnum = int(port)
+        if portnum < 0 or portnum > 65535:
+            print "[ERROR] invalid port number"
+            portnum = -1
+    except:
+        try:
+            p = socket.getservbyname(port)
+            portnum = int(p)
+        except socket.error, e:
+            print "[ERROR] " + str(e)
+            portnum = -1
+    return portnum
+
+
+def gethostname(host):
+    try:
+        hostip = socket.gethostbyname(host)
+    except socket.gaierror as e:
+        print "[ERROR] " + e.strerror
+        return ''
+    else:
+        return hostip
