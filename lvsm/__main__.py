@@ -27,6 +27,7 @@ Use 'lvsm help <command>' for information on a specific command.
 import getopt
 import sys
 
+import __init__ as appinfo
 import lvsm
 import utils
 
@@ -46,14 +47,16 @@ def main():
     CONFFILE = "/etc/lvsm.conf"
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hc:d",
-                                   ["help", "config=", "debug"])
+        opts, args = getopt.getopt(sys.argv[1:], "hvc:d",
+                                   ["help", "version", "config=", "debug"])
     except getopt.error, msg:
         usage(2, msg)
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage(0)
+        elif opt in ("-v", "--version"):
+            print appinfo.__version__
         elif opt in ("-c", "--config"):
             CONFFILE = arg
         elif opt in ("-d", "--debug"):
