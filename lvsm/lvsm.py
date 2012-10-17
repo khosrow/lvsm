@@ -265,7 +265,8 @@ class StatusPrompt(CommandPrompt):
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
                     return
             else:
-                print self.do_show.__doc__
+                print "Usage: virtual tcp|udp|fwm <vip> <port>"
+                return
         elif line.startswith("real"):
             if len(commands) == 3:
                 host = commands[1]
@@ -303,8 +304,11 @@ class StatusPrompt(CommandPrompt):
             host = commands[1]
             if len(commands) == 2:
                 port = ''
-            else:
+            elif len(commands) == 3:
                 port = commands[2]
+            else:
+                print "Usage: disable real <host> [<port>]"
+                return
             self.director.disable(host, port)
         else:
             print self.do_disable.__doc__
@@ -324,7 +328,7 @@ class StatusPrompt(CommandPrompt):
     def do_enable(self, line):
         """Enable a real or virtual server.
 
-        syntax: enable real|virutal <host>
+        syntax: enable real|virutal <host> [<port>]
         """
         commands = line.split()
         if len(commands) < 2 or len(commands) > 3:
@@ -336,8 +340,11 @@ class StatusPrompt(CommandPrompt):
             host = commands[1]
             if len(commands) == 2:
                 port = ''
-            else:
+            elif len(commands) == 3:
                 port = commands[2]
+            else:
+                print "Usage: enable real <host> [<port>]"
+                return
             self.director.enable(host, port)
         else:
             print self.do_enable.__doc__

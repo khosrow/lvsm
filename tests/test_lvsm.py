@@ -79,22 +79,11 @@ class TestStatus(unittest.TestCase):
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
-  -> fe01.example.com:http        Masq    1      0          0
-  -> fe02.example.com:http        Masq    1      0          0
-TCP  www.example.com:https        rr persistent 300
-  -> fe01.example.com:https       Masq    1      0          0
-TCP  example.org:ssh              rr
-  -> secure1.example.org:ssh      Masq    1      0          0
-  -> secure2.example.org:ssh      Masq    1      0          0
-TCP  example.org:domain           rr
-  -> dns01.example.org:domain     Masq    1      0          0
-  -> dns02.example.org:domain     Masq    1      0          0
-TCP  example.com:ftp              rr
-  -> fe01.example.com:ftp         Masq    1      0          0
-  -> fe02.example.com:ftp         Masq    1      0          0
+  -> google.com:http              Masq    1      0          0
+  -> localhost:http               Masq    1      0          0
 UDP  example.org:domain           rr
-  -> dns01.example.org:domain     Masq    1      0          0
-  -> dns02.example.org:domain     Masq    1      0          0"""
+  -> resolver1.opendns.com:domain Masq    1      0          0
+  -> resolver1.opendns.com:domain Masq    1      0          0"""
         self.shell.onecmd(' show director')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -122,9 +111,9 @@ target     prot opt source               destination"""
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
-  -> fe01.example.com:http        Masq    1      0          0
-  -> fe02.example.com:http        Masq    1      0          0"""
-        self.shell.onecmd(' show virtual tcp www.example.com 80')
+  -> google.com:http              Masq    1      0          0
+  -> localhost:http               Masq    1      0          0"""
+        self.shell.onecmd(' show virtual tcp www.example.com http')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
@@ -136,30 +125,35 @@ TCP  www.example.com:http         rr
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 UDP  example.org:domain           rr
-  -> dns01.example.org:domain     Masq    1      0          0
-  -> dns02.example.org:domain     Masq    1      0          0"""
+  -> resolver1.opendns.com:domain Masq    1      0          0
+  -> resolver1.opendns.com:domain Masq    1      0          0"""
         self.shell.onecmd(' show virtual udp example.org 53')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showrealactive(self):
-        self.shell.settings['numeric'] = True
+        self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """
 Active servers:
 ---------------
-TCP  192.0.43.10:80
-  -> 10.10.1.21:80"""
-        self.shell.onecmd(' show real 10.10.1.21 80')
+TCP 43-10.any.icann.org:http
+  -> localhost:http"""
+        self.shell.onecmd(' show real localhost 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showrealdisabled(self):
         output = StringIO.StringIO()
-        sys.output = output
-        expected_result = ""
-        self.assertTrue(True)
+        sys.stdout = output
+        expected_result = """
+Disabled servers:
+-----------------
+43-7.any.icann.org:http"""
+        self.shell.onecmd(' show real 43-7.any.icann.org http')
+        result = output.getvalue()
+        self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_disablereal(self):
         self.assertTrue(True)

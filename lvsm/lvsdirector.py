@@ -4,6 +4,7 @@ import socket
 import subprocess
 
 import utils
+import sys
 
 
 class Director():
@@ -136,20 +137,30 @@ class Director():
             print line
         # now check to see if any servers are disabled
         if self.name == 'ldirectord':
+            print >> sys.stderr, "checking disabled"
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
+                print >> sys.stderr, filename + "--"
+                print >> sys.stderr, hostip
                 if (filename == hostip or
                     filename == hostip + ":" + str(portnum)):
                     if numeric:
                         output.append(filename)
                     else:
                         rip = filename.split(":")[0]
-                        ripname = socket.gethostbyaddr(rip)
+                        try:
+                            (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
+                        except socket.herror, e:
+                            print >> sys.stderr, str(e)
+                            return
                         if len(filename.split(":")) == 2:
                             ripport = filename.split(":")[1]
                             ripportname = socket.getservbyport(int(ripport))
                             ripname = ripname + ':' + ripportname
+                            print >> sys.stderr, ripname
+                        else:
+                            print >> sys.stderr, "we're here"
                         output.append(ripname)
             if output:
                 print ""
