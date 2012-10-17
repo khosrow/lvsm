@@ -8,7 +8,7 @@ Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
   -> google.com:http              Masq    1      0          0
-  -> localhost:http               Masq    1      0          0
+  -> slashdot.org:http            Masq    1      0          0
 UDP  example.org:domain           rr
   -> resolver1.opendns.com:domain Masq    1      0          0
   -> resolver1.opendns.com:domain Masq    1      0          0"""
@@ -18,7 +18,7 @@ Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  192.0.43.10:80               rr
   -> 173.194.43.3:80              Masq    1      0          0
-  -> 127.0.0.1:80                 Masq    1      0          0
+  -> 216.34.181.45:80             Masq    1      0          0
 UDP  192.0.43.10:53               rr
   -> 208.67.222.222:53            Masq    1      0          0
   -> 208.67.220.220:53            Masq    1      0          0"""

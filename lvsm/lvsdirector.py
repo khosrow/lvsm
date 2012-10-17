@@ -137,12 +137,9 @@ class Director():
             print line
         # now check to see if any servers are disabled
         if self.name == 'ldirectord':
-            print >> sys.stderr, "checking disabled"
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
-                print >> sys.stderr, filename + "--"
-                print >> sys.stderr, hostip
                 if (filename == hostip or
                     filename == hostip + ":" + str(portnum)):
                     if numeric:
@@ -158,9 +155,8 @@ class Director():
                             ripport = filename.split(":")[1]
                             ripportname = socket.getservbyport(int(ripport))
                             ripname = ripname + ':' + ripportname
-                            print >> sys.stderr, ripname
                         else:
-                            print >> sys.stderr, "we're here"
+                            pass
                         output.append(ripname)
             if output:
                 print ""

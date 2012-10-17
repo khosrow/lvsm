@@ -80,7 +80,7 @@ Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
   -> google.com:http              Masq    1      0          0
-  -> localhost:http               Masq    1      0          0
+  -> slashdot.org:http            Masq    1      0          0
 UDP  example.org:domain           rr
   -> resolver1.opendns.com:domain Masq    1      0          0
   -> resolver1.opendns.com:domain Masq    1      0          0"""
@@ -112,7 +112,7 @@ Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
   -> google.com:http              Masq    1      0          0
-  -> localhost:http               Masq    1      0          0"""
+  -> slashdot.org:http            Masq    1      0          0"""
         self.shell.onecmd(' show virtual tcp www.example.com http')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -139,8 +139,8 @@ UDP  example.org:domain           rr
 Active servers:
 ---------------
 TCP 43-10.any.icann.org:http
-  -> localhost:http"""
-        self.shell.onecmd(' show real localhost 80')
+  -> slashdot.org:http"""
+        self.shell.onecmd(' show real slashdot.org 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
@@ -151,7 +151,7 @@ TCP 43-10.any.icann.org:http
 Disabled servers:
 -----------------
 43-7.any.icann.org:http"""
-        self.shell.onecmd(' show real 43-7.any.icann.org http')
+        self.shell.onecmd(' show real 192.0.43.7 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
