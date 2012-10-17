@@ -140,6 +140,9 @@ class Director():
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
+                # assumption is filename will be HOSTIP[:PORT]
+                # but we need to handle the case if someone makes the
+                # file from CLI and is of format HOSTNAME[:PORT]
                 if (filename == hostip or
                     filename == hostip + ":" + str(portnum)):
                     if numeric:
