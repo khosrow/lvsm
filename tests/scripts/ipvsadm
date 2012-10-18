@@ -7,43 +7,21 @@ alpha_listing="""IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
-  -> fe01.example.com:http        Masq    1      0          0
-  -> fe02.example.com:http        Masq    1      0          0
-TCP  www.example.com:https        rr persistent 300
-  -> fe01.example.com:https       Masq    1      0          0
-TCP  example.org:ssh              rr
-  -> secure1.example.org:ssh      Masq    1      0          0
-  -> secure2.example.org:ssh      Masq    1      0          0
-TCP  example.org:domain           rr
-  -> dns01.example.org:domain     Masq    1      0          0
-  -> dns02.example.org:domain     Masq    1      0          0
-TCP  example.com:ftp              rr
-  -> fe01.example.com:ftp         Masq    1      0          0
-  -> fe02.example.com:ftp         Masq    1      0          0
+  -> google.com:http              Masq    1      0          0
+  -> slashdot.org:http            Masq    1      0          0
 UDP  example.org:domain           rr
-  -> dns01.example.org:domain     Masq    1      0          0
-  -> dns02.example.org:domain     Masq    1      0          0"""
+  -> resolver1.opendns.com:domain Masq    1      0          0
+  -> resolver1.opendns.com:domain Masq    1      0          0"""
 
 numeric_listing="""IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  192.0.43.10:80               rr
-  -> 10.10.1.21:80                Masq    1      0          0
-  -> 10.10.1.22:80                Masq    1      0          0
-TCP  192.0.43.10:443              rr persistent 300
-  -> 10.10.1.21:443               Masq    1      0          0
-TCP  192.0.43.10:22               rr
-  -> 10.10.1.31:22                Masq    1      0          0
-  -> 10.10.1.32:22                Masq    1      0          0
-TCP  192.0.43.10:53               rr
-  -> 10.10.1.41:53                Masq    1      0          0
-  -> 10.10.1.42:53                Masq    1      0          0
-TCP  192.0.43.10:21               rr
-  -> 10.10.1.21:21                Masq    1      0          0
-  -> 10.10.1.22:21                Masq    1      0          0
+  -> 173.194.43.3:80              Masq    1      0          0
+  -> 216.34.181.45:80             Masq    1      0          0
 UDP  192.0.43.10:53               rr
-  -> 10.10.1.41:53                Masq    1      0          0
-  -> 10.10.1.42:53                Masq    1      0          0"""
+  -> 208.67.222.222:53            Masq    1      0          0
+  -> 208.67.220.220:53            Masq    1      0          0"""
 
 def main():
   try:
@@ -61,10 +39,12 @@ def main():
     if opt in ("-L", "--list"):
       listing = True
     elif opt == "-t":
-      if arg == "www.example.com:80" or arg == "192.0.43.10:80":
+      if (arg == "www.example.com:80" or arg == "192.0.43.10:80"
+          or arg == "www.example.com:http"):
         tcp = True
     elif opt == "-u":
-      if arg == "example.org:53" or arg == "192.0.43.10:53":
+      if (arg == "example.org:53" or arg == "192.0.43.10:53"
+          or arg == "example.org:domain"):
         udp = True
     elif opt == "-f":
       fwm = True
@@ -79,7 +59,7 @@ def main():
   elif udp:
     for item in list_items[:3]:
       print item
-    for item in list_items[17:]:
+    for item in list_items[6:]:
       print item
   elif listing:
     print full_listing

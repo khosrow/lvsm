@@ -4,6 +4,7 @@ import socket
 import subprocess
 
 import utils
+import sys
 
 
 class Director():
@@ -139,17 +140,26 @@ class Director():
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
+                # assumption is filename will be HOSTIP[:PORT]
+                # but we need to handle the case if someone makes the
+                # file from CLI and is of format HOSTNAME[:PORT]
                 if (filename == hostip or
                     filename == hostip + ":" + str(portnum)):
                     if numeric:
                         output.append(filename)
                     else:
                         rip = filename.split(":")[0]
-                        ripname = socket.gethostbyaddr(rip)
+                        try:
+                            (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
+                        except socket.herror, e:
+                            print >> sys.stderr, str(e)
+                            return
                         if len(filename.split(":")) == 2:
                             ripport = filename.split(":")[1]
                             ripportname = socket.getservbyport(int(ripport))
                             ripname = ripname + ':' + ripportname
+                        else:
+                            pass
                         output.append(ripname)
             if output:
                 print ""
