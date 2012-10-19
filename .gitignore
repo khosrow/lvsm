@@ -31,3 +31,6 @@ pip-log.txt
 
 # project files
 *.sublime-*
+
+# config files used for testing
+lvsm.conf
