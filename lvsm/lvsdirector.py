@@ -37,7 +37,7 @@ class Director():
                     return False
                 return True
             else:
-                print "[ERROR] maintenance_dir not defined in config." 
+                print "[ERROR] maintenance_dir not defined in config."
                 return False
         else:
             print ("[ERROR] no valid director defined, " +
@@ -90,7 +90,18 @@ class Director():
             display_flag = ''
         args = (self.ipvsadm + ' -L ' + display_flag + ' ' + protocol + ' ' +
                 hostip + ':' + str(portnum))
-        utils.execute(args, "problem with ipvsadm", pipe=True)
+        # utils.execute(args, "problem with ipvsadm", pipe=True)
+        try:
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                    shell=True)
+        except OSError as e:
+            print "[ERROR] problem with ipvsadm - " + e.strerror
+        else:
+            stdout, stderr = proc.communicate()
+            if stdout:
+                print stdout
+            elif stderr:
+                print stderr
 
     def show_real(self, host, port, numeric):
         """show status of real server across multiple VIPs"""
@@ -154,7 +165,7 @@ class Director():
                     else:
                         rip = filename.split(":")[0]
                         try:
-                            (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
+                            (ripname, al, ipl) = socket.gethostbyaddr(rip)
                         except socket.herror, e:
                             print >> sys.stderr, str(e)
                             return

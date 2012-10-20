@@ -11,27 +11,6 @@ def log(msg):
         print "[DEBUG] " + msg
 
 
-def execute(args, error, pipe=False):
-    """Simple wrapper for subprocess.Popen"""
-    try:
-        # log(str(args))
-        if pipe:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
-        else:
-            result = subprocess.call(args, shell=True)
-    except OSError as e:
-        print "[ERROR] " + error + " - " + e.strerror
-    else:
-        if pipe:
-            stdout, stderr = proc.communicate()
-            if stdout:
-                print stdout
-                return stdout
-            elif stderr:
-                print stderr
-                return stderr
-
-
 def parse_config(filename):
     #open config file and read it
     lines = print_file(filename)

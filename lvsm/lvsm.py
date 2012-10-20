@@ -117,11 +117,19 @@ class ConfigurePrompt(CommandPrompt):
         # commit code
         args = ('svn commit --username ' + username + ' --password ' +
                 password + ' ' + filename)
-        utils.execute(args, "problem with configuration sync")
+        try:
+            result = subprocess.call(args, shell=True)
+        except OSError as e:
+            print "[ERROR] problem with configuration sync - " + e.strerror
+        # utils.execute(args, "problem with configuration sync")
         # now update on all the nodes in the cluster
         args = (cluster_command + 'svn update --username ' + username +
                 ' --password ' + password + ' ' + filename)
-        utils.execute(args, "problem with configuration sync")
+        # utils.execute(args, "problem with configuration sync")
+        try:
+            result = subprocess.call(args, shell=True)
+        except OSError as e:
+            print "[ERROR] problem with configuration sync - " + e.strerror
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
@@ -250,10 +258,32 @@ class StatusPrompt(CommandPrompt):
             display_flag = ''
         if line == "director":
             args = self.config['ipvsadm'] + ' -L ' + display_flag
-            utils.execute(args, "problem with ipvsadm", pipe=True)
+            # utils.execute(args, "problem with ipvsadm", pipe=True)
+            try:
+                proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                        shell=True)
+            except OSError as e:
+                print "[ERROR] problem with ipvsadm - " + e.strerror
+            else:
+                stdout, stderr = proc.communicate()
+                if stdout:
+                    print stdout
+                elif stderr:
+                    print stderr
         elif line == "firewall":
             args = self.config['iptables'] + ' -L -v'
-            utils.execute(args, "problem with iptables", pipe=True)
+            # utils.execute(args, "problem with iptables", pipe=True)
+            try:
+                proc = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                        shell=True)
+            except OSError as e:
+                print "[ERROR] problem with ipvsadm - " + e.strerror
+            else:
+                stdout, stderr = proc.communicate()
+                if stdout:
+                    print stdout
+                elif stderr:
+                    print stderr
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 protocol = commands[1]
