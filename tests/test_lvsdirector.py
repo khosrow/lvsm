@@ -7,11 +7,13 @@ from lvsm import lvsdirector
 
 path = os.path.abspath(os.path.dirname(__file__))
 
+
 class DirectorTestCase(unittest.TestCase):
     def setUp(self):
         # for now only testing ldirectord
-        self.director = lvsdirector.Director('ldirectord', path + '/maintenance',
-                                         path + '/scripts/ipvsadm')
+        self.director = lvsdirector.Director('ldirectord',
+                                             path + '/maintenance',
+                                             path + '/scripts/ipvsadm')
 
     def test_disablehost(self):
         filepath = self.director.maintenance_dir + '/192.0.43.10'
