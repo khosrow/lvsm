@@ -18,39 +18,41 @@ class Director():
         if port:
             portnum = utils.getportnum(port)
             if portnum == -1:
-                return
+                return False
         if self.name == 'ldirectord':
             if self.maintenance_dir:
                 hostip = utils.gethostname(host)
                 if not hostip:
-                    return
+                    return False
                 if port:
                     hostport = hostip + ":" + str(portnum)
                 else:
-                    hostport = host
+                    hostport = hostip
                 try:
                     f = open(self.maintenance_dir + "/" + hostport, 'w')
                     f.write("# created by LVSM")
                 except IOError as e:
-                    print "[ERROR] unable to disable " + host
                     print "[ERROR] " + e.strerror + ": '" + e.filename +\
                           "'"
+                    return False
+                return True
             else:
-                print ("[ERROR] maintenance_dir not defined in config." +
-                       " Could not disable server!")
+                print "[ERROR] maintenance_dir not defined in config." 
+                return False
         else:
-            print ("[ERROR] no valid director defined." +
-                   " Don't know how to disable servers!")
+            print ("[ERROR] no valid director defined, " +
+                   " don't know how to disable servers!")
+            return False
 
     def enable(self, host, port=''):
         # check that it's a valid port
         if port:
             portnum = utils.getportnum(port)
             if portnum == -1:
-                return
+                return False
         hostip = utils.gethostname(host)
         if not hostip:
-            return
+            return False
         if self.name == 'ldirectord':
             if port:
                 hostport = hostip + ":" + str(portnum)
@@ -60,15 +62,17 @@ class Director():
                 try:
                     os.unlink(self.maintenance_dir + "/" + hostport)
                 except OSError as e:
-                    print "[ERROR] could not enable " + host
                     print "[ERROR] " + e.strerror + ": '" + e.filename +\
                           "'"
+                    return False
+                return True
             else:
-                print ("[ERROR] maintenance_dir not defined in config." +
-                       " Could not enable real servers!")
+                print "[ERROR] maintenance_dir not defined in config."
+                return False
         else:
-            print ("[ERROR] no valid director defined." +
-                   " Don't know how to disable servers!")
+            print ("[ERROR] no valid director defined!" +
+                   " don't know how to enable servers!")
+            return False
 
     def show_virtual(self, host, port, prot, numeric):
         """show status of virtual server"""

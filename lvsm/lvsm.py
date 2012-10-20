@@ -309,7 +309,8 @@ class StatusPrompt(CommandPrompt):
             else:
                 print "Usage: disable real <host> [<port>]"
                 return
-            self.director.disable(host, port)
+            if not self.director.disable(host, port):
+                print "[ERROR] could not disable " + host
         else:
             print self.do_disable.__doc__
 
@@ -345,6 +346,7 @@ class StatusPrompt(CommandPrompt):
             else:
                 print "Usage: enable real <host> [<port>]"
                 return
-            self.director.enable(host, port)
+            if not self.director.enable(host, port):
+                print "[ERROR] could not enable " + host
         else:
             print self.do_enable.__doc__

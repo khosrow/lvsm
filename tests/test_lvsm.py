@@ -8,7 +8,7 @@ from lvsm import lvsm
 path = os.path.abspath(os.path.dirname(__file__))
 
 
-class TestConfig(unittest.TestCase):
+class Configure(unittest.TestCase):
     """Verify correct functionality in configure"""
     config = {'director_config': path + '/etc/ldirectord.conf',
               'firewall_config': path + '/etc/iptables.rules',
@@ -51,7 +51,7 @@ class TestConfig(unittest.TestCase):
     #   self.assertEqual(result, expected_result)
 
 
-class TestConfigErrors(unittest.TestCase):
+class ConfigureErrors(unittest.TestCase):
     """Verify error checking in configure"""
     def test_showdirector(self):
         self.assertTrue(True)
@@ -60,7 +60,7 @@ class TestConfigErrors(unittest.TestCase):
         self.assertTrue(True)
 
 
-class TestStatus(unittest.TestCase):
+class Status(unittest.TestCase):
     config = {'ipvsadm': path + '/scripts/ipvsadm',
               'iptables': path + '/scripts/iptables',
               'director_config': path + '/etc/ldirectord.conf',
@@ -156,13 +156,28 @@ Disabled servers:
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_disablereal(self):
-        self.assertTrue(True)
+        filepath = self.config['maintenance_dir'] + '/192.0.43.10'
+        self.shell.onecmd('disable real example.com')
+        self.assertTrue(os.path.exists(filepath))
+        # now clean up the file
+        try:
+            os.unlink(filepath)
+        except OSError as e:
+            pass
 
     def test_enablereal(self):
-        self.assertTrue(True)
+        filepath = self.config['maintenance_dir'] + '/192.0.43.10:80'
+        try:
+            # create the file before we continue
+            f = open(filepath, 'w')
+            f.close()
+            self.shell.onecmd(' enable real example.com http')
+            self.assertTrue(not os.path.exists(filepath))
+        except IOError as e:
+            pass
 
 
-class TestStatusErrors(unittest.TestCase):
+class StatusErrors(unittest.TestCase):
     def test_showdirector(self):
         self.assertTrue(True)
 
