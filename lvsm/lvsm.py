@@ -325,6 +325,8 @@ class StatusPrompt(CommandPrompt):
         syntax: disable real|virutal <host> [<port>]
         """
         commands = line.split()
+        # ask for an optional reason for disabling
+        reason = raw_input("Reason for disabling [default = None]: ")
         if len(commands) < 2 or len(commands) > 3:
             print self.do_disable.__doc__
         elif line.startswith("virtual"):
@@ -339,7 +341,7 @@ class StatusPrompt(CommandPrompt):
             else:
                 print "Usage: disable real <host> [<port>]"
                 return
-            if not self.director.disable(host, port):
+            if not self.director.disable(host, port, reason):
                 print "[ERROR] could not disable " + host
         else:
             print self.do_disable.__doc__

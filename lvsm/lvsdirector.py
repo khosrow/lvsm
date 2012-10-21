@@ -13,7 +13,7 @@ class Director():
         self.name = name
         self.ipvsadm = ipvsadm
 
-    def disable(self, host, port=''):
+    def disable(self, host, port='', reason=''):
         # check that it's a valid port
         if port:
             portnum = utils.getportnum(port)
@@ -30,7 +30,7 @@ class Director():
                     hostport = hostip
                 try:
                     f = open(self.maintenance_dir + "/" + hostport, 'w')
-                    f.write("# created by LVSM")
+                    f.write(reason)
                 except IOError as e:
                     print "[ERROR] " + e.strerror + ": '" + e.filename +\
                           "'"
@@ -158,10 +158,16 @@ class Director():
                 # assumption is filename will be HOSTIP[:PORT]
                 # but we need to handle the case if someone makes the
                 # file from CLI and is of format HOSTNAME[:PORT]
+                try:
+                    f = open(self.maintenance_dir + "/" + filename)
+                    reason = 'Reason: ' + f.readline()
+                except IOError as e:
+                    reason = ''
+                    print "[ERROR] " + e.strerror + ' \'' + e.filename + '\''
                 if (filename == hostip or
                     filename == hostip + ":" + str(portnum)):
                     if numeric:
-                        output.append(filename)
+                        output.append(filename + "\t\t" + reason)
                     else:
                         rip = filename.split(":")[0]
                         try:
@@ -175,7 +181,7 @@ class Director():
                             ripname = ripname + ':' + ripportname
                         else:
                             pass
-                        output.append(ripname)
+                        output.append(ripname + "\t\t" + reason)
             if output:
                 print ""
                 print "Disabled servers:"

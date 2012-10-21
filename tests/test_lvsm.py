@@ -150,13 +150,15 @@ TCP 43-10.any.icann.org:http
         expected_result = """
 Disabled servers:
 -----------------
-43-7.any.icann.org:http"""
+43-7.any.icann.org:http\t\tReason: Disabled for testing"""
         self.shell.onecmd(' show real 192.0.43.7 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_disablereal(self):
         filepath = self.config['maintenance_dir'] + '/192.0.43.10'
+        # this is the disabling message we'll store in the file
+        sys.stdin = StringIO.StringIO('disabled by test case')
         self.shell.onecmd('disable real example.com')
         self.assertTrue(os.path.exists(filepath))
         # now clean up the file
