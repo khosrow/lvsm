@@ -33,7 +33,7 @@ class Firewall():
         try:
             proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
         except OSError as e:
-            print "[ERROR] problem with iptables - " e.strerror
+            print "[ERROR] problem with iptables - " + e.strerror
             return False
         stdout, stderr = proc.communicate()
         if stdout:
