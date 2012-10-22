@@ -8,6 +8,7 @@ import sys
 import socket
 
 import lvsdirector
+import firewall
 import utils
 
 DEBUG = False
@@ -180,7 +181,6 @@ class ConfigurePrompt(CommandPrompt):
         """
         if line == "director" or line == "firewall":
             filename = self.config[line + '_config']
-            #args = ["vi", filename]
             args = "vi " + filename
             utils.log(str(args))
             result = subprocess.call(args, shell=True)
@@ -221,6 +221,7 @@ class StatusPrompt(CommandPrompt):
         self.director = lvsdirector.Director(self.config['director'],
                                              self.config['maintenance_dir'],
                                              self.config['ipvsadm'])
+        self.firewall = firewall.Firewall(self.config['iptables'])
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
@@ -252,51 +253,23 @@ class StatusPrompt(CommandPrompt):
         virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP
         """
         commands = line.split()
-        if self.settings['numeric']:
-            display_flag = '-n'
-        else:
-            display_flag = ''
         if line == "director":
-            args = self.config['ipvsadm'] + ' -L ' + display_flag
-            # utils.execute(args, "problem with ipvsadm", pipe=True)
-            try:
-                proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                        shell=True)
-            except OSError as e:
-                print "[ERROR] problem with ipvsadm - " + e.strerror
-            else:
-                stdout, stderr = proc.communicate()
-                if stdout:
-                    print stdout
-                elif stderr:
-                    print stderr
+            self.director.show(self.settings['numeric'])
         elif line == "firewall":
-            args = self.config['iptables'] + ' -L -v'
-            # utils.execute(args, "problem with iptables", pipe=True)
-            try:
-                proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                        shell=True)
-            except OSError as e:
-                print "[ERROR] problem with ipvsadm - " + e.strerror
-            else:
-                stdout, stderr = proc.communicate()
-                if stdout:
-                    print stdout
-                elif stderr:
-                    print stderr
+            self.firewall.show(self.settings['numeric'])
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 protocol = commands[1]
                 vip = commands[2]
                 port = commands[3]
-                self.director.show_virtual(vip, port, protocol,
-                                           self.settings['numeric'])
-                if protocol not in self.protocols:
+                if protocol in self.protocols:
+                    self.director.show_virtual(vip, port, protocol,
+                                               self.settings['numeric'])
+                    self.firewall.show_virtual(vip, self.settings['numeric'])
+                else:
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
-                    return
             else:
                 print "Usage: virtual tcp|udp|fwm <vip> <port>"
-                return
         elif line.startswith("real"):
             if len(commands) == 3:
                 host = commands[1]
