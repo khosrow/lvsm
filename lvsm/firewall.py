@@ -14,14 +14,15 @@ class Firewall():
         try:
             proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
         except OSError as e:
-            print "[ERROR] problem with ipvsadm - " + e.strerror
+            print "[ERROR] problem with iptables - " + e.strerror
             return False
         stdout, stderr = proc.communicate()
         if stdout:
             print stdout
+            return True
         elif stderr:
             print stderr
-        return True
+        return False
 
     def show_virtual(self, host, numeric):
         args = self.iptables + ' -L INPUT'
@@ -37,9 +38,11 @@ class Firewall():
             return False
         stdout, stderr = proc.communicate()
         if stdout:
-            for line in stdout:
+            lines = stdout.split('\n')
+            for line in lines:
                 if line.find(hostname) > -1:
                     print line
+            return True
         elif stderr:
             print stderr
-        return True
+        return False

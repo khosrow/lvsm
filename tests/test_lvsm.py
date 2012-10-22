@@ -93,6 +93,7 @@ UDP  example.org:domain           rr
         sys.stdout = output
         expected_result = """Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
+ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination
@@ -112,7 +113,9 @@ Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
 TCP  www.example.com:http         rr
   -> google.com:http              Masq    1      0          0
-  -> slashdot.org:http            Masq    1      0          0"""
+  -> slashdot.org:http            Masq    1      0          0
+
+ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http"""
         self.shell.onecmd(' show virtual tcp www.example.com http')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())

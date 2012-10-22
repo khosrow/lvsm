@@ -2,6 +2,7 @@
 
 echo "Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
+ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination
