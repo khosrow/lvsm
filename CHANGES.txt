@@ -1,0 +1,24 @@
+Changelog
+=========
+
+
+0.2.0 (2012-10-21)
+------------------
+
+* Bug fixes
+
+* Disabling real servers now prompts user for a comment
+
+* ``show virtual`` now displays firewall info for VIP
+
+
+0.1.1 (2012-10-17)
+------------------
+
+* Bug fixes
+
+
+0.1.0 (2012-10-16)
+------------------
+
+* First relase 
