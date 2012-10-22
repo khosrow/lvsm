@@ -13,6 +13,22 @@ class Director():
         self.name = name
         self.ipvsadm = ipvsadm
 
+    def show(self, numeric):
+        args = self.ipvsadm + ' -L '
+        if numeric:
+            args = args + ' -n'
+        try:
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
+        except OSError as e:
+            print "[ERROR] problem with ipvsadm - " + e.strerror
+            return False
+        stdout, stderr = proc.communicate()
+        if stdout:
+            print stdout
+        elif stderr:
+            print stderr
+        return True
+
     def disable(self, host, port='', reason=''):
         # check that it's a valid port
         if port:
@@ -80,10 +96,10 @@ class Director():
         protocol = protocols[prot]
         hostip = utils.gethostname(host)
         if not hostip:
-            return
+            return False
         portnum = utils.getportnum(port)
         if portnum == -1:
-            return
+            return False
         if numeric:
             display_flag = '-n'
         else:
@@ -92,27 +108,31 @@ class Director():
                 hostip + ':' + str(portnum))
         # utils.execute(args, "problem with ipvsadm", pipe=True)
         try:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                    shell=True)
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-        else:
-            stdout, stderr = proc.communicate()
-            if stdout:
-                print stdout
-            elif stderr:
-                print stderr
+            return False
+        stdout, stderr = proc.communicate()
+        if stdout:
+            print stdout
+        elif stderr:
+            print stderr
+        return True
 
     def show_real(self, host, port, numeric):
         """show status of real server across multiple VIPs"""
         hostip = utils.gethostname(host)
         if not hostip:
-            return
+            return False
         portnum = utils.getportnum(port)
         if portnum == -1:
-            return
+            return False
         args = self.ipvsadm + ' -Ln'
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
+        try:
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
+        except OSError as e:
+            print "[ERROR] " + e.strerror
+            return False
         stdout, stderr = proc.communicate()
         if stdout:
             lines = stdout.split('\n')
@@ -121,6 +141,7 @@ class Director():
         virtual = ""
         real = ""
         output = list()
+        # find the output line that contains the rip
         for line in lines:
             if (line.startswith("TCP") or
                 line.startswith("UDP") or
@@ -173,8 +194,8 @@ class Director():
                         try:
                             (ripname, al, ipl) = socket.gethostbyaddr(rip)
                         except socket.herror, e:
-                            print >> sys.stderr, str(e)
-                            return
+                            print "[ERROR] " + str(e)
+                            return False
                         if len(filename.split(":")) == 2:
                             ripport = filename.split(":")[1]
                             ripportname = socket.getservbyport(int(ripport))
@@ -189,6 +210,7 @@ class Director():
             for line in output:
                 print line
         print ""
+        return True
 
     def check_real(self, host, port):
         """Check a host/port to see if it's in the realserver list"""
