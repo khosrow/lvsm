@@ -1,7 +1,7 @@
 """Firewall funcationality"""
 import subprocess
-
 import utils
+
 
 class Firewall():
     def __init__(self, iptables):

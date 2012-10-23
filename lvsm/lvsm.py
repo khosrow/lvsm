@@ -6,7 +6,6 @@ import getpass
 import subprocess
 import sys
 import socket
-
 import lvsdirector
 import firewall
 import utils

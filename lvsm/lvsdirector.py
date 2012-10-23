@@ -2,9 +2,8 @@
 import os
 import socket
 import subprocess
-
-import utils
 import sys
+import utils
 
 
 class Director():
@@ -44,6 +43,13 @@ class Director():
                     hostport = hostip + ":" + str(portnum)
                 else:
                     hostport = hostip
+                # go through maint_dir to see if host is already disabled
+                filenames = os.listdir(self.maintenance_dir)
+                for filename in filenames:
+                    f = self.convert_filename(filename)
+                    if hostport == f or hostip == f:
+                        print "host is already disabled!"
+                        return True
                 try:
                     f = open(self.maintenance_dir + "/" + hostport, 'w')
                     f.write(reason)
@@ -56,8 +62,8 @@ class Director():
                 print "[ERROR] maintenance_dir not defined in config."
                 return False
         else:
-            print ("[ERROR] no valid director defined, " +
-                   " don't know how to disable servers!")
+            print "[ERROR] no valid director defined, " +\
+                  " don't know how to disable servers!"
             return False
 
     def enable(self, host, port=''):
@@ -75,15 +81,19 @@ class Director():
             else:
                 hostport = hostip
             if self.maintenance_dir:
-                try:
-                    os.unlink(self.maintenance_dir + "/" + hostport)
-                except OSError as e:
-                    print "[ERROR] " + e.strerror + ": '" + e.filename +\
-                          "'"
-                    return False
-                return True
+                filenames = os.listdir(self.maintenance_dir)
+                for filename in filenames:
+                    f = self.convert_filename(filename)
+                    if hostport == f or hostip == f:
+                        try:
+                            os.unlink(self.maintenance_dir + "/" + filename)
+                        except OSError as e:
+                            print "[ERROR] " + e.strerror + ": '" +\
+                                  e.filename + "'"
+                            return False
+                        return True
             else:
-                print "[ERROR] maintenance_dir not defined in config."
+                print "[ERROR] maintenance_dir not defined!"
                 return False
         else:
             print ("[ERROR] no valid director defined!" +
@@ -127,6 +137,7 @@ class Director():
         portnum = utils.getportnum(port)
         if portnum == -1:
             return False
+        hostport = hostip + ":" + str(portnum)
         args = self.ipvsadm + ' -Ln'
         try:
             proc = subprocess.Popen(args, stdout=subprocess.PIPE, shell=True)
@@ -147,8 +158,7 @@ class Director():
                 line.startswith("UDP") or
                 line.startswith("FWM")):
                 virtual = line
-            hostservice = hostip + ":" + str(portnum)
-            if line.find(hostservice) != -1:
+            if line.find(hostport) != -1:
                 if numeric:
                     output.append('  '.join(virtual.split()[:2]))
                     output.append('  ' + ' '.join(line.split()[:2]))
@@ -176,17 +186,16 @@ class Director():
             output = list()
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
-                # assumption is filename will be HOSTIP[:PORT]
-                # but we need to handle the case if someone makes the
-                # file from CLI and is of format HOSTNAME[:PORT]
                 try:
                     f = open(self.maintenance_dir + "/" + filename)
                     reason = 'Reason: ' + f.readline()
                 except IOError as e:
                     reason = ''
                     print "[ERROR] " + e.strerror + ' \'' + e.filename + '\''
-                if (filename == hostip or
-                    filename == hostip + ":" + str(portnum)):
+                if (self.convert_filename(filename) == hostip or
+                    self.convert_filename(filename) == hostip + ":" +
+                    str(portnum)):
+                    # decide if we have to convert to hostname or not
                     if numeric:
                         output.append(filename + "\t\t" + reason)
                     else:
@@ -211,6 +220,20 @@ class Director():
                 print line
         print ""
         return True
+
+    def convert_filename(self, filename):
+        """convert a filename of format host[:port] to IP[:port]"""
+        values = filename.split(':')
+        portnum = -1
+        if not values:
+            return ''
+        hostip = utils.gethostname(values[0])
+        if len(values) == 2:
+            portnum = utils.getportnum(values[1])
+        if portnum > -1:
+            return hostip + ':' + str(portnum)
+        else:
+            return hostip
 
     def check_real(self, host, port):
         """Check a host/port to see if it's in the realserver list"""

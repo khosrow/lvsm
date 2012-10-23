@@ -2,7 +2,6 @@ import unittest
 import os
 import sys
 import StringIO
-
 from lvsm import lvsdirector
 
 path = os.path.abspath(os.path.dirname(__file__))
@@ -52,3 +51,19 @@ class DirectorTestCase(unittest.TestCase):
             self.assertTrue(self.director.enable('example.com', 'http'))
         except IOError as e:
             pass
+
+    def test_enablehostname(self):
+        filepath = self.director.maintenance_dir + '/slashdot.org'
+        try:
+            # create the file before we continue
+            f = open(filepath, 'w')
+            f.close()
+            self.assertTrue(self.director.enable('slashdot.org', ''))
+        except IOError as e:
+            pass
+
+    def test_convertfilename(self):
+        filename = 'slashdot.org:http'
+        expected_result = '216.34.181.45:80'
+        self.assertEqual(self.director.convert_filename(filename),
+                         expected_result)

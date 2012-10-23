@@ -26,7 +26,6 @@ Use 'lvsm help <command>' for information on a specific command.
 
 import getopt
 import sys
-
 import __init__ as appinfo
 import lvsm
 import utils
