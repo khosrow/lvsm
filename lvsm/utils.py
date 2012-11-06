@@ -21,7 +21,9 @@ def parse_config(filename):
                     'firewall_config': '',
                     'dsh_group': '',
                     'director': '',
-                    'maintenance_dir': ''
+                    'maintenance_dir': '',
+                    'director_cmd':'',
+                    'firewall_cmd':''
                     }
     linenum = 0
     for line in lines:
