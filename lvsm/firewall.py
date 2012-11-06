@@ -40,7 +40,7 @@ class Firewall():
         if stdout:
             lines = stdout.split('\n')
             for line in lines:
-                if line.find(hostname) > -1:
+                if line.find(" " + hostname) > -1:
                     print line
             return True
         elif stderr:
