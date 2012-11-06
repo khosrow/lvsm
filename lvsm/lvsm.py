@@ -73,8 +73,8 @@ class CommandPrompt(cmd.Cmd):
     def emptyline(self):
         """Override the default emptyline and return a blank line"""
         return ""
-        
-        
+
+
 class MainPrompt(CommandPrompt):
     """Class to handle the top level prompt in lvsm"""
     prompt = "lvsm# "

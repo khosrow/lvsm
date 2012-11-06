@@ -122,7 +122,7 @@ class Director():
                 hostip + ':' + str(portnum))
         # utils.execute(args, "problem with ipvsadm", pipe=True)
         try:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
+            proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, shell=True)
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
