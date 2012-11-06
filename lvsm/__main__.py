@@ -56,6 +56,7 @@ def main():
             usage(0)
         elif opt in ("-v", "--version"):
             print appinfo.__version__
+            sys.exit(0)
         elif opt in ("-c", "--config"):
             CONFFILE = arg
         elif opt in ("-d", "--debug"):
