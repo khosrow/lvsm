@@ -46,12 +46,15 @@ Otherwise the program will look in the current directory for **lvsm.conf**
 Valid configuration directives are as follows:
 
 * **director_config**: location of the director configuration file
+* **director_cmd**: command to restart the director
 * **firewall_config**: location of the iptables configuration file
+* **firewall_cmd**: command restart the iptables firewall
 * **dsh_group**: the name of the dsh group to use 
 * **director**: the type of director used for *ipvs*. Only ``ldirectord`` is supported at the moment
 * **maintenance_dir**: directory used by *ldirectord* for disabling servers
 * **ipvsadm**: location of the *ipvsadm* binary. Defaults to ``ipvsadm``
 * **iptables**: location of the *iptables* binary. Defaults to ``iptables``
+
 
 All other directives are invalid and cause an error message. Further, lines beginning with ``#`` are considered
 comments and will not be parsed.
@@ -83,6 +86,31 @@ Commands below will work at all levels.
 **end**: return to the previous
 
 **exit, quit**: exit the lvsm shell
+
+---------------
+main level
+---------------
+
+Available commands are
+
+* **restart**: restart a given module. For this command to work the configuration items ``director_cmd`` and/or ``firewall_cmd`` need to be set up in the ``lvsm.conf`` file.
+
+Usage:
+
+::
+
+    restart <module>
+
+Where ``<module>`` is one of:
+
++------------------------------------+-------------------------------------+
+| Option                             | Result                              |
++====================================+=====================================+
+|``director``                        | restart the lvs director            |
++------------------------------------+-------------------------------------+
+|``firewall``                        | restart the iptables firewall       |
++------------------------------------+-------------------------------------+
+
 
 ---------------
 configure level
