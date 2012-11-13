@@ -78,7 +78,7 @@ class CommandPrompt(cmd.Cmd):
 class MainPrompt(CommandPrompt):
     """Class to handle the top level prompt in lvsm"""
     prompt = "lvsm# "
-    modules = ['director ', 'firewall ']
+    modules = ['director', 'firewall']
 
     def do_configure(self, line):
         """The configuration level
@@ -146,7 +146,7 @@ class MainPrompt(CommandPrompt):
 
 class ConfigurePrompt(CommandPrompt):
     prompt = "lvsm(configure)# "
-    modules = ['director ', 'firewall ']
+    modules = ['director', 'firewall']
 
     def print_config(self, configkey):
         """prints out the specified configuration file"""
@@ -259,7 +259,7 @@ class StatusPrompt(CommandPrompt):
         cmd.Cmd.__init__(self)
         self.config = config
         self.prompt = "lvsm(status)# "
-        self.modules = ['director ', 'firewall ', 'virtual ', 'real ']
+        self.modules = ['director', 'firewall', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.director = lvsdirector.Director(self.config['director'],
                                              self.config['maintenance_dir'],
@@ -268,14 +268,11 @@ class StatusPrompt(CommandPrompt):
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
-        prots = []
-        for protocol in self.protocols:
-            prot.append(protocol + ' ')
         if line.startswith("show virtual "):
             if line == "show virtual ":
-                completions = prots[:]
+                completions = self.protocols[:]
             elif len(line) < 16:
-                completions = [p for p in prots if p.startswith(text)]
+                completions = [p for p in self.protocols if p.startswith(text)]
             else:
                 completions = []
         elif (line.startswith("show director") or
@@ -329,7 +326,7 @@ class StatusPrompt(CommandPrompt):
 
     def complete_disable(self, text, line, begidx, endidx):
         """Tab completion for disable command"""
-        servers = ['real ', 'virtual ']
+        servers = ['real', 'virtual']
         if  (line.startswith("disable real") or
              line.startswith("disable virtual")):
             completions = []
@@ -368,7 +365,7 @@ class StatusPrompt(CommandPrompt):
 
     def complete_enable(self, text, line, begidx, endidx):
         """Tab completion for enable command"""
-        servers = ['real ', 'virtual ']
+        servers = ['real', 'virtual']
         if  (line.startswith("enable real") or
              line.startswith("enable virtual")):
             completions = []
