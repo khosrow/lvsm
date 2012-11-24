@@ -25,11 +25,11 @@ Software Requirements
 
 One or more of the following software is required for correct functionality of *lvsm*:
 
-* iptables
-* ipvsadm
-* svn
-* dsh
-* vi
+* `iptables`_
+* `ipvsadm`_
+* `svn`_
+* `dsh`_
+* `vi`_
 
 =============
 Configuration
@@ -252,4 +252,8 @@ This software is released under the `MIT license`_.
 .. _revision control system: http://en.wikipedia.org/wiki/Revision_control
 .. _subversion: http://subversion.tigris.org
 .. _MIT license: https://github.com/khosrow/lvsm/blob/master/LICENSE.rst
+.. _ipvsadm: http://www.linuxvirtualserver.org/software/ipvs.html
+.. _svn: http://subversion.tigris.org/
+.. _dsh: http://www.netfort.gr.jp/~dancer/software/dsh.html.en
+.. _vi: http://en.wikipedia.org/wiki/Vi
 
