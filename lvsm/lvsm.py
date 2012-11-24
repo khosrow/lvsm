@@ -106,32 +106,34 @@ class MainPrompt(CommandPrompt):
 
     def do_restart(self, line):
         """restart the given module.
-        
+
         Module must be one of director or firewall.
-        
-        syntax: restart director|firewall        
+
+        syntax: restart director|firewall
         """
         if line == "director":
             if self.config['director_cmd']:
                 print "restaring director"
-                try:    
-                    result = subprocess.call(self.config['director_cmd'], shell=True)
+                try:
+                    result = subprocess.call(self.config['director_cmd'],
+                                             shell=True)
                 except OSError as e:
-                    print "[ERROR] problem restaring director - " + e.strerror                
+                    print "[ERROR] problem restaring director - " + e.strerror
             else:
                 print "[ERROR] director_cmd not defined in config!"
         elif line == "firewall":
             if self.config['firewall_cmd']:
                 print "restarting firewall"
-                try:    
-                    result = subprocess.call(self.config['firewall_cmd'], shell=True)
+                try:
+                    result = subprocess.call(self.config['firewall_cmd'],
+                                             shell=True)
                 except OSError as e:
                     print "[ERROR] problem restaring firewall - " + e.strerror
             else:
                 print "[ERROR] firewall_cmd not defined in config!"
         else:
             print "Usage: restart firewall|director"
-                
+
     def complete_restart(self, text, line, begix, endidx):
         """Tab completion for restart command"""
         if len(line) < 17:
