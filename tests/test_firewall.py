@@ -20,5 +20,5 @@ class FirewallTestCase(unittest.TestCase):
     def test_showvirtual(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        self.assertTrue(self.firewall.show_virtual('www.example.com',
+        self.assertTrue(self.firewall.show_virtual('www.example.com', 'http',
                         numeric=False))
