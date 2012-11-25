@@ -28,28 +28,28 @@ def parse_config(filename):
     linenum = 0
     for line in lines:
         linenum += 1
-        if line[0] == '#':
-            continue
-        k, sep, v = line.rstrip().partition('=')
-        key = k.lstrip().rstrip()
-        value = v.lstrip().rstrip()
-        if config_items.get(key) is None:
-            print "[ERROR] configuration file line " + str(linenum) +\
-                  ": invalid variable '" + key + "'"
-            sys.exit(1)
-        else:
-            config_items[key] = value
-            # if the item is a config file, verify that the file exists
-            if key.endswith('_config'):
-                try:
-                    file = open(value)
-                    file.close()
-                except IOError as e:
-                    print "[ERROR] in lvsm configuration file line " +\
-                          str(linenum)
-                    print "[ERROR] " + e.strerror + ": '" + e.filename +\
-                          "'"
-                    sys.exit(1)
+        conf, sep, comment = line.rstrip().partition('#')
+        if conf:
+            k, sep, v = conf.rstrip().partition('=')
+            key = k.lstrip().rstrip()
+            value = v.lstrip().rstrip()
+            if config_items.get(key) is None:
+                print "[ERROR] configuration file line " + str(linenum) +\
+                      ": invalid variable '" + key + "'"
+                sys.exit(1)
+            else:
+                config_items[key] = value
+                # if the item is a config file, verify that the file exists
+                if key.endswith('_config'):
+                    try:
+                        file = open(value)
+                        file.close()
+                    except IOError as e:
+                        print "[ERROR] in lvsm configuration file line " +\
+                              str(linenum)
+                        print "[ERROR] " + e.strerror + ": '" + e.filename +\
+                              "'"
+                        sys.exit(1)
     return config_items
 
 
