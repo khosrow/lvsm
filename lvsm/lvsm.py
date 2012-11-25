@@ -120,7 +120,7 @@ class MainPrompt(CommandPrompt):
                 except OSError as e:
                     print "[ERROR] problem restaring director - " + e.strerror
             else:
-                print "[ERROR] director_cmd not defined in config!"
+                print "[ERROR] 'director_cmd' not defined in config!"
         elif line == "firewall":
             if self.config['firewall_cmd']:
                 print "restarting firewall"
@@ -130,7 +130,7 @@ class MainPrompt(CommandPrompt):
                 except OSError as e:
                     print "[ERROR] problem restaring firewall - " + e.strerror
             else:
-                print "[ERROR] firewall_cmd not defined in config!"
+                print "[ERROR] 'firewall_cmd' not defined in config!"
         else:
             print "Usage: restart firewall|director"
 
@@ -152,9 +152,12 @@ class ConfigurePrompt(CommandPrompt):
 
     def print_config(self, configkey):
         """prints out the specified configuration file"""
-        lines = utils.print_file(self.config[configkey])
-        for line in lines:
-            print line.rstrip()
+        if not self.config[configkey]:
+            print "[ERROR] '" + configkey + "' not defined in config file!"
+        else:
+            lines = utils.print_file(self.config[configkey])
+            for line in lines:
+                print line.rstrip()
 
     def svn_sync(self, filename, username, password):
         cluster_command = ''
@@ -225,13 +228,17 @@ class ConfigurePrompt(CommandPrompt):
         firewall                the iptables firewall config file
         """
         if line == "director" or line == "firewall":
-            filename = self.config[line + '_config']
-            args = "vi " + filename
-            utils.log(str(args))
-            result = subprocess.call(args, shell=True)
-            if result != 0:
-                print "[ERROR] something happened during the edit of " +\
-                      config[line]
+            key = line + "_config"
+            filename = self.config[key]
+            if not filename:
+                print "[ERROR] '" + key + "' not defined in config file!"
+            else:
+                args = "vi " + filename
+                utils.log(str(args))
+                result = subprocess.call(args, shell=True)
+                if result != 0:
+                    print "[ERROR] something happened during the edit of " +\
+                          config[line]
         else:
             print self.do_edit.__doc__
 
