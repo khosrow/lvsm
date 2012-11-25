@@ -67,15 +67,15 @@ def main():
     utils.log("Parsed config file")
     utils.log(str(config))
 
-    shell = lvsm.MainPrompt(config)
-    if args:
-        shell.onecmd(' '.join(args[:]))
-    else:
-        shell.cmdloop()
+    try: 
+        shell = lvsm.MainPrompt(config)
+        if args:
+            shell.onecmd(' '.join(args[:]))
+        else:
+            shell.cmdloop()
+    except KeyboardInterrupt:
+        print "\nleaving abruptly!"
+        sys.exit(1)
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print "\ngoodbye!"
-        sys.exit(0)
+    main()
