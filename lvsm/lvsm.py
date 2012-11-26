@@ -9,6 +9,7 @@ import socket
 import lvsdirector
 import firewall
 import utils
+import termcolor
 
 DEBUG = False
 
@@ -77,7 +78,7 @@ class CommandPrompt(cmd.Cmd):
 
 class MainPrompt(CommandPrompt):
     """Class to handle the top level prompt in lvsm"""
-    prompt = "lvsm# "
+    prompt = termcolor.colored("lvsm#", "red", attrs=["bold"]) + " "
     modules = ['director', 'firewall']
 
     def do_configure(self, line):
@@ -147,7 +148,8 @@ class MainPrompt(CommandPrompt):
 
 
 class ConfigurePrompt(CommandPrompt):
-    prompt = "lvsm(configure)# "
+    prompt = termcolor.colored("lvsm(configure)#", "red", 
+                               attrs=["bold"]) + " "
     modules = ['director', 'firewall']
 
     def print_config(self, configkey):
@@ -267,7 +269,8 @@ class StatusPrompt(CommandPrompt):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
-        self.prompt = "lvsm(status)# "
+        self.prompt = termcolor.colored("lvsm(status)#", "red",
+                                        attrs=["bold"]) + " "
         self.modules = ['director', 'firewall', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.director = lvsdirector.Director(self.config['director'],
