@@ -11,7 +11,8 @@ setup(
     url='https://github.com/khosrow/lvsm',
     license='LICENSE.rst',
     description=lvsm.__doc__.strip(),
-    long_description=open('README.rst').read(),
+    long_description="\n\n".join([open('README.rst').read(),
+                                  open('CHANGES.rst').read()]),
     entry_points={
         'console_scripts': [
             'lvsm = lvsm.__main__:main',
