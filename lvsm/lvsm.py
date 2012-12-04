@@ -15,8 +15,10 @@ DEBUG = False
 
 
 class CommandPrompt(cmd.Cmd):
-    settings = {'numeric': False}
-    variables = ['numeric']
+    settings = {'numeric': False,
+                'color': True}
+    variables = ['numeric', 'color']
+    rawprompt = ''
 
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
@@ -39,7 +41,7 @@ class CommandPrompt(cmd.Cmd):
 
     def do_end(self, line):
         """return to previous context"""
-        print
+        #print
         return True
 
     def do_set(self, line):
@@ -47,18 +49,39 @@ class CommandPrompt(cmd.Cmd):
 
         syntax: set [<variable>] [<value>]
         <variable> can be one of
-        numeric on|off          Toggle numeric ipvsadm display ON/OFF"""
+        numeric on|off          Toggle numeric ipvsadm display ON/OFF
+        color on|off            Toggle color display ON/OFF"""
         if not line:
-            print self.settings
-        elif line.startswith("numeric"):
-            if line == "numeric on":
-                self.settings['numeric'] = True
-            elif line == "numeric off":
-                self.settings['numeric'] = False
-            else:
-                print "Usage: set numeric on|off"
+            print
+            print "Shell Settings"
+            print "=============="
+            for key, value in self.settings.items():
+                print str(key) + " : " + str(value)
+            print
         else:
-            print self.do_set.__doc__
+            tokens = line.split()
+            if len(tokens) == 2:
+                if tokens[0] == "numeric":
+                    if tokens[1] == "on":
+                        self.settings['numeric'] = True
+                    elif tokens[1] == "off":
+                        self.settings['numeric'] = False
+                    else:
+                        print "Usage: set numeric on|off"
+                elif tokens[0] == "color":
+                    if tokens[1] == "on":
+                        self.settings['color'] = True
+                        self.prompt = termcolor.colored(self.rawprompt, "red",
+                                                        attrs=["bold"])
+                    elif tokens[1] == "off":
+                        self.settings['color'] = False
+                        self.prompt = self.rawprompt
+                    else:
+                        print "Usage: set color on|off"
+                else:
+                    print self.do_set.__doc__
+            else:
+                print self.do_set.__doc__
 
     def complete_set(self, text, line, begidx, endidx):
         """Tab completion for the set command"""
@@ -73,13 +96,33 @@ class CommandPrompt(cmd.Cmd):
 
     def emptyline(self):
         """Override the default emptyline and return a blank line"""
-        return ""
+        pass
+
+    def postcmd(self, stop, line):
+        """Hook method executed just after a command dispatch is finished."""
+        # check to see if the prompt should be colorized
+        if self.settings['color']:
+            self.prompt = termcolor.colored(self.rawprompt, "red",
+                                            attrs=["bold"])
+        else:
+            self.prompt = self.rawprompt
+        return stop
 
 
 class MainPrompt(CommandPrompt):
     """Class to handle the top level prompt in lvsm"""
-    prompt = termcolor.colored("lvsm#", "red", attrs=["bold"]) + " "
-    modules = ['director', 'firewall']
+    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+        cmd.Cmd.__init__(self)
+        self.config = config
+        self.modules = ['director', 'firewall']
+        self.rawprompt = "lvsm# "
+        if self.settings['color']:
+            c = "red"
+            a = ["bold"]
+        else:
+            c = None
+            a = None
+        self.prompt = termcolor.colored("lvsm# ", color=c, attrs=a)
 
     def do_configure(self, line):
         """The configuration level
@@ -148,9 +191,19 @@ class MainPrompt(CommandPrompt):
 
 
 class ConfigurePrompt(CommandPrompt):
-    prompt = termcolor.colored("lvsm(configure)#", "red", 
-                               attrs=["bold"]) + " "
-    modules = ['director', 'firewall']
+    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+        cmd.Cmd.__init__(self)
+        self.config = config
+        self.modules = ['director', 'firewall']
+        self.rawprompt = "lvsm(configure)# "
+        if self.settings['color']:
+            c = "red"
+            a = ["bold"]
+        else:
+            c = None
+            a = None
+        self.prompt = termcolor.colored("lvsm(configure)# ", color=c,
+                                        attrs=a)
 
     def print_config(self, configkey):
         """prints out the specified configuration file"""
@@ -269,14 +322,21 @@ class StatusPrompt(CommandPrompt):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
-        self.prompt = termcolor.colored("lvsm(status)#", "red",
-                                        attrs=["bold"]) + " "
         self.modules = ['director', 'firewall', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.director = lvsdirector.Director(self.config['director'],
                                              self.config['maintenance_dir'],
                                              self.config['ipvsadm'])
         self.firewall = firewall.Firewall(self.config['iptables'])
+        self.rawprompt = "lvsm(status)# "
+        if self.settings['color']:
+            c = "red"
+            a = ["bold"]
+        else:
+            c = None
+            a = None
+        self.prompt = termcolor.colored("lvsm(status)# ", color=c,
+                                        attrs=a)
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
