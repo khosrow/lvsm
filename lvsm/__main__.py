@@ -67,7 +67,7 @@ def main():
     utils.log("Parsed config file")
     utils.log(str(config))
 
-    try: 
+    try:
         shell = lvsm.MainPrompt(config)
         if args:
             shell.onecmd(' '.join(args[:]))
