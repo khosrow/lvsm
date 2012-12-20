@@ -31,17 +31,40 @@ class CommandPrompt(cmd.Cmd):
 
     def do_exit(self, line):
         """exit from lvsm shell"""
-        print "goodbye."
-        sys.exit(0)
+        # check to see if any config files are modified using "svn status"
+        modified = list()
+        if self.config['director_config']:
+            result = subprocess.check_output(["svn", "status",
+                                             self.config['director_config']])
+            if result[0] == "M":
+                modified.append(self.config['director_config'])
+        if self.config['firewall_config']:
+            result = subprocess.check_output(["svn", "status",
+                                             self.config['firewall_config']])
+            if result[0] == "M":
+                modified.append(self.config['firewall_config'])
+        if modified:
+            print "The following config file(s) were not comitted to svn:"
+            for filename in modified:
+                print filename
+            print
+            while True:
+                answer = raw_input("Do you want to quit? (y/n) ")
+                if answer == "y" or answer == "Y":
+                    print "goodbye."
+                    sys.exit(0)
+                elif answer == "n" or answer == "N":
+                    break
+        else:
+            print "goodbye."
+            sys.exit(0)
 
     def do_quit(self, line):
         """exit from lvsm shell"""
-        print "goodbye."
-        sys.exit(0)
+        self.do_exit(line)
 
     def do_end(self, line):
         """return to previous context"""
-        #print
         return True
 
     def do_set(self, line):
