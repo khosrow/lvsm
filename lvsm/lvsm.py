@@ -411,7 +411,7 @@ class StatusPrompt(CommandPrompt):
     def do_disable(self, line):
         """Disable a real or virtual server.
 
-        syntax: disable real|virutal <host> [<port>]
+        syntax: disable real|virtual <host> [<port>]
         """
         commands = line.split()
         # ask for an optional reason for disabling
@@ -450,7 +450,7 @@ class StatusPrompt(CommandPrompt):
     def do_enable(self, line):
         """Enable a real or virtual server.
 
-        syntax: enable real|virutal <host> [<port>]
+        syntax: enable real|virtual <host> [<port>]
         """
         commands = line.split()
         if len(commands) < 2 or len(commands) > 3:
