@@ -13,7 +13,8 @@ class Configure(unittest.TestCase):
               'firewall_config': path + '/etc/iptables.rules',
               'dsh_group': '',
               'director': 'ldirectord',
-              'maintenance_dir': ''
+              'maintenance_dir': '',
+              'director_cmd': ''
               }
     shell = lvsm.ConfigurePrompt(config)
 
@@ -66,7 +67,8 @@ class Status(unittest.TestCase):
               'firewall_config': path + '/etc/iptables.rules',
               'dsh_group': '',
               'director': 'ldirectord',
-              'maintenance_dir': path + '/maintenance'
+              'maintenance_dir': path + '/maintenance',
+              'director_cmd': ''
               }
     shell = lvsm.StatusPrompt(config)
 
