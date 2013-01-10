@@ -12,7 +12,8 @@ class DirectorTestCase(unittest.TestCase):
         # for now only testing ldirectord
         self.director = lvsdirector.Director('ldirectord',
                                              path + '/maintenance',
-                                             path + '/scripts/ipvsadm')
+                                             path + '/scripts/ipvsadm',
+                                             path + '/etc/ldirectord.conf')
 
     def test_disablehost(self):
         filepath = self.director.maintenance_dir + '/192.0.43.10'
