@@ -6,11 +6,26 @@ import sys
 import utils
 
 
+class Server():
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+
+
+class Virtual(Server):
+    def __init__(self, ip, port):
+        Server.__init__(ip, port)
+        self.realServers = list()
+
+
 class Director():
-    def __init__(self, name, maintenance_dir, ipvsadm):
+    def __init__(self, name, maintenance_dir, ipvsadm,
+                 configfile='', restart_cmd=''):
         self.maintenance_dir = maintenance_dir
         self.name = name
         self.ipvsadm = ipvsadm
+        self.configfile = configfile
+        self.restart_cmd = restart_cmd
 
     def show(self, numeric):
         args = self.ipvsadm + ' -L '
@@ -69,6 +84,7 @@ class Director():
             return False
 
     def enable(self, host, port=''):
+        """enable a previously disabled server"""
         # check that it's a valid port
         if port:
             portnum = utils.getportnum(port)
@@ -250,3 +266,14 @@ class Director():
         """Check a host/port to see if it's in the realserver list"""
         # useful with show_real command
         pass
+
+    def restart(self):
+        """Restart the director"""
+        if self.restart_cmd:
+            print "restaring director"
+            try:
+                result = subprocess.call(self.restart_cmd, shell=True)
+            except OSError as e:
+                print "[ERROR] problem restaring director - " + e.strerror
+        else:
+            print "[ERROR] 'director_cmd' not defined in config!"
