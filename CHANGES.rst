@@ -1,6 +1,14 @@
 Changes
 ========
 
+0.3.1 (2013-01-09)
+------------------
+
+* Added color term support
+* Added verification of modified configs
+* refactored CommandPrompt and Director classes
+* Fixed typos 
+
 
 0.3.0 (2012-11-06)
 ------------------
