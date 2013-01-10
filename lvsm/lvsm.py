@@ -24,6 +24,11 @@ class CommandPrompt(cmd.Cmd):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
+        self.director = lvsdirector.Director(self.config['director'],
+                                             self.config['maintenance_dir'],
+                                             self.config['ipvsadm'],
+                                             self.config['director_config'],
+                                             self.config['director_cmd'])
 
     def help_help(self):
         print
@@ -32,6 +37,7 @@ class CommandPrompt(cmd.Cmd):
     def do_exit(self, line):
         """exit from lvsm shell"""
         # check to see if any config files are modified using "svn status"
+        # the command will return 'M  filename' if a file is modified
         modified = list()
         if self.config['director_config']:
             result = subprocess.check_output(["svn", "status",
@@ -135,8 +141,9 @@ class CommandPrompt(cmd.Cmd):
 class MainPrompt(CommandPrompt):
     """Class to handle the top level prompt in lvsm"""
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
-        cmd.Cmd.__init__(self)
-        self.config = config
+        CommandPrompt.__init__(self, config)
+        # cmd.Cmd.__init__(self)
+        # self.config = config
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm# "
         if self.settings['color']:
@@ -343,13 +350,11 @@ class ConfigurePrompt(CommandPrompt):
 class StatusPrompt(CommandPrompt):
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
-        cmd.Cmd.__init__(self)
-        self.config = config
+        # cmd.Cmd.__init__(self)
+        CommandPrompt.__init__(self, config)
+        # self.config = config
         self.modules = ['director', 'firewall', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
-        self.director = lvsdirector.Director(self.config['director'],
-                                             self.config['maintenance_dir'],
-                                             self.config['ipvsadm'])
         self.firewall = firewall.Firewall(self.config['iptables'])
         self.rawprompt = "lvsm(status)# "
         if self.settings['color']:
