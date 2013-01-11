@@ -42,12 +42,12 @@ class CommandPrompt(cmd.Cmd):
         if self.config['director_config']:
             result = subprocess.check_output(["svn", "status",
                                              self.config['director_config']])
-            if result[0] == "M":
+            if result and result[0] == "M":
                 modified.append(self.config['director_config'])
         if self.config['firewall_config']:
             result = subprocess.check_output(["svn", "status",
                                              self.config['firewall_config']])
-            if result[0] == "M":
+            if result and result[0] == "M":
                 modified.append(self.config['firewall_config'])
         if modified:
             print "The following config file(s) were not comitted to svn:"
