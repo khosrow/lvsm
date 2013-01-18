@@ -26,6 +26,8 @@ Use 'lvsm help <command>' for information on a specific command.
 
 import getopt
 import sys
+import signal
+import subprocess
 import __init__ as appinfo
 import lvsm
 import utils
@@ -42,7 +44,7 @@ def usage(code, msg=''):
     sys.exit(code)
 
 
-def main():
+def main():    
     CONFFILE = "/etc/lvsm.conf"
 
     try:
@@ -62,10 +64,14 @@ def main():
         elif opt in ("-d", "--debug"):
             utils.DEBUG = True
 
-    #open config file and read it
+    # open config file and read it
     config = utils.parse_config(CONFFILE)
     utils.log("Parsed config file")
     utils.log(str(config))
+
+    # get the rows, cols from stty to be used by utils.pager
+    utils.update_rows_cols()
+    signal.signal(signal.SIGWINCH, utils.sigwinch_handler)
 
     try:
         shell = lvsm.MainPrompt(config)
