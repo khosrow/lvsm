@@ -18,6 +18,17 @@ class Firewall():
             return
         return output.split("\n")
 
+    def shownat(self, numeric):
+        args = [self.iptables, "-t", "nat", "-L"]
+        if numeric:
+            args.append("-n")
+        try:
+            output = subprocess.check_output(args)
+        except OSError as e:
+            print ("[ERROR] problem with iptables - " + e.strerror)
+            return
+        return output.split("\n")
+
     def show_virtual(self, host, port, numeric):
         result = list()
         args = [self.iptables, '-L', 'INPUT']
