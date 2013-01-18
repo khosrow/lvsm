@@ -15,10 +15,29 @@ class FirewallTestCase(unittest.TestCase):
     def test_show(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        self.assertTrue(self.firewall.show(numeric=False))
+        expected_result = """Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination"""  
+        lines = self.firewall.show(numeric=False)
+        result = ''
+        for line in lines:
+            result = result + line + '\n'
+        self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showvirtual(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        self.assertTrue(self.firewall.show_virtual('www.example.com', 'http',
-                        numeric=False))
+        expected_result = "ACCEPT     tcp  --  anywhere\
+             www.example.com tcp dpt:http"
+        lines = self.firewall.show_virtual('www.example.com', 'http', 
+                                           numeric=False)
+        result = ''
+        for line in lines:
+            result = result + line + '\n'
+        self.assertEqual(result.rstrip(), expected_result.rstrip())            
