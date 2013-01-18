@@ -142,8 +142,6 @@ class MainPrompt(CommandPrompt):
     """Class to handle the top level prompt in lvsm"""
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         CommandPrompt.__init__(self, config)
-        # cmd.Cmd.__init__(self)
-        # self.config = config
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm# "
         if self.settings['color']:
@@ -235,15 +233,6 @@ class ConfigurePrompt(CommandPrompt):
         self.prompt = termcolor.colored("lvsm(configure)# ", color=c,
                                         attrs=a)
 
-    def print_config(self, configkey):
-        """prints out the specified configuration file"""
-        if not self.config[configkey]:
-            print "[ERROR] '" + configkey + "' not defined in config file!"
-        else:
-            lines = utils.print_file(self.config[configkey])
-            for line in lines:
-                print line.rstrip()
-
     def svn_sync(self, filename, username, password):
         cluster_command = ''
         if self.config['dsh_group']:
@@ -285,10 +274,14 @@ class ConfigurePrompt(CommandPrompt):
         director                the IPVS director config file
         firewall                the iptables firewall config file
         """
-        if line == "director":
-            self.print_config("director_config")
-        elif line == "firewall":
-            self.print_config("firewall_config")
+        if line == "director" or line == "firewall":
+            configkey = line + "_config"        
+            if not self.config[configkey]:
+                print("[ERROR] '" + configkey + "' not defined in " +
+                      "configuration file!")
+            else:
+                lines = utils.print_file(self.config[configkey])
+                utils.pager(lines)
         else:
             print self.do_show.__doc__
 
@@ -397,19 +390,21 @@ class StatusPrompt(CommandPrompt):
         """
         commands = line.split()
         if line == "director":
-            self.director.show(self.settings['numeric'])
+            utils.pager(self.director.show(self.settings['numeric']))
         elif line == "firewall":
-            self.firewall.show(self.settings['numeric'])
+            # self.firewall.show(self.settings['numeric'])
+            utils.pager(self.firewall.show(self.settings['numeric']))
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 protocol = commands[1]
                 vip = commands[2]
                 port = commands[3]
+                n = self.settings['numeric']
                 if protocol in self.protocols:
-                    if self.director.show_virtual(vip, port, protocol,
-                                                  self.settings['numeric']):
-                        self.firewall.show_virtual(vip, port,
-                                                   self.settings['numeric'])
+                    d = self.director.show_virtual(vip, port, protocol, n)                                                   
+                    if d:
+                        f = self.firewall.show_virtual(vip, port, n)
+                        utils.pager(d + f)                                                       
                 else:
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
             else:
@@ -418,7 +413,9 @@ class StatusPrompt(CommandPrompt):
             if len(commands) == 3:
                 host = commands[1]
                 port = commands[2]
-                self.director.show_real(host, port, self.settings['numeric'])
+                utils.pager(self.director.show_real(host,
+                                                    port,
+                                                    self.settings['numeric']))
             else:
                 print "Usage: real <server> <port>"
         else:
@@ -442,8 +439,6 @@ class StatusPrompt(CommandPrompt):
         syntax: disable real|virtual <host> [<port>]
         """
         commands = line.split()
-        # ask for an optional reason for disabling
-        reason = raw_input("Reason for disabling [default = None]: ")
         if len(commands) < 2 or len(commands) > 3:
             print self.do_disable.__doc__
         elif line.startswith("virtual"):
@@ -458,6 +453,8 @@ class StatusPrompt(CommandPrompt):
             else:
                 print "Usage: disable real <host> [<port>]"
                 return
+            # ask for an optional reason for disabling
+            reason = raw_input("Reason for disabling [default = None]: ")
             if not self.director.disable(host, port, reason):
                 print "[ERROR] could not disable " + host
         else:
