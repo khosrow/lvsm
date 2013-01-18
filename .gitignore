@@ -34,3 +34,6 @@ pip-log.txt
 
 # config files used for testing
 lvsm.conf
+
+# KDE files
+.directory
