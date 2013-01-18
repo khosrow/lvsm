@@ -143,7 +143,11 @@ UDP  example.org:domain           rr
 Active servers:
 ---------------
 TCP 43-10.any.icann.org:http
-  -> slashdot.org:http"""
+  -> slashdot.org:http
+
+
+Disabled servers:
+-----------------"""
         self.shell.onecmd(' show real slashdot.org 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -152,6 +156,10 @@ TCP 43-10.any.icann.org:http
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """
+Active servers:
+---------------
+
+
 Disabled servers:
 -----------------
 43-7.any.icann.org:http\t\tReason: Disabled for testing"""
