@@ -2,8 +2,13 @@
 import socket
 import subprocess
 import sys
+import termcolor
+from getch import getch
+
 
 DEBUG = False
+ROWS = 24
+COLS = 85
 
 
 def log(msg):
@@ -92,3 +97,30 @@ def gethostname(host):
         return ''
     else:
         return hostip
+
+
+def pager(lines):
+    """print lines to screen and mimic behaviour of MORE command"""
+    global ROWS
+    i = 0
+    if lines is not None:
+        for line in lines:
+            i = i + 1
+            if ROWS and i == int(ROWS) - 1:
+                more = termcolor.colored("-- More --", color=None,
+                                         attrs=["reverse"])
+                sys.stdout.write(more)
+                getch()
+                i = 0
+                print
+            print line.rstrip()
+
+
+def sigwinch_handler(signum, frame):
+    update_rows_cols()
+
+
+def update_rows_cols():
+    global ROWS, COLS
+    s = subprocess.check_output(["/bin/stty", "size"])
+    ROWS, COLS = s.split()
