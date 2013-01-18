@@ -1,6 +1,16 @@
 Changes
 ========
 
+0.3.2 (2013-01-13)
+------------------
+
+* Fixed bug when quitting and no files are modified
+* Added pagination support for long output
+* Added new "status show nat" command
+* refactored Director classes to use a factory pattern
+* Added stub Keepalived class
+
+
 0.3.1 (2013-01-09)
 ------------------
 
