@@ -346,7 +346,7 @@ class StatusPrompt(CommandPrompt):
         # cmd.Cmd.__init__(self)
         CommandPrompt.__init__(self, config)
         # self.config = config
-        self.modules = ['director', 'firewall', 'virtual', 'real']
+        self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.firewall = firewall.Firewall(self.config['iptables'])
         self.rawprompt = "lvsm(status)# "
@@ -370,6 +370,7 @@ class StatusPrompt(CommandPrompt):
                 completions = []
         elif (line.startswith("show director") or
               line.startswith("show firewall") or
+              line.startswith("show nat") or
               line.startswith("show real")):
             completions = []
         elif not text:
@@ -385,15 +386,17 @@ class StatusPrompt(CommandPrompt):
         <module> can be one of the following
         director                the running ipvs status
         firewall                the iptables firewall status
+        nat                     the NAT done by iptables
         real <server> <port>    the status of a realserver
         virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP
         """
         commands = line.split()
         if line == "director":
             utils.pager(self.director.show(self.settings['numeric']))
-        elif line == "firewall":
-            # self.firewall.show(self.settings['numeric'])
+        elif line == "firewall":            
             utils.pager(self.firewall.show(self.settings['numeric']))
+        elif line == "nat":
+            utils.pager(self.firewall.shownat(self.settings['numeric']))
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 protocol = commands[1]
