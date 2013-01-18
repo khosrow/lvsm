@@ -18,105 +18,34 @@ class Virtual(Server):
         self.realServers = list()
 
 
-class Director():
-    def __init__(self, name, maintenance_dir, ipvsadm,
+class GenericDirector(object):
+    def __init__(self, maintenance_dir, ipvsadm,
                  configfile='', restart_cmd=''):
         self.maintenance_dir = maintenance_dir
-        self.name = name
         self.ipvsadm = ipvsadm
         self.configfile = configfile
         self.restart_cmd = restart_cmd
 
-    def show(self, numeric):
-        args = self.ipvsadm + ' -L '
-        if numeric:
-            args = args + ' -n'
-        try:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, shell=True)
-        except OSError as e:
-            print "[ERROR] problem with ipvsadm - " + e.strerror
-            return False
-        stdout, stderr = proc.communicate()
-        if stdout:
-            print stdout
-        elif stderr:
-            print stderr
-            return False
-        return True
-
     def disable(self, host, port='', reason=''):
-        # check that it's a valid port
-        if port:
-            portnum = utils.getportnum(port)
-            if portnum == -1:
-                return False
-        if self.name == 'ldirectord':
-            if self.maintenance_dir:
-                hostip = utils.gethostname(host)
-                if not hostip:
-                    return False
-                if port:
-                    hostport = hostip + ":" + str(portnum)
-                else:
-                    hostport = hostip
-                # go through maint_dir to see if host is already disabled
-                filenames = os.listdir(self.maintenance_dir)
-                for filename in filenames:
-                    f = self.convert_filename(filename)
-                    if hostport == f or hostip == f:
-                        print "host is already disabled!"
-                        return True
-                try:
-                    f = open(self.maintenance_dir + "/" + hostport, 'w')
-                    f.write(reason)
-                except IOError as e:
-                    print "[ERROR] " + e.strerror + ": '" + e.filename +\
-                          "'"
-                    return False
-                return True
-            else:
-                print "[ERROR] maintenance_dir not defined in config."
-                return False
-        else:
-            print "[ERROR] no valid director defined, " +\
-                  " don't know how to disable servers!"
-            return False
+        """disable a previously disabled server.
+        To be implemented by inheriting classes"""
+        return False
 
     def enable(self, host, port=''):
-        """enable a previously disabled server"""
-        # check that it's a valid port
-        if port:
-            portnum = utils.getportnum(port)
-            if portnum == -1:
-                return False
-        hostip = utils.gethostname(host)
-        if not hostip:
-            return False
-        if self.name == 'ldirectord':
-            if port:
-                hostport = hostip + ":" + str(portnum)
-            else:
-                hostport = hostip
-            if self.maintenance_dir:
-                filenames = os.listdir(self.maintenance_dir)
-                for filename in filenames:
-                    f = self.convert_filename(filename)
-                    if hostport == f or hostip == f:
-                        try:
-                            os.unlink(self.maintenance_dir + "/" + filename)
-                        except OSError as e:
-                            print "[ERROR] " + e.strerror + ": '" +\
-                                  e.filename + "'"
-                            return False
-                        return True
-            else:
-                print "[ERROR] maintenance_dir not defined!"
-                return False
-        else:
-            print ("[ERROR] no valid director defined!" +
-                   " don't know how to enable servers!")
-            return False
+        """enable a previously disabled server.
+        To be implemented by inheriting classes"""
+        return False
+
+    def show(self, numeric):
+        args = [self.ipvsadm, '-L']        
+        if numeric:
+            args.append('-n')
+        try:
+            output = subprocess.check_output(args)
+        except OSError as e:
+            print "[ERROR] problem with ipvsadm - " + e.strerror
+            return        
+        return output.split('\n')
 
     def show_virtual(self, host, port, prot, numeric):
         """show status of virtual server"""
@@ -125,62 +54,55 @@ class Director():
         # make sure we have a valid host
         hostip = utils.gethostname(host)
         if not hostip:
-            return False
+            return
         # make sure the port is valid
         portnum = utils.getportnum(port)
         if portnum == -1:
-            return False
+            return
+        args = [self.ipvsadm, '-L']
         if numeric:
-            display_flag = '-n'
-        else:
-            display_flag = ''
-        args = (self.ipvsadm + ' -L ' + display_flag + ' ' + protocol + ' ' +
-                hostip + ':' + str(portnum))
-        # utils.execute(args, "problem with ipvsadm", pipe=True)
+            args.append('-n')
+        
+        args.append(protocol)
+        args.append(hostip + ':' + str(portnum))
         try:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, shell=True)
+            output = subprocess.check_output(args)
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-            return False
-        stdout, stderr = proc.communicate()
-        if stdout:
-            print stdout
-        elif stderr:
-            # capture the useless ipvs error message and return proper error
-            if stderr.rstrip() == "Memory allocation problem":
-                print "Virtual service not defined!"
-            else:
-                print stderr
-            return False
-        return True
+            return     
+        return output.split('\n')
 
     def show_real(self, host, port, numeric):
         """show status of real server across multiple VIPs"""
+        active = self.show_real_active(host, port, numeric)
+        if active is None:
+            active = list()
+        disabled = self.show_real_disabled(host, port, numeric)
+        if disabled is None:
+            disabled = list()
+        return active + disabled
+
+    def show_real_active(self, host, port, numeric):
+        """show status of active real server across multiple VIPs"""
         hostip = utils.gethostname(host)
         if not hostip:
-            return False
+            return
         portnum = utils.getportnum(port)
         if portnum == -1:
-            return False
+            return
         hostport = hostip + ":" + str(portnum)
-        args = self.ipvsadm + ' -Ln'
+        args = [self.ipvsadm, '-L', '-n']
         try:
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, shell=True)
+            lines = subprocess.check_output(args)
         except OSError as e:
             print "[ERROR] " + e.strerror
-            return False
-        stdout, stderr = proc.communicate()
-        if stdout:
-            lines = stdout.split('\n')
-        else:
-            lines = ""
+            return
+        
         virtual = ""
         real = ""
-        output = list()
+        output = ["", "Active servers:", "---------------"]
         # find the output line that contains the rip
-        for line in lines:
+        for line in lines.split('\n'):
             if (line.startswith("TCP") or
                 line.startswith("UDP") or
                 line.startswith("FWM")):
@@ -202,51 +124,12 @@ class Director():
                     output.append(virtual.split()[0] + ' ' + vipname + ':' +
                                   vipportname)
                     output.append('  -> ' + ripname + ':' + ripportname)
-        if output:
-            print ""
-            print "Active servers:"
-            print "---------------"
-        for line in output:
-            print line
-        # now check to see if any servers are disabled
-        if self.name == 'ldirectord':
-            output = list()
-            filenames = os.listdir(self.maintenance_dir)
-            for filename in filenames:
-                try:
-                    f = open(self.maintenance_dir + "/" + filename)
-                    reason = 'Reason: ' + f.readline()
-                except IOError as e:
-                    reason = ''
-                    print "[ERROR] " + e.strerror + ' \'' + e.filename + '\''
-                if (self.convert_filename(filename) == hostip or
-                    self.convert_filename(filename) == hostip + ":" +
-                    str(portnum)):
-                    # decide if we have to convert to hostname or not
-                    if numeric:
-                        output.append(filename + "\t\t" + reason)
-                    else:
-                        rip = filename.split(":")[0]
-                        try:
-                            (ripname, al, ipl) = socket.gethostbyaddr(rip)
-                        except socket.herror, e:
-                            print "[ERROR] " + str(e)
-                            return False
-                        if len(filename.split(":")) == 2:
-                            ripport = filename.split(":")[1]
-                            ripportname = socket.getservbyport(int(ripport))
-                            ripname = ripname + ':' + ripportname
-                        else:
-                            pass
-                        output.append(ripname + "\t\t" + reason)
-            if output:
-                print ""
-                print "Disabled servers:"
-                print "-----------------"
-            for line in output:
-                print line
-        print ""
-        return True
+        output.append("")
+        return output
+
+    def show_real_disabled(self, host, port, numeric):
+        """stub funtion. To be implemented by inheriting classes"""
+        pass
 
     def convert_filename(self, filename):
         """convert a filename of format host[:port] to IP[:port]"""
@@ -277,3 +160,132 @@ class Director():
                 print "[ERROR] problem restaring director - " + e.strerror
         else:
             print "[ERROR] 'director_cmd' not defined in config!"
+
+
+class Ldirectord(GenericDirector):
+    def __init__(self, maintenance_dir, ipvsadm,
+                 configfile='', restart_cmd=''):
+        super(Ldirectord, self).__init__(maintenance_dir, ipvsadm,
+                                         configfile, restart_cmd)
+
+    def disable(self, host, port='', reason=''):
+        if self.maintenance_dir:
+            hostip = utils.gethostname(host)
+            if not hostip:
+                return False
+            if port:
+                # check that it's a valid port
+                portnum = utils.getportnum(port)
+                if portnum == -1:
+                    return False
+                hostport = hostip + ":" + str(portnum)
+            else:
+                hostport = hostip
+            # go through maint_dir to see if host is already disabled
+            filenames = os.listdir(self.maintenance_dir)
+            for filename in filenames:
+                f = self.convert_filename(filename)
+                if hostport == f or hostip == f:
+                    print "host is already disabled!"
+                    return True
+            try:
+                f = open(self.maintenance_dir + "/" + hostport, 'w')
+                f.write(reason)
+            except IOError as e:
+                print "[ERROR] " + e.strerror + ": '" + e.filename +\
+                      "'"
+                return False
+            return True
+        else:
+            print "[ERROR] maintenance_dir not defined in config."
+            return False
+
+    def enable(self, host, port=''):
+        """enable a previously disabled server"""
+        hostip = utils.gethostname(host)
+        if not hostip:
+            return False
+        if port:
+            # check that it's a valid port
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return False
+            hostport = hostip + ":" + str(portnum)
+        else:
+            hostport = hostip
+        if self.maintenance_dir:
+            filenames = os.listdir(self.maintenance_dir)
+            for filename in filenames:
+                f = self.convert_filename(filename)
+                if hostport == f or hostip == f:
+                    try:
+                        os.unlink(self.maintenance_dir + "/" + filename)
+                    except OSError as e:
+                        print "[ERROR] " + e.strerror + ": '" +\
+                              e.filename + "'"
+                        return False
+                    return True
+        else:
+            print "[ERROR] maintenance_dir not defined!"
+            return False
+
+    def show_real_disabled(self, host, port, numeric):
+        """show status of disabled real server across multiple VIPs"""
+        hostip = utils.gethostname(host)
+        if not hostip:
+            return
+        portnum = utils.getportnum(port)
+        if portnum == -1:
+            return
+        hostport = hostip + ":" + str(portnum)
+        output = ["", "Disabled servers:", "-----------------"]
+        filenames = os.listdir(self.maintenance_dir)
+        for filename in filenames:
+            try:
+                f = open(self.maintenance_dir + "/" + filename)
+                reason = 'Reason: ' + f.readline()
+            except IOError as e:
+                reason = ''
+                print "[ERROR] " + e.strerror + ' \'' + e.filename + '\''
+            if (self.convert_filename(filename) == hostip or
+                self.convert_filename(filename) == hostip + ":" +
+                str(portnum)):
+                # decide if we have to convert to hostname or not
+                if numeric:
+                    output.append(filename + "\t\t" + reason)
+                else:
+                    rip = filename.split(":")[0]
+                    try:
+                        (ripname, al, ipl) = socket.gethostbyaddr(rip)
+                    except socket.herror, e:
+                        print "[ERROR] " + str(e)
+                        return False
+                    if len(filename.split(":")) == 2:
+                        ripport = filename.split(":")[1]
+                        ripportname = socket.getservbyport(int(ripport))
+                        ripname = ripname + ':' + ripportname
+                    else:
+                        pass
+                    output.append(ripname + "\t\t" + reason)
+        return output
+
+
+class Keepalived(GenericDirector):
+    def __init__(self, maintenance_dir, ipvsadm,
+                 configfile='', restart_cmd=''):
+        super(Keepalived, self).__init__(maintenance_dir, ipvsadm,
+                                         configfile, restart_cmd)
+
+
+class Director(object):
+    """Factory class to return the right kind of director"""
+    directors = {'generic': GenericDirector,
+                 'ldirectord': Ldirectord,
+                 'keepalived': Keepalived}
+
+    def __new__(self, name, maintenance_dir, ipvsadm,
+                configfile='', restart_cmd=''):
+        if name != 'ldirectord' and name != 'keepalived':
+            name = 'generic'
+        return Director.directors[name](maintenance_dir, ipvsadm,
+                                        configfile, restart_cmd)
