@@ -122,5 +122,15 @@ def sigwinch_handler(signum, frame):
 
 def update_rows_cols():
     global ROWS, COLS
-    s = subprocess.check_output(["/bin/stty", "size"])
-    ROWS, COLS = s.split()
+    args = ["/bin/stty", "size"]
+    try:
+        try:
+            s = subprocess.check_output(args)
+        # python 2.6 compatibility code
+        except AttributeError:
+            s, stderr = subprocess.Popen(args, 
+                                         stdout=subprocess.PIPE).communicate()
+    except OSError as e:
+        ROWS = 1000
+    else:
+        ROWS, COLS = s.split()

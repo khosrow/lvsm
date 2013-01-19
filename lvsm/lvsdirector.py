@@ -41,7 +41,10 @@ class GenericDirector(object):
         if numeric:
             args.append('-n')
         try:
-            output = subprocess.check_output(args)
+            try:
+                output = subprocess.check_output(args)
+            except AttributeError as e:
+                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
             return        
@@ -66,7 +69,10 @@ class GenericDirector(object):
         args.append(protocol)
         args.append(hostip + ':' + str(portnum))
         try:
-            output = subprocess.check_output(args)
+            try:
+                output = subprocess.check_output(args)
+            except AttributeError as e:
+                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
             return     
@@ -93,7 +99,10 @@ class GenericDirector(object):
         hostport = hostip + ":" + str(portnum)
         args = [self.ipvsadm, '-L', '-n']
         try:
-            lines = subprocess.check_output(args)
+            try:
+                lines = subprocess.check_output(args)
+            except AttributeError as e:
+                lines, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] " + e.strerror
             return

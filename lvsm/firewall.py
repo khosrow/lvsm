@@ -12,7 +12,11 @@ class Firewall():
         if numeric:
             args.append("-n")
         try:
-            output = subprocess.check_output(args)
+            try:
+                output = subprocess.check_output(args)
+            # python 2.6 compatibility code
+            except AttributeError as e:
+                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] problem with iptables - " + e.strerror
             return
@@ -23,7 +27,11 @@ class Firewall():
         if numeric:
             args.append("-n")
         try:
-            output = subprocess.check_output(args)
+            try:
+                output = subprocess.check_output(args)
+            # python 2.6 compatibility code
+            except AttributeError as e:
+                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print ("[ERROR] problem with iptables - " + e.strerror)
             return
@@ -40,7 +48,11 @@ class Firewall():
             hostname = host
             portname = port
         try:
-            output = subprocess.check_output(args)
+            try:
+                output = subprocess.check_output(args)
+            # python 2.6 compatibility code
+            except AttributeError as e:
+                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] problem with iptables - " + e.strerror
             return

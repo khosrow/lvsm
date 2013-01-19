@@ -39,14 +39,27 @@ class CommandPrompt(cmd.Cmd):
         # check to see if any config files are modified using "svn status"
         # the command will return 'M  filename' if a file is modified
         modified = list()
+        args = ["svn", "status"]
         if self.config['director_config']:
-            result = subprocess.check_output(["svn", "status",
-                                             self.config['director_config']])
+            args.append(self.config['director_config'])
+            try:
+                try:
+                    result = subprocess.check_output(args)
+                except AttributeError as e:
+                    result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
+            except OSError as e:
+                print("[ERROR] " + e.strerror)
             if result and result[0] == "M":
                 modified.append(self.config['director_config'])
         if self.config['firewall_config']:
-            result = subprocess.check_output(["svn", "status",
-                                             self.config['firewall_config']])
+            args.append(self.config['firewall_config'])
+            try:
+                try:
+                    result = subprocess.check_output(args)
+                except AttributeError as e:
+                    result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
+            except OSError as e:
+                print("[ERROR] " + e.strerror)
             if result and result[0] == "M":
                 modified.append(self.config['firewall_config'])
         if modified:
