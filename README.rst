@@ -81,6 +81,8 @@ common commands
 
 Commands below will work at all levels.
 
+**set**: change or show display settings inside lvsm. 
+
 **help**: print a relevant help messge depending on the level
 
 **end**: return to the previous
@@ -203,6 +205,8 @@ Usage:
 |``director``                        | show the running ipvs status        |
 +------------------------------------+-------------------------------------+
 |``firewall``                        | show the iptables status            |
++------------------------------------+-------------------------------------+
+|``nat`     `                        | show the iptables NAT tables        |
 +------------------------------------+-------------------------------------+
 |``real <server> <port>``            | show the status of a real server    |
 +------------------------------------+-------------------------------------+
