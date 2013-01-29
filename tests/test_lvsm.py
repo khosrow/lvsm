@@ -71,6 +71,7 @@ class Status(unittest.TestCase):
               'director_cmd': ''
               }
     shell = lvsm.StatusPrompt(config)
+    shell.settings['color'] = False
 
     def test_showdirector(self):
         self.shell.settings['numeric'] = False

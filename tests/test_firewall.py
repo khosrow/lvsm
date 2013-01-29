@@ -24,7 +24,7 @@ target     prot opt source               destination
 
 Chain OUTPUT (policy ACCEPT)
 target     prot opt source               destination"""  
-        lines = self.firewall.show(numeric=False)
+        lines = self.firewall.show(numeric=False, color=False)
         result = ''
         for line in lines:
             result = result + line + '\n'
@@ -36,7 +36,7 @@ target     prot opt source               destination"""
         expected_result = "ACCEPT     tcp  --  anywhere\
              www.example.com tcp dpt:http"
         lines = self.firewall.show_virtual('www.example.com', 'http', 
-                                           numeric=False)
+                                           numeric=False, color=False)
         result = ''
         for line in lines:
             result = result + line + '\n'
