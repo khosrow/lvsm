@@ -1,13 +1,14 @@
 """Firewall funcationality"""
 import subprocess
 import utils
+import termcolor
 
 
 class Firewall():
     def __init__(self, iptables):
         self.iptables = iptables
 
-    def show(self, numeric):
+    def show(self, numeric, color):
         args = [self.iptables, "-L", "-v"]
         if numeric:
             args.append("-n")
@@ -20,9 +21,22 @@ class Firewall():
         except OSError as e:
             print "[ERROR] problem with iptables - " + e.strerror
             return
-        return output.split("\n")
 
-    def shownat(self, numeric):
+        if color:
+            result = list()
+            for line in output.split('\n'):
+                if line.startswith('ACCEPT'):
+                    result.append(termcolor.colored(line, 'green'))
+                elif line.startswith('REJECT') or line.startswith('DROP'):
+                    result.append(termcolor.colored(line, 'red'))
+                else:
+                    result.append(line)
+        else:
+            result = output.split('\n')
+
+        return result
+
+    def show_nat(self, numeric):
         args = [self.iptables, "-t", "nat", "-L"]
         if numeric:
             args.append("-n")
@@ -37,7 +51,7 @@ class Firewall():
             return
         return output.split("\n")
 
-    def show_virtual(self, host, port, numeric):
+    def show_virtual(self, host, port, numeric, color):
         result = list()
         args = [self.iptables, '-L', 'INPUT']
         if numeric:
@@ -66,6 +80,14 @@ class Firewall():
                 tokens = line.split()
                 if len(tokens) >= 7:
                     if (tokens[4] == hostname and
-                        tokens[6] == "dpt:" + portname):                        
-                        result.append(line)
+                        tokens[6] == "dpt:" + portname):
+                        if color:
+                            if line.startswith('ACCEPT'):
+                                result.append(termcolor.colored(line, 'green'))
+                            elif line.startswith('REJECT') or line.startswith('DROP'):
+                                result.append(termcolor.colored(line, 'red'))
+                            else:
+                                result.append(line)
+                        else:
+                            result.append(line)
         return result

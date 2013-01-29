@@ -113,7 +113,7 @@ class CommandPrompt(cmd.Cmd):
                 elif tokens[0] == "color":
                     if tokens[1] == "on":
                         self.settings['color'] = True
-                        self.prompt = termcolor.colored(self.rawprompt, "red",
+                        self.prompt = termcolor.colored(self.rawprompt,
                                                         attrs=["bold"])
                     elif tokens[1] == "off":
                         self.settings['color'] = False
@@ -144,7 +144,7 @@ class CommandPrompt(cmd.Cmd):
         """Hook method executed just after a command dispatch is finished."""
         # check to see if the prompt should be colorized
         if self.settings['color']:
-            self.prompt = termcolor.colored(self.rawprompt, "red",
+            self.prompt = termcolor.colored(self.rawprompt,
                                             attrs=["bold"])
         else:
             self.prompt = self.rawprompt
@@ -158,7 +158,8 @@ class MainPrompt(CommandPrompt):
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm# "
         if self.settings['color']:
-            c = "red"
+            # c = "red"
+            c = None
             a = ["bold"]
         else:
             c = None
@@ -238,7 +239,8 @@ class ConfigurePrompt(CommandPrompt):
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm(configure)# "
         if self.settings['color']:
-            c = "red"
+            # c = "red"
+            c = None
             a = ["bold"]
         else:
             c = None
@@ -364,7 +366,8 @@ class StatusPrompt(CommandPrompt):
         self.firewall = firewall.Firewall(self.config['iptables'])
         self.rawprompt = "lvsm(status)# "
         if self.settings['color']:
-            c = "red"
+            # c = "red"
+            c = None
             a = ["bold"]
         else:
             c = None
@@ -404,22 +407,23 @@ class StatusPrompt(CommandPrompt):
         virtual tcp|udp|fwm <vip> <port>    the status of a specific VIP
         """
         commands = line.split()
+        numeric = self.settings['numeric']
+        color = self.settings['color']
         if line == "director":
-            utils.pager(self.director.show(self.settings['numeric']))
+            utils.pager(self.director.show(numeric, color))
         elif line == "firewall":            
-            utils.pager(self.firewall.show(self.settings['numeric']))
+            utils.pager(self.firewall.show(numeric, color))
         elif line == "nat":
-            utils.pager(self.firewall.shownat(self.settings['numeric']))
+            utils.pager(self.firewall.show_nat(numeric))
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 protocol = commands[1]
                 vip = commands[2]
                 port = commands[3]
-                n = self.settings['numeric']
                 if protocol in self.protocols:
-                    d = self.director.show_virtual(vip, port, protocol, n)                                                   
+                    d = self.director.show_virtual(vip, port, protocol, numeric, color) 
                     if d:
-                        f = self.firewall.show_virtual(vip, port, n)
+                        f = self.firewall.show_virtual(vip, port, numeric, color)
                         utils.pager(d + f)                                                       
                 else:
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
@@ -429,9 +433,7 @@ class StatusPrompt(CommandPrompt):
             if len(commands) == 3:
                 host = commands[1]
                 port = commands[2]
-                utils.pager(self.director.show_real(host,
-                                                    port,
-                                                    self.settings['numeric']))
+                utils.pager(self.director.show_real(host, port, numeric))
             else:
                 print "Usage: real <server> <port>"
         else:

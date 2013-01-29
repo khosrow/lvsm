@@ -4,7 +4,7 @@ import socket
 import subprocess
 import sys
 import utils
-
+import termcolor
 
 class Server():
     def __init__(self, ip, port):
@@ -36,21 +36,34 @@ class GenericDirector(object):
         To be implemented by inheriting classes"""
         return False
 
-    def show(self, numeric):
-        args = [self.ipvsadm, '-L']        
+    def show(self, numeric, color):
+        args = [self.ipvsadm, '-L']
         if numeric:
             args.append('-n')
+
         try:
             try:
                 output = subprocess.check_output(args)
+            # python 2.6 compatibility code
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-            return        
-        return output.split('\n')
+            return
+        
+        if color:
+            result = list()
+            for line in output.split('\n'):
+                if line.startswith('TCP') or line.startswith('UDP') or line.startswith('FWM'):
+                    result.append(termcolor.colored(line, 'magenta'))
+                else:
+                    result.append(line)
+        else:
+            result = output.split('\n')
 
-    def show_virtual(self, host, port, prot, numeric):
+        return result
+
+    def show_virtual(self, host, port, prot, numeric, color):
         """show status of virtual server"""
         protocols = {'tcp': '-t', 'udp': '-u', 'fwm': '-f'}
         protocol = protocols[prot]
@@ -71,12 +84,24 @@ class GenericDirector(object):
         try:
             try:
                 output = subprocess.check_output(args)
+            # python 2.6 compatibility code
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-            return     
-        return output.split('\n')
+            return
+
+        if color:
+            result = list()
+            for line in output.split('\n'):
+                if line.startswith('TCP') or line.startswith('UDP') or line.startswith('FWM'):
+                    result.append(termcolor.colored(line, 'magenta'))
+                else:
+                    result.append(line)
+        else:
+            result = output.split('\n')
+
+        return result
 
     def show_real(self, host, port, numeric):
         """show status of real server across multiple VIPs"""
@@ -101,6 +126,7 @@ class GenericDirector(object):
         try:
             try:
                 lines = subprocess.check_output(args)
+            # python 2.6 compatibility code
             except AttributeError as e:
                 lines, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
