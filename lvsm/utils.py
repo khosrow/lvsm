@@ -102,19 +102,54 @@ def gethostname(host):
 def pager(lines):
     """print lines to screen and mimic behaviour of MORE command"""
     global ROWS
-    i = 0
-    if lines is not None:
-        for line in lines:
-            i = i + 1
-            if ROWS and i == int(ROWS) - 1:
-                more = termcolor.colored("-- More --", color=None,
-                                         attrs=["reverse"])
-                sys.stdout.write(more)
-                getch()
-                i = 0
-                print
-            print line.rstrip()
 
+    if lines is None:
+        return
+
+    # no need to invoke curses if it can be displayed
+    # in one page
+    if int(ROWS) >= len(lines):
+        for line in lines:
+            print line.rstrip()
+        return
+
+    try:
+        import curses
+        # init curses
+        stdscr = curses.initscr()
+        curses.cbreak()
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_RED, -1)
+        stdscr.keypad(1)
+        try:
+            i = 0
+            j = 0
+            for line in lines:
+                i = i + 1
+                j = j + 1
+                if ROWS and i == int(ROWS):
+                    stdscr.addstr("--More--", curses.A_REVERSE)
+                    stdscr.refresh()
+                    c = stdscr.getch()
+                    stdscr.erase()
+                    if c == ord('q'):
+                        break                    
+                stdscr.addstr(line+"\n")
+                stdscr.refresh()
+        except curses.error:
+            # simple error catching for now
+            print "[ERROR] curses had a problem"            
+        finally:
+            # clean up curses
+            curses.nocbreak()
+            stdscr.keypad(0)
+            curses.echo()
+            curses.endwin()
+    except ImportError:
+        # fallback if curses is not found
+        for line in lines:
+            print line.rstrip()
 
 def sigwinch_handler(signum, frame):
     update_rows_cols()
