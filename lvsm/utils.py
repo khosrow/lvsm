@@ -106,13 +106,12 @@ def pager(lines):
     if lines is not None:
         for line in lines:
             i = i + 1
-            if ROWS and i == int(ROWS) - 1:
+            if ROWS and i == int(ROWS):
                 more = termcolor.colored("-- More --", color=None,
                                          attrs=["reverse"])
-                sys.stdout.write(more)
+                print more + "\r",
                 getch()
                 i = 0
-                print
             print line.rstrip()
 
 
