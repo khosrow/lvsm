@@ -55,7 +55,7 @@ class GenericDirector(object):
             result = list()
             for line in output.split('\n'):
                 if line.startswith('TCP') or line.startswith('UDP') or line.startswith('FWM'):
-                    result.append(termcolor.colored(line, 'magenta'))
+                    result.append(termcolor.colored(line, attrs=['bold']))
                 else:
                     result.append(line)
         else:
@@ -84,6 +84,9 @@ class GenericDirector(object):
         try:
             try:
                 output = subprocess.check_output(args)
+            except subprocess.CalledProcessError, e:
+                print "[ERROR] problem with ipvsadm - " + e.output
+                return
             # python 2.6 compatibility code
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
@@ -91,11 +94,12 @@ class GenericDirector(object):
             print "[ERROR] problem with ipvsadm - " + e.strerror
             return
 
+
         if color:
             result = list()
             for line in output.split('\n'):
                 if line.startswith('TCP') or line.startswith('UDP') or line.startswith('FWM'):
-                    result.append(termcolor.colored(line, 'magenta'))
+                    result.append(termcolor.colored(line, attrs=['bold']))
                 else:
                     result.append(line)
         else:
@@ -103,9 +107,9 @@ class GenericDirector(object):
 
         return result
 
-    def show_real(self, host, port, numeric):
+    def show_real(self, host, port, numeric, color):
         """show status of real server across multiple VIPs"""
-        active = self.show_real_active(host, port, numeric)
+        active = self.show_real_active(host, port, numeric, color)
         if active is None:
             active = list()
         disabled = self.show_real_disabled(host, port, numeric)
@@ -113,7 +117,7 @@ class GenericDirector(object):
             disabled = list()
         return active + disabled
 
-    def show_real_active(self, host, port, numeric):
+    def show_real_active(self, host, port, numeric, color):
         """show status of active real server across multiple VIPs"""
         hostip = utils.gethostname(host)
         if not hostip:
@@ -142,23 +146,34 @@ class GenericDirector(object):
                 line.startswith("UDP") or
                 line.startswith("FWM")):
                 virtual = line
-            if line.find(hostport) != -1:
+
+            if hostport in line:
                 if numeric:
-                    output.append('  '.join(virtual.split()[:2]))
-                    output.append('  ' + ' '.join(line.split()[:2]))
+                    v = '  '.join(virtual.split()[:2])
+                    r = '  ' + ' '.join(line.split()[:2])
                 else:
                     # convert host IP and port num to names before displaying
                     vip = virtual.split()[1].split(":")[0]
                     (vipname, aliaslist, iplist) = socket.gethostbyaddr(vip)
                     vipport = virtual.split()[1].split(":")[1]
                     vipportname = socket.getservbyport(int(vipport))
+                    v = virtual.split()[0] + ' ' + vipname + ':' + vipportname
+
                     rip = line.split()[1].split(":")[0]
                     (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
                     ripport = line.split()[1].split(":")[1]
-                    ripportname = socket.getservbyport(int(ripport))
-                    output.append(virtual.split()[0] + ' ' + vipname + ':' +
-                                  vipportname)
-                    output.append('  -> ' + ripname + ':' + ripportname)
+                    ripportname = socket.getservbyport(int(ripport))                    
+                    r = '  -> ' + ripname + ':' + ripportname
+
+                # colorize output
+                if color:
+                    a = ['bold']
+                else:
+                    a = None
+
+                output.append(termcolor.colored(v, attrs=a))
+                output.append(r)
+
         output.append("")
         return output
 
