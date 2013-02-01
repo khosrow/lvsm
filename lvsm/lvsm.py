@@ -144,8 +144,8 @@ class CommandPrompt(cmd.Cmd):
         """Hook method executed just after a command dispatch is finished."""
         # check to see if the prompt should be colorized
         if self.settings['color']:
-            self.prompt = termcolor.colored(self.rawprompt,
-                                            attrs=["bold"])
+            self.prompt = termcolor.colored(self.rawprompt, attrs=None)
+                                            # attrs=["bold"])
         else:
             self.prompt = self.rawprompt
         return stop
@@ -160,7 +160,8 @@ class MainPrompt(CommandPrompt):
         if self.settings['color']:
             # c = "red"
             c = None
-            a = ["bold"]
+            # a = ["bold"]
+            a = None
         else:
             c = None
             a = None
@@ -241,7 +242,8 @@ class ConfigurePrompt(CommandPrompt):
         if self.settings['color']:
             # c = "red"
             c = None
-            a = ["bold"]
+            # a = ["bold"]
+            a = None
         else:
             c = None
             a = None
@@ -368,7 +370,8 @@ class StatusPrompt(CommandPrompt):
         if self.settings['color']:
             # c = "red"
             c = None
-            a = ["bold"]
+            # a = ["bold"]
+            a = None
         else:
             c = None
             a = None
@@ -433,7 +436,7 @@ class StatusPrompt(CommandPrompt):
             if len(commands) == 3:
                 host = commands[1]
                 port = commands[2]
-                utils.pager(self.director.show_real(host, port, numeric))
+                utils.pager(self.director.show_real(host, port, numeric, color))
             else:
                 print "Usage: real <server> <port>"
         else:
