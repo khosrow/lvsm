@@ -111,6 +111,8 @@ def pager(lines):
                                          attrs=["reverse"])
                 print more + "\r",
                 getch()
+                # erase the "-- More --"
+                print "          \r",
                 i = 0
             print line.rstrip()
 
