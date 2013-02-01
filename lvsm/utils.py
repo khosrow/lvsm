@@ -110,10 +110,18 @@ def pager(lines):
                 more = termcolor.colored("-- More --", color=None,
                                          attrs=["reverse"])
                 print more + "\r",
-                getch()
+                ch = getch()
                 # erase the "-- More --"
                 print "          \r",
-                i = 0
+                # pressing 'q' will go back to prompt
+                # pressing 'enter' will advance by 1 line
+                # otherwise show next page
+                if ord(ch) == 113:
+                    return
+                elif ord(ch) == 13:
+                    i = i - 1
+                else:            
+                    i = 0
             print line.rstrip()
 
 
