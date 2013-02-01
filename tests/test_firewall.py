@@ -40,4 +40,27 @@ target     prot opt source               destination"""
         result = ''
         for line in lines:
             result = result + line + '\n'
-        self.assertEqual(result.rstrip(), expected_result.rstrip())            
+        self.assertEqual(result.rstrip(), expected_result.rstrip())
+
+    def test_shownat(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
+        expected_result = """Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination"""
+        
+        lines = self.firewall.show_nat(numeric=False)
+
+        result = ''
+        for line in lines:
+            result = result + line + '\n'
+
+        self.assertEqual(result.rstrip(), expected_result.rstrip())
