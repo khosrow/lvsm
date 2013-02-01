@@ -25,9 +25,9 @@ class Firewall():
         if color:
             result = list()
             for line in output.split('\n'):
-                if line.startswith('ACCEPT'):
+                if 'Chain' not in line and 'ACCEPT' in line:
                     result.append(termcolor.colored(line, 'green'))
-                elif line.startswith('REJECT') or line.startswith('DROP'):
+                elif 'Chain' not in line and ('REJECT' in line or 'DROP' in line):
                     result.append(termcolor.colored(line, 'red'))
                 else:
                     result.append(line)
@@ -80,7 +80,7 @@ class Firewall():
                 tokens = line.split()
                 if len(tokens) >= 7:
                     if (tokens[4] == hostname and
-                        tokens[6] == "dpt:" + portname):
+                        tokens[6] == "dpt:" + str(portname)):
                         if color:
                             if line.startswith('ACCEPT'):
                                 result.append(termcolor.colored(line, 'green'))
