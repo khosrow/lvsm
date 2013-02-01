@@ -1,6 +1,20 @@
 #!/bin/bash
 
-echo "Chain INPUT (policy ACCEPT)
+if [ $1 = "-t" ] && [ $2 = "nat" ]
+then
+    echo "Chain PREROUTING (policy ACCEPT)
+target     prot opt source               destination
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain POSTROUTING (policy ACCEPT)
+target     prot opt source               destination"
+else 
+    echo "Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
 ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
 
@@ -9,3 +23,4 @@ target     prot opt source               destination
 
 Chain OUTPUT (policy ACCEPT)
 target     prot opt source               destination"
+fi
