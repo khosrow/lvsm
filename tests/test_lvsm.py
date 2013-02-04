@@ -14,7 +14,8 @@ class Configure(unittest.TestCase):
               'dsh_group': '',
               'director': 'ldirectord',
               'maintenance_dir': '',
-              'director_cmd': ''
+              'director_cmd': '',
+              'nodes':''
               }
     shell = lvsm.ConfigurePrompt(config)
 
@@ -68,7 +69,8 @@ class Status(unittest.TestCase):
               'dsh_group': '',
               'director': 'ldirectord',
               'maintenance_dir': path + '/maintenance',
-              'director_cmd': ''
+              'director_cmd': '',
+              'nodes':''
               }
     shell = lvsm.StatusPrompt(config)
     shell.settings['color'] = False
