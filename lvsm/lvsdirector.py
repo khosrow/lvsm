@@ -20,11 +20,20 @@ class Virtual(Server):
 
 class GenericDirector(object):
     def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd=''):
+                 configfile='', restart_cmd='', nodes=''):
         self.maintenance_dir = maintenance_dir
         self.ipvsadm = ipvsadm
         self.configfile = configfile
         self.restart_cmd = restart_cmd
+        if nodes != '':
+            self.nodes = nodes.replace(',','').split(',')
+        else:
+            self.nodes = None
+        try:
+            self.hostname = subprocess.check_output(['hostname','-s'])
+        except (OSError, subprocess.CalledProcessError):
+            self.hostname = ''
+
 
     def disable(self, host, port='', reason=''):
         """disable a previously disabled server.
@@ -214,9 +223,9 @@ class GenericDirector(object):
 
 class Ldirectord(GenericDirector):
     def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd=''):
+                 configfile='', restart_cmd='', nodes=''):
         super(Ldirectord, self).__init__(maintenance_dir, ipvsadm,
-                                         configfile, restart_cmd)
+                                         configfile, restart_cmd, nodes)
 
     def disable(self, host, port='', reason=''):
         if self.maintenance_dir:
@@ -245,6 +254,18 @@ class Ldirectord(GenericDirector):
                 print "[ERROR] " + e.strerror + ": '" + e.filename +\
                       "'"
                 return False
+
+            if self.nodes is not None:
+                filename = self.maintenance_dir + "/" + hostport
+                for node in self.nodes and node != self.hostname:
+                    remote = node + ":" + self.maintenance_dir
+                    args = ['scp', filename, remote]
+                    try:
+                        output = subprocess.check_output(args)
+                    except OSError as e:
+                        print "[ERROR] problem disabling on remote node - " + e.strerror
+                    except subprocess.CalledProcessError as e:
+                        print "[ERROR] problem disabling on remote node - "
             return True
         else:
             print "[ERROR] maintenance_dir not defined in config."
@@ -274,6 +295,18 @@ class Ldirectord(GenericDirector):
                         print "[ERROR] " + e.strerror + ": '" +\
                               e.filename + "'"
                         return False
+
+                    if self.nodes is not None:
+                        filename = self.maintenance_dir + "/" + hostport
+                        for node in self.nodes and node != self.hostname:
+                            cmd = "rm " + self.maintenance_dir + "/" + hostport
+                            args = ['ssh', node, cmd]
+                            try:
+                                output = subprocess.check_output(args)
+                            except OSError as e:
+                                print "[ERROR] problem disabling on remote node - " + e.strerror
+                            except subprocess.CalledProcessError as e:
+                                print "[ERROR] problem disabling on remote node - "
                     return True
         else:
             print "[ERROR] maintenance_dir not defined!"
@@ -322,7 +355,7 @@ class Ldirectord(GenericDirector):
 
 class Keepalived(GenericDirector):
     def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd=''):
+                 configfile='', restart_cmd='', nodes=''):
         super(Keepalived, self).__init__(maintenance_dir, ipvsadm,
                                          configfile, restart_cmd)
 
@@ -334,7 +367,7 @@ class Director(object):
                  'keepalived': Keepalived}
 
     def __new__(self, name, maintenance_dir, ipvsadm,
-                configfile='', restart_cmd=''):
+                configfile='', restart_cmd='', nodes=''):
         if name != 'ldirectord' and name != 'keepalived':
             name = 'generic'
         return Director.directors[name](maintenance_dir, ipvsadm,
