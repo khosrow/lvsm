@@ -28,7 +28,8 @@ class CommandPrompt(cmd.Cmd):
                                              self.config['maintenance_dir'],
                                              self.config['ipvsadm'],
                                              self.config['director_config'],
-                                             self.config['director_cmd'])
+                                             self.config['director_cmd'],
+                                             self.config['nodes'])
 
     def help_help(self):
         print
