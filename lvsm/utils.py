@@ -28,7 +28,8 @@ def parse_config(filename):
                     'director': '',
                     'maintenance_dir': '',
                     'director_cmd': '',
-                    'firewall_cmd': ''
+                    'firewall_cmd': '',
+                    'nodes': ''
                     }
     linenum = 0
     for line in lines:
