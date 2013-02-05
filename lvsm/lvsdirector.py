@@ -261,6 +261,9 @@ class Ldirectord(GenericDirector):
             for line in output:
                 if hostport in line:
                     print "Failed"
+                    # note: even if the real is still showing up, we've created
+                    # the file, so we should still return true
+                    return True
             print "OK"
             return True
         else:
@@ -314,6 +317,7 @@ class Ldirectord(GenericDirector):
                     for line in output:
                         if hostport in line:
                             print "OK"
+                            return True
                     # if we get to this point, means the host is not active
                     print "Failed"
                     # note: even if the real is not showing up, we have remove
