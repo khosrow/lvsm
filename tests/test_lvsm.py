@@ -2,9 +2,9 @@ import unittest
 import os
 import sys
 import StringIO
-from lvsm import lvsm
 
 path = os.path.abspath(os.path.dirname(__file__))
+from lvsm import lvsm
 
 
 class Configure(unittest.TestCase):
