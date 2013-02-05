@@ -51,7 +51,7 @@ class Firewall():
             return
         return output.split("\n")
 
-    def show_virtual(self, host, port, numeric, color):
+    def show_virtual(self, host, port, protocol, numeric, color):
         result = list()
         args = [self.iptables, '-L', 'INPUT']
         if numeric:
@@ -75,11 +75,13 @@ class Firewall():
             for line in lines:
                 # break the iptables output into tokens
                 # assumptions:
+                # 2nd item is the protocol
                 # 5th item is the hostname
                 # 8th item is the portname
                 tokens = line.split()
                 if len(tokens) >= 7:
-                    if (tokens[4] == hostname and
+                    if ((tokens[1] == protocol or tokens[2] == "all") and
+                        tokens[4] == hostname and
                         tokens[6] == "dpt:" + str(portname)):
                         if color:
                             if line.startswith('ACCEPT'):
