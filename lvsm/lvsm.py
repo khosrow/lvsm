@@ -426,7 +426,7 @@ class StatusPrompt(CommandPrompt):
                 if protocol in self.protocols:
                     d = self.director.show_virtual(vip, port, protocol, numeric, color)
                     if d:
-                        f = self.firewall.show_virtual(vip, port, numeric, color)
+                        f = self.firewall.show_virtual(vip, port, protocol, numeric, color)
                         utils.pager(d + f)
                 else:
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"

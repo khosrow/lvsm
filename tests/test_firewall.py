@@ -35,7 +35,7 @@ target     prot opt source               destination"""
         sys.stdout = output
         expected_result = "ACCEPT     tcp  --  anywhere\
              www.example.com tcp dpt:http"
-        lines = self.firewall.show_virtual('www.example.com', 'http', 
+        lines = self.firewall.show_virtual('www.example.com', 'http', 'tcp',
                                            numeric=False, color=False)
         result = ''
         for line in lines:
