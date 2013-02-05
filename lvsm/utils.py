@@ -146,8 +146,8 @@ def check_output(args):
     """Wrapper for subprocess.check_output"""
     try:
         output = subprocess.check_output(args)
+        return output
     # python 2.6 compatibility code
     except AttributeError as e:
         output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-    finally:
         return output

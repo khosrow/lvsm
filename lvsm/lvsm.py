@@ -46,8 +46,10 @@ class CommandPrompt(cmd.Cmd):
             args.append(self.config['director_config'])
             try:
                 result = utils.check_output(args)
-            except (OSError, subprocess.CalledProcessError) as e:
-                print("[ERROR] " + e.strerror)
+            except OSError as e:
+                print"[ERROR] " + e.strerror
+            except subprocess.CalledProcessError as e:
+                print"[ERROR] " + e.output
             if result and result[0] == "M":
                 modified.append(self.config['director_config'])
 

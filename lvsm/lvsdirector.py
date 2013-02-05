@@ -53,8 +53,11 @@ class GenericDirector(object):
 
         try:
             output = utils.check_output(args)
-        except (OSError, subprocess.CalledProcessError) as e:
+        except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
+            return
+        except subprocess.CalledProcessError as e:
+            print "[ERROR] problem with ipvsadm - " + e.output
             return
 
         if color:
@@ -89,8 +92,11 @@ class GenericDirector(object):
         args.append(hostip + ':' + str(portnum))
         try:
             output = utils.check_output(args)
-        except (OSError, subprocess.CalledProcessError) as e:
+        except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
+            return 
+        except subprocess.CalledProcessError as e:
+            print "[ERROR] problem with ipvsadm - " + e.output
             return
 
         if color:
@@ -127,8 +133,11 @@ class GenericDirector(object):
         args = [self.ipvsadm, '-L', '-n']
         try:
             lines = utils.check_output(args)
-        except (OSError, subprocess.CalledProcessError) as e:
+        except OSError as e:
             print "[ERROR] " + e.strerror
+            return
+        except subprocess.CalledProcessError as e:
+            print "[ERROR] problem with ipvsadm - " + e.output
             return
 
         virtual = ""
@@ -247,8 +256,10 @@ class Ldirectord(GenericDirector):
                     args = ['scp', filename, remote]
                     try:
                         output = utils.check_output(args)
-                    except (OSError, subprocess.CalledProcessError) as e:
+                    except OSError as e:
                         print "[ERROR] problem disabling on remote node - " + e.strerror
+                    except subprocess.CalledProcessError as e:
+                        print "[ERROR] problem disabling on remote node - " + e.output
             # now confirm that it's removed from ldirector
             i = 0
             print "Disabling server ",
@@ -302,8 +313,10 @@ class Ldirectord(GenericDirector):
                             args = ['ssh', node, cmd]
                             try:
                                 output = utils.check_output(args)
-                            except (OSError, subprocess.CalledProcessError) as e:
-                                print "[ERROR] problem disabling on remote node - " + e.strerror
+                            except OSError as e:
+                                print "[ERROR] problem enabling on remote node - " + e.strerror
+                            except subprocess.CalledProcessError as e:
+                                print "[ERROR] problem enabling on remote node - " + e.output
                     i = 0 
                     print "Enabling server ",
                     while i < 5:
