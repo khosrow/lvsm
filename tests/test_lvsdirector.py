@@ -2,9 +2,9 @@ import unittest
 import os
 import sys
 import StringIO
-from lvsm import lvsdirector
 
 path = os.path.abspath(os.path.dirname(__file__))
+from lvsm import lvsdirector
 
 
 class DirectorTestCase(unittest.TestCase):
@@ -16,6 +16,8 @@ class DirectorTestCase(unittest.TestCase):
                                              path + '/etc/ldirectord.conf')
 
     def test_disablehost(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
         filepath = self.director.maintenance_dir + '/192.0.43.10'
         self.assertTrue(self.director.disable('example.com'))
         # now clean up the file
@@ -25,6 +27,8 @@ class DirectorTestCase(unittest.TestCase):
             pass
 
     def test_disablehostport(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
         filepath = self.director.maintenance_dir + '/192.0.43.10:443'
         self.assertTrue(self.director.disable('example.com', 'https'))
         # now clean up the file
@@ -34,6 +38,8 @@ class DirectorTestCase(unittest.TestCase):
             pass
 
     def test_enablehost(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
         filepath = self.director.maintenance_dir + '/192.0.43.10'
         try:
             # create the file before we continue
@@ -44,6 +50,8 @@ class DirectorTestCase(unittest.TestCase):
             pass
 
     def test_enablehostport(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
         filepath = self.director.maintenance_dir + '/192.0.43.10:80'
         try:
             # create the file before we continue
@@ -54,6 +62,8 @@ class DirectorTestCase(unittest.TestCase):
             pass
 
     def test_enablehostname(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
         filepath = self.director.maintenance_dir + '/slashdot.org'
         try:
             # create the file before we continue
