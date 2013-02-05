@@ -44,7 +44,7 @@ def usage(code, msg=''):
     sys.exit(code)
 
 
-def main():    
+def main():
     CONFFILE = "/etc/lvsm.conf"
 
     try:
