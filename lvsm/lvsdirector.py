@@ -3,8 +3,10 @@ import os
 import socket
 import subprocess
 import sys
+import time
 import utils
 import termcolor
+
 
 class Server():
     def __init__(self, ip, port):
@@ -26,14 +28,13 @@ class GenericDirector(object):
         self.configfile = configfile
         self.restart_cmd = restart_cmd
         if nodes != '':
-            self.nodes = nodes.replace(',','').split(',')
+            self.nodes = nodes.replace(',', '').split(',')
         else:
             self.nodes = None
         try:
-            self.hostname = subprocess.check_output(['hostname','-s'])
+            self.hostname = utils.check_output(['hostname', '-s'])
         except (OSError, subprocess.CalledProcessError):
             self.hostname = ''
-
 
     def disable(self, host, port='', reason=''):
         """disable a previously disabled server.
@@ -51,15 +52,11 @@ class GenericDirector(object):
             args.append('-n')
 
         try:
-            try:
-                output = subprocess.check_output(args)
-            # python 2.6 compatibility code
-            except AttributeError as e:
-                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-        except OSError as e:
+            output = utils.check_output(args)
+        except (OSError, subprocess.CalledProcessError) as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
             return
-        
+
         if color:
             result = list()
             for line in output.split('\n'):
@@ -87,22 +84,14 @@ class GenericDirector(object):
         args = [self.ipvsadm, '-L']
         if numeric:
             args.append('-n')
-        
+
         args.append(protocol)
         args.append(hostip + ':' + str(portnum))
         try:
-            try:
-                output = subprocess.check_output(args)
-            except subprocess.CalledProcessError, e:
-                print "[ERROR] problem with ipvsadm - " + e.output
-                return
-            # python 2.6 compatibility code
-            except AttributeError as e:
-                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-        except OSError as e:
+            output = utils.check_output(args)
+        except (OSError, subprocess.CalledProcessError) as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
             return
-
 
         if color:
             result = list()
@@ -137,15 +126,11 @@ class GenericDirector(object):
         hostport = hostip + ":" + str(portnum)
         args = [self.ipvsadm, '-L', '-n']
         try:
-            try:
-                lines = subprocess.check_output(args)
-            # python 2.6 compatibility code
-            except AttributeError as e:
-                lines, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-        except OSError as e:
+            lines = utils.check_output(args)
+        except (OSError, subprocess.CalledProcessError) as e:
             print "[ERROR] " + e.strerror
             return
-        
+
         virtual = ""
         real = ""
         output = ["", "Active servers:", "---------------"]
@@ -171,7 +156,7 @@ class GenericDirector(object):
                     rip = line.split()[1].split(":")[0]
                     (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
                     ripport = line.split()[1].split(":")[1]
-                    ripportname = socket.getservbyport(int(ripport))                    
+                    ripportname = socket.getservbyport(int(ripport))
                     r = '  -> ' + ripname + ':' + ripportname
 
                 # colorize output
@@ -261,11 +246,22 @@ class Ldirectord(GenericDirector):
                     remote = node + ":" + self.maintenance_dir
                     args = ['scp', filename, remote]
                     try:
-                        output = subprocess.check_output(args)
-                    except OSError as e:
+                        output = utils.check_output(args)
+                    except (OSError, subprocess.CalledProcessError) as e:
                         print "[ERROR] problem disabling on remote node - " + e.strerror
-                    except subprocess.CalledProcessError as e:
-                        print "[ERROR] problem disabling on remote node - "
+            # now confirm that it's removed from ldirector
+            i = 0
+            print "Disabling server ",
+            while i < 5:
+                print ".",
+                sys.stdout.flush()
+                time.sleep(1)
+                i = i + 1
+            output = self.show(numeric=True, color=False)
+            for line in output:
+                if hostport in line:
+                    print "Failed"
+            print "OK"
             return True
         else:
             print "[ERROR] maintenance_dir not defined in config."
@@ -302,11 +298,26 @@ class Ldirectord(GenericDirector):
                             cmd = "rm " + self.maintenance_dir + "/" + hostport
                             args = ['ssh', node, cmd]
                             try:
-                                output = subprocess.check_output(args)
-                            except OSError as e:
+                                output = utils.check_output(args)
+                            except (OSError, subprocess.CalledProcessError) as e:
                                 print "[ERROR] problem disabling on remote node - " + e.strerror
-                            except subprocess.CalledProcessError as e:
-                                print "[ERROR] problem disabling on remote node - "
+                    i = 0 
+                    print "Enabling server ",
+                    while i < 5:
+                        print ".",
+                        sys.stdout.flush()
+                        time.sleep(1)
+                        i = i + 1
+
+                    # verify that the host is active in ldirectord
+                    output = self.show(numeric=True, color=False)
+                    for line in output:
+                        if hostport in line:
+                            print "OK"
+                    # if we get to this point, means the host is not active
+                    print "Failed"
+                    # note: even if the real is not showing up, we have remove
+                    # the file, so we should still return true
                     return True
         else:
             print "[ERROR] maintenance_dir not defined!"
