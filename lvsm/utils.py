@@ -3,6 +3,7 @@ import socket
 import subprocess
 import sys
 import termcolor
+import subprocess
 from getch import getch
 
 
@@ -121,7 +122,7 @@ def pager(lines):
                     return
                 elif ord(ch) == 13:
                     i = i - 1
-                else:            
+                else:
                     i = 0
             print line.rstrip()
 
@@ -134,13 +135,19 @@ def update_rows_cols():
     global ROWS, COLS
     args = ["/bin/stty", "size"]
     try:
-        try:
-            s = subprocess.check_output(args)
-        # python 2.6 compatibility code
-        except AttributeError:
-            s, stderr = subprocess.Popen(args, 
-                                         stdout=subprocess.PIPE).communicate()
-    except OSError as e:
+        s = check_output(args)
+    except (OSError, subprocess.CalledProcessError) as e:
         ROWS = 1000
     else:
         ROWS, COLS = s.split()
+
+
+def check_output(args):
+    """Wrapper for subprocess.check_output"""
+    try:
+        output = subprocess.check_output(args)
+    # python 2.6 compatibility code
+    except AttributeError as e:
+        output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
+    finally:
+        return output
