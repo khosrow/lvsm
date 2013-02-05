@@ -41,17 +41,16 @@ class CommandPrompt(cmd.Cmd):
         # the command will return 'M  filename' if a file is modified
         modified = list()
         args = ["svn", "status"]
+
         if self.config['director_config']:
             args.append(self.config['director_config'])
             try:
-                try:
-                    result = subprocess.check_output(args)
-                except AttributeError as e:
-                    result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-            except OSError as e:
+                result = utils.check_output(args)
+            except (OSError, subprocess.CalledProcessError) as e:
                 print("[ERROR] " + e.strerror)
             if result and result[0] == "M":
                 modified.append(self.config['director_config'])
+
         if self.config['firewall_config']:
             args.append(self.config['firewall_config'])
             try:
@@ -293,7 +292,7 @@ class ConfigurePrompt(CommandPrompt):
         firewall                the iptables firewall config file
         """
         if line == "director" or line == "firewall":
-            configkey = line + "_config"        
+            configkey = line + "_config"
             if not self.config[configkey]:
                 print("[ERROR] '" + configkey + "' not defined in " +
                       "configuration file!")
@@ -415,7 +414,7 @@ class StatusPrompt(CommandPrompt):
         color = self.settings['color']
         if line == "director":
             utils.pager(self.director.show(numeric, color))
-        elif line == "firewall":            
+        elif line == "firewall":
             utils.pager(self.firewall.show(numeric, color))
         elif line == "nat":
             utils.pager(self.firewall.show_nat(numeric))
@@ -425,10 +424,10 @@ class StatusPrompt(CommandPrompt):
                 vip = commands[2]
                 port = commands[3]
                 if protocol in self.protocols:
-                    d = self.director.show_virtual(vip, port, protocol, numeric, color) 
+                    d = self.director.show_virtual(vip, port, protocol, numeric, color)
                     if d:
                         f = self.firewall.show_virtual(vip, port, numeric, color)
-                        utils.pager(d + f)                                                       
+                        utils.pager(d + f)
                 else:
                     print "Usage: virtual tcp|udp|fwm <vip> <port>"
             else:
