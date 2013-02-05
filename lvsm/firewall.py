@@ -70,7 +70,7 @@ class Firewall():
         except OSError as e:
             print "[ERROR] problem with iptables - " + e.strerror
             return
-        if output:            
+        if output:
             lines = output.split('\n')
             for line in lines:
                 # break the iptables output into tokens
