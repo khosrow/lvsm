@@ -28,11 +28,11 @@ class GenericDirector(object):
         self.configfile = configfile
         self.restart_cmd = restart_cmd
         if nodes != '':
-            self.nodes = nodes.replace(',', '').split(',')
+            self.nodes = nodes.replace(' ', '').split(',')
         else:
             self.nodes = None
         try:
-            self.hostname = utils.check_output(['hostname', '-s'])
+            self.hostname = utils.check_output(['hostname', '-s']).rstrip()
         except (OSError, subprocess.CalledProcessError):
             self.hostname = ''
 
@@ -251,22 +251,23 @@ class Ldirectord(GenericDirector):
 
             if self.nodes is not None:
                 filename = self.maintenance_dir + "/" + hostport
-                for node in self.nodes and node != self.hostname:
-                    remote = node + ":" + self.maintenance_dir
-                    args = ['scp', filename, remote]
-                    try:
-                        output = utils.check_output(args)
-                    except OSError as e:
-                        print "[ERROR] problem disabling on remote node - " + e.strerror
-                    except subprocess.CalledProcessError as e:
-                        print "[ERROR] problem disabling on remote node - " + e.output
+                for node in self.nodes:
+                    if node != self.hostname:
+                        remote = node + ":" + self.maintenance_dir
+                        args = ['scp', filename, remote]
+                        try:
+                            output = utils.check_output(args)
+                        except OSError as e:
+                            print "[ERROR] problem disabling on remote node - " + e.strerror
+                        except subprocess.CalledProcessError as e:
+                            print "[ERROR] problem disabling on remote node - " + e.output
             # now confirm that it's removed from ldirector
             i = 0
             print "Disabling server ",
-            while i < 5:
-                print ".",
+            while i < 3:
+                sys.stdout.write(".")
                 sys.stdout.flush()
-                time.sleep(1)
+                time.sleep(1.5)
                 i = i + 1
             output = self.show(numeric=True, color=False)
             for line in output:
@@ -308,15 +309,16 @@ class Ldirectord(GenericDirector):
 
                     if self.nodes is not None:
                         filename = self.maintenance_dir + "/" + hostport
-                        for node in self.nodes and node != self.hostname:
-                            cmd = "rm " + self.maintenance_dir + "/" + hostport
-                            args = ['ssh', node, cmd]
-                            try:
-                                output = utils.check_output(args)
-                            except OSError as e:
-                                print "[ERROR] problem enabling on remote node - " + e.strerror
-                            except subprocess.CalledProcessError as e:
-                                print "[ERROR] problem enabling on remote node - " + e.output
+                        for node in self.nodes:
+                            if node != self.hostname:
+                                cmd = "rm " + self.maintenance_dir + "/" + hostport
+                                args = ['ssh', node, cmd]
+                                try:
+                                    output = utils.check_output(args)
+                                except OSError as e:
+                                    print "[ERROR] problem enabling on remote node - " + e.strerror
+                                except subprocess.CalledProcessError as e:
+                                    print "[ERROR] problem enabling on remote node - " + e.output
                     i = 0 
                     print "Enabling server ",
                     while i < 5:
@@ -399,4 +401,4 @@ class Director(object):
         if name != 'ldirectord' and name != 'keepalived':
             name = 'generic'
         return Director.directors[name](maintenance_dir, ipvsadm,
-                                        configfile, restart_cmd)
+                                        configfile, restart_cmd, nodes)
