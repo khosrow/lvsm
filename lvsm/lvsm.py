@@ -253,26 +253,43 @@ class ConfigurePrompt(CommandPrompt):
                                         attrs=a)
 
     def svn_sync(self, filename, username, password):
-        cluster_command = ''
-        if self.config['dsh_group']:
-            cluster_command = 'dsh -g ' + self.config['dsh_group'] + ' '
-        # commit code
-        args = ('svn commit --username ' + username + ' --password ' +
-                password + ' ' + filename)
+        # commit config locally
+        args = ['svn', 
+                'commit', 
+                '--username',
+                username,
+                '--password',
+                password,
+                filename]
+        svn_cmd = ('svn commit --username ' + username +
+                   ' --password ' + password + ' ' + filename)
         try:
-            result = subprocess.call(args, shell=True)
-        except OSError as e:
-            print "[ERROR] problem with configuration sync - " + e.strerror
-        # utils.execute(args, "problem with configuration sync")
-        # now update on all the nodes in the cluster
-        args = (cluster_command + 'svn update --username ' + username +
-                ' --password ' + password + ' ' + filename)
-        # utils.execute(args, "problem with configuration sync")
-        try:
-            result = subprocess.call(args, shell=True)
+            result = subprocess.call(svn_cmd, shell=True)
         except OSError as e:
             print "[ERROR] problem with configuration sync - " + e.strerror
 
+        # update config on all nodes
+        n = self.config['nodes']
+        if n != '':
+            nodes = n.replace(' ', '').split(',')
+        else:
+            nodes = None
+        
+        try:
+            hostname = utils.check_output(['hostname', '-s'])
+        except (OSError, subprocess.CalledProcessError):
+            hostname = ''
+        if nodes is not None:
+            svn_cmd = ('svn update --username ' + username +
+                       ' --password ' + password + ' ' + filename)
+            for node in nodes:
+                if node != hostname:
+                    args = 'ssh '+ node + ' ' +  svn_cmd
+                    try:
+                        result = subprocess.call(args, shell=True)
+                    except OSError as e:
+                        print "[ERROR] problem with configuration sync - " + e.strerror
+        
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
         if len(line) < 14:
