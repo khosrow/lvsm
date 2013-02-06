@@ -54,6 +54,7 @@ Valid configuration directives are as follows:
 * **maintenance_dir**: directory used by *ldirectord* for disabling servers
 * **ipvsadm**: location of the *ipvsadm* binary. Defaults to ``ipvsadm``
 * **iptables**: location of the *iptables* binary. Defaults to ``iptables``
+* **nodes**: comma separated list of nodes if lvs runs in a cluster
 
 
 All other directives are invalid and cause an error message. Further, lines beginning with ``#`` are considered
