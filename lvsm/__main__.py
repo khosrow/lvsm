@@ -16,6 +16,8 @@ Options:
   -c <conffile>         Specify which configuration file to use.
   -config=<connfile>    The default is /etc/lvsm.conf
 
+  -v, --version         Display lvsm version
+
 Commands:
   configure
   status
@@ -57,7 +59,7 @@ def main():
         if opt in ("-h", "--help"):
             usage(0)
         elif opt in ("-v", "--version"):
-            print appinfo.__version__
+            print "lvsm " + appinfo.__version__
             sys.exit(0)
         elif opt in ("-c", "--config"):
             CONFFILE = arg
