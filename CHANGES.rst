@@ -1,6 +1,15 @@
 Changes
 ========
 
+0.3.3 (2013-02-05)
+------------------
+
+* Fixed pagination
+* Added colour support to ipvsadm and iptables output
+* enable/disable commands now ensure the RIP is enabled/disabled
+* enable/disable now work across a cluster (if defined)
+* General bug fixes
+
 0.3.2 (2013-01-13)
 ------------------
 
