@@ -20,12 +20,11 @@ def log(msg):
 def parse_config(filename):
     #open config file and read it
     lines = print_file(filename)
-    # list of valid config keys
+    # list of valid config keys and their default values
     config_items = {'ipvsadm': 'ipvsadm',
                     'iptables': 'iptables',
                     'director_config': '',
                     'firewall_config': '',
-                    'dsh_group': '',
                     'director': '',
                     'maintenance_dir': '',
                     'director_cmd': '',
