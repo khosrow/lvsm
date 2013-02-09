@@ -272,11 +272,11 @@ class Ldirectord(GenericDirector):
             output = self.show(numeric=True, color=False)
             for line in output:
                 if hostport in line:
-                    print "Failed"
+                    print " Failed"
                     # note: even if the real is still showing up, we've created
                     # the file, so we should still return true
                     return True
-            print "OK"
+            print " OK"
             return True
         else:
             print "[ERROR] maintenance_dir not defined in config."
@@ -321,20 +321,20 @@ class Ldirectord(GenericDirector):
                                     print "[ERROR] problem enabling on remote node - " + e.output
                     i = 0 
                     print "Enabling server ",
-                    while i < 5:
-                        print ".",
+                    while i < 3:
+                        sys.stdout.write(".")
                         sys.stdout.flush()
-                        time.sleep(1)
+                        time.sleep(1.5)
                         i = i + 1
 
                     # verify that the host is active in ldirectord
                     output = self.show(numeric=True, color=False)
                     for line in output:
                         if hostport in line:
-                            print "OK"
+                            print " OK"
                             return True
                     # if we get to this point, means the host is not active
-                    print "Failed"
+                    print " Failed"
                     # note: even if the real is not showing up, we have remove
                     # the file, so we should still return true
                     return True
