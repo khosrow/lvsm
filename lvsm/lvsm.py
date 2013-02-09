@@ -30,6 +30,9 @@ class CommandPrompt(cmd.Cmd):
                                              self.config['director_config'],
                                              self.config['director_cmd'],
                                              self.config['nodes'])
+        # disable color if the terminal doesn't support it
+        if not sys.stdout.isatty():
+            self.settings['color'] = False
 
     def help_help(self):
         print
