@@ -49,7 +49,6 @@ Valid configuration directives are as follows:
 * **director_cmd**: command to restart the director
 * **firewall_config**: location of the iptables configuration file
 * **firewall_cmd**: command restart the iptables firewall
-* **dsh_group**: the name of the dsh group to use 
 * **director**: the type of director used for *ipvs*. Only ``ldirectord`` is supported at the moment
 * **maintenance_dir**: directory used by *ldirectord* for disabling servers
 * **ipvsadm**: location of the *ipvsadm* binary. Defaults to ``ipvsadm``
@@ -67,7 +66,7 @@ example:
     # this line is a comment
     director_config = /etc/ha.d/ldirectord.cf
     firewall_config = /etc/iptables.rules
-    dsh_group = lb
+    nodes = lb1, lb2
 
 ========
 Commands
