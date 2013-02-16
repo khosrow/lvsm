@@ -1,5 +1,6 @@
 """Firewall funcationality"""
 import subprocess
+import socket
 import utils
 import termcolor
 
@@ -59,7 +60,7 @@ class Firewall():
             hostname = utils.gethostname(host)
             portname = utils.getportnum(port)
         else:
-            hostname = host
+            hostname = socket.getfqdn(host)
             portname = port
         try:
             try:
