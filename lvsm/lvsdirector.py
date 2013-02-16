@@ -94,7 +94,7 @@ class GenericDirector(object):
             output = utils.check_output(args)
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-            return 
+            return
         except subprocess.CalledProcessError as e:
             print "[ERROR] problem with ipvsadm - " + e.output
             return
@@ -299,7 +299,7 @@ class Ldirectord(GenericDirector):
             filenames = os.listdir(self.maintenance_dir)
             for filename in filenames:
                 f = self.convert_filename(filename)
-                if hostport == f or hostip == f:
+                if hostport == f or hostip == f or hostip + ":" in f:
                     try:
                         os.unlink(self.maintenance_dir + "/" + filename)
                     except OSError as e:
@@ -308,10 +308,9 @@ class Ldirectord(GenericDirector):
                         return False
 
                     if self.nodes is not None:
-                        filename = self.maintenance_dir + "/" + hostport
                         for node in self.nodes:
                             if node != self.hostname:
-                                cmd = "rm " + self.maintenance_dir + "/" + hostport
+                                cmd = "rm " + self.maintenance_dir + "/" + filename
                                 args = ['ssh', node, cmd]
                                 try:
                                     output = utils.check_output(args)
@@ -319,7 +318,7 @@ class Ldirectord(GenericDirector):
                                     print "[ERROR] problem enabling on remote node - " + e.strerror
                                 except subprocess.CalledProcessError as e:
                                     print "[ERROR] problem enabling on remote node - " + e.output
-                    i = 0 
+                    i = 0
                     print "Enabling server ",
                     while i < 3:
                         sys.stdout.write(".")
