@@ -70,7 +70,12 @@ class GenericDirector(object):
         else:
             result = output.split('\n')
 
-        return result
+        # show a list of disabled real servers
+        disabled = self.show_real_disabled('', '', numeric )
+        if disabled:
+            disabled = ["", "Disabled servers:", "-----------------"] + disabled
+
+        return result + disabled
 
     def show_virtual(self, host, port, prot, numeric, color):
         """show status of virtual server"""
@@ -114,11 +119,11 @@ class GenericDirector(object):
     def show_real(self, host, port, numeric, color):
         """show status of real server across multiple VIPs"""
         active = self.show_real_active(host, port, numeric, color)
-        if active is None:
-            active = list()
+        if active:
+            active = ["", "Active servers:", "---------------"] + active
         disabled = self.show_real_disabled(host, port, numeric)
-        if disabled is None:
-            disabled = list()
+        if disabled:
+            disabled = ["", "Disabled servers:", "-----------------"] + disabled
         return active + disabled
 
     def show_real_active(self, host, port, numeric, color):
@@ -142,7 +147,8 @@ class GenericDirector(object):
 
         virtual = ""
         real = ""
-        output = ["", "Active servers:", "---------------"]
+        # output = ["", "Active servers:", "---------------"]
+        output = list()
         # find the output line that contains the rip
         for line in lines.split('\n'):
             if (line.startswith("TCP") or
@@ -177,7 +183,6 @@ class GenericDirector(object):
                 output.append(termcolor.colored(v, attrs=a))
                 output.append(r)
 
-        output.append("")
         return output
 
     def show_real_disabled(self, host, port, numeric):
@@ -343,14 +348,17 @@ class Ldirectord(GenericDirector):
 
     def show_real_disabled(self, host, port, numeric):
         """show status of disabled real server across multiple VIPs"""
-        hostip = utils.gethostname(host)
-        if not hostip:
-            return
-        portnum = utils.getportnum(port)
-        if portnum == -1:
-            return
-        hostport = hostip + ":" + str(portnum)
-        output = ["", "Disabled servers:", "-----------------"]
+        # note that host='' and port='' returns all disabled server
+        if host and port:
+            hostip = utils.gethostname(host)
+            if not hostip:
+                return
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return
+            hostport = hostip + ":" + str(portnum)
+        # output = ["", "Disabled servers:", "-----------------"]
+        output = list()
         filenames = os.listdir(self.maintenance_dir)
         for filename in filenames:
             try:
@@ -359,7 +367,8 @@ class Ldirectord(GenericDirector):
             except IOError as e:
                 reason = ''
                 print "[ERROR] " + e.strerror + ' \'' + e.filename + '\''
-            if (self.convert_filename(filename) == hostip or
+            if ((not host and not port) or
+                self.convert_filename(filename) == hostip or
                 self.convert_filename(filename) == hostip + ":" +
                 str(portnum)):
                 # decide if we have to convert to hostname or not
