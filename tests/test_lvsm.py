@@ -82,12 +82,16 @@ class Status(unittest.TestCase):
         expected_result = """IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  www.example.com:http         rr
-  -> google.com:http              Masq    1      0          0
+TCP  dinsdale.python.org:http     rr
   -> slashdot.org:http            Masq    1      0          0
-UDP  example.org:domain           rr
+UDP  dinsdale.python.org:domain   rr
   -> resolver1.opendns.com:domain Masq    1      0          0
-  -> resolver1.opendns.com:domain Masq    1      0          0"""
+  -> resolver2.opendns.com:domain Masq    1      0          0
+
+
+Disabled servers:
+-----------------
+lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
         self.shell.onecmd(' show director')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -97,7 +101,7 @@ UDP  example.org:domain           rr
         sys.stdout = output
         expected_result = """Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
+ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination
@@ -115,12 +119,11 @@ target     prot opt source               destination"""
         expected_result = """IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  www.example.com:http         rr
-  -> google.com:http              Masq    1      0          0
+TCP  dinsdale.python.org:http     rr
   -> slashdot.org:http            Masq    1      0          0
 
-ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http"""
-        self.shell.onecmd(' show virtual tcp www.example.com http')
+ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http"""
+        self.shell.onecmd(' show virtual tcp dinsdale.python.org http')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
@@ -131,10 +134,10 @@ ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http"""
         expected_result = """IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-UDP  example.org:domain           rr
+UDP  dinsdale.python.org:domain   rr
   -> resolver1.opendns.com:domain Masq    1      0          0
-  -> resolver1.opendns.com:domain Masq    1      0          0"""
-        self.shell.onecmd(' show virtual udp example.org 53')
+  -> resolver2.opendns.com:domain Masq    1      0          0"""
+        self.shell.onecmd(' show virtual udp dinsdale.python.org 53')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
@@ -145,12 +148,8 @@ UDP  example.org:domain           rr
         expected_result = """
 Active servers:
 ---------------
-TCP 43-10.any.icann.org:http
-  -> slashdot.org:http
-
-
-Disabled servers:
------------------"""
+TCP dinsdale.python.org:http
+  -> slashdot.org:http"""
         self.shell.onecmd(' show real slashdot.org 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -159,22 +158,18 @@ Disabled servers:
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """
-Active servers:
----------------
-
-
 Disabled servers:
 -----------------
-43-7.any.icann.org:http\t\tReason: Disabled for testing"""
-        self.shell.onecmd(' show real 192.0.43.7 80')
+lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
+        self.shell.onecmd(' show real 173.194.43.3 80')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_disablereal(self):
-        filepath = self.config['maintenance_dir'] + '/192.0.43.10'
+        filepath = self.config['maintenance_dir'] + '/208.67.222.222'
         # this is the disabling message we'll store in the file
         sys.stdin = StringIO.StringIO('disabled by test case')
-        self.shell.onecmd('disable real example.com')
+        self.shell.onecmd('disable real 208.67.222.222')
         self.assertTrue(os.path.exists(filepath))
         # now clean up the file
         try:
@@ -183,12 +178,12 @@ Disabled servers:
             pass
 
     def test_enablereal(self):
-        filepath = self.config['maintenance_dir'] + '/192.0.43.10:80'
+        filepath = self.config['maintenance_dir'] + '/208.67.222.222:53'
         try:
             # create the file before we continue
             f = open(filepath, 'w')
             f.close()
-            self.shell.onecmd(' enable real example.com http')
+            self.shell.onecmd(' enable real 208.67.222.222 domain')
             self.assertTrue(not os.path.exists(filepath))
         except IOError as e:
             pass

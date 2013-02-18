@@ -17,7 +17,7 @@ class FirewallTestCase(unittest.TestCase):
         sys.stdout = output
         expected_result = """Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
+ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination
@@ -34,8 +34,8 @@ target     prot opt source               destination"""
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = "ACCEPT     tcp  --  anywhere\
-             www.example.com tcp dpt:http"
-        lines = self.firewall.show_virtual('www.example.com', 'http', 'tcp',
+             dinsdale.python.org tcp dpt:http"
+        lines = self.firewall.show_virtual('dinsdale.python.org', 'http', 'tcp',
                                            numeric=False, color=False)
         result = ''
         for line in lines:

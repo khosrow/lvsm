@@ -14,12 +14,18 @@ class DirectorTestCase(unittest.TestCase):
                                              path + '/maintenance',
                                              path + '/scripts/ipvsadm',
                                              path + '/etc/ldirectord.conf')
+        
+    def test_convertfilename(self):
+        filename = 'slashdot.org:http'
+        expected_result = '216.34.181.45:80'
+        self.assertEqual(self.director.convert_filename(filename),
+                         expected_result)
 
     def test_disablehost(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        filepath = self.director.maintenance_dir + '/192.0.43.10'
-        self.assertTrue(self.director.disable('example.com'))
+        filepath = self.director.maintenance_dir + '/208.67.222.222'
+        self.assertTrue(self.director.disable('resolver1.opendns.com'))
         # now clean up the file
         try:
             os.unlink(filepath)
@@ -29,8 +35,8 @@ class DirectorTestCase(unittest.TestCase):
     def test_disablehostport(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        filepath = self.director.maintenance_dir + '/192.0.43.10:443'
-        self.assertTrue(self.director.disable('example.com', 'https'))
+        filepath = self.director.maintenance_dir + '/208.67.222.222:53'
+        self.assertTrue(self.director.disable('resolver1.opendns.com', 'domain'))
         # now clean up the file
         try:
             os.unlink(filepath)
@@ -40,24 +46,24 @@ class DirectorTestCase(unittest.TestCase):
     def test_enablehost(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        filepath = self.director.maintenance_dir + '/192.0.43.10'
+        filepath = self.director.maintenance_dir + '/208.67.222.222'
         try:
             # create the file before we continue
             f = open(filepath, 'w')
             f.close()
-            self.assertTrue(self.director.enable('example.com'))
+            self.assertTrue(self.director.enable('resolver1.opendns.com'))
         except IOError as e:
             pass
 
     def test_enablehostport(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        filepath = self.director.maintenance_dir + '/192.0.43.10:80'
+        filepath = self.director.maintenance_dir + '/208.67.222.222:53'
         try:
             # create the file before we continue
             f = open(filepath, 'w')
             f.close()
-            self.assertTrue(self.director.enable('example.com', 'http'))
+            self.assertTrue(self.director.enable('resolver1.opendns.com', 'domain'))
         except IOError as e:
             pass
 
@@ -72,9 +78,3 @@ class DirectorTestCase(unittest.TestCase):
             self.assertTrue(self.director.enable('slashdot.org', ''))
         except IOError as e:
             pass
-
-    def test_convertfilename(self):
-        filename = 'slashdot.org:http'
-        expected_result = '216.34.181.45:80'
-        self.assertEqual(self.director.convert_filename(filename),
-                         expected_result)
