@@ -16,7 +16,7 @@ target     prot opt source               destination"
 else 
     echo "Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             www.example.com tcp dpt:http
+ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination

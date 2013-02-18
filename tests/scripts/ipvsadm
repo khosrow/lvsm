@@ -2,26 +2,27 @@
 
 import sys
 import getopt
+import os
 
-alpha_listing="""IP Virtual Server version 1.2.1 (size=4096)
-Prot LocalAddress:Port Scheduler Flags
-  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  www.example.com:http         rr
-  -> google.com:http              Masq    1      0          0
-  -> slashdot.org:http            Masq    1      0          0
-UDP  example.org:domain           rr
-  -> resolver1.opendns.com:domain Masq    1      0          0
-  -> resolver1.opendns.com:domain Masq    1      0          0"""
+header=['IP Virtual Server version 1.2.1 (size=4096)',
+        'Prot LocalAddress:Port Scheduler Flags', 
+        '  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn']
 
-numeric_listing="""IP Virtual Server version 1.2.1 (size=4096)
-Prot LocalAddress:Port Scheduler Flags
-  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  192.0.43.10:80               rr
-  -> 173.194.43.3:80              Masq    1      0          0
-  -> 216.34.181.45:80             Masq    1      0          0
-UDP  192.0.43.10:53               rr
-  -> 208.67.222.222:53            Masq    1      0          0
-  -> 208.67.220.220:53            Masq    1      0          0"""
+alpha_tcp=['TCP  dinsdale.python.org:http     rr',
+           '  -> google.com:http              Masq    1      0          0',
+           '  -> slashdot.org:http            Masq    1      0          0']
+
+alpha_udp=['UDP  dinsdale.python.org:domain   rr',
+           '  -> resolver1.opendns.com:domain Masq    1      0          0',
+           '  -> resolver2.opendns.com:domain Masq    1      0          0']
+
+numeric_tcp=['TCP  82.94.164.162:80             rr',
+             '  -> 173.194.43.3:80              Masq    1      0          0',
+             '  -> 216.34.181.45:80             Masq    1      0          0']
+
+numeric_udp=['UDP  82.94.164.162:53             rr',
+             '  -> 208.67.222.222:53            Masq    1      0          0',
+             '  -> 208.67.220.220:53            Masq    1      0          0']
 
 def main():
   try:
@@ -30,39 +31,65 @@ def main():
   except getopt.error, msg:
     print msg
     sys.exit(1)
+  
   listing = True
   tcp = False
   udp = False
   fwm = False
-  full_listing = alpha_listing
+  numeric = False
+
   for opt, arg in opts:
     if opt in ("-L", "--list"):
       listing = True
     elif opt == "-t":
-      if (arg == "www.example.com:80" or arg == "192.0.43.10:80"
-          or arg == "www.example.com:http"):
+      if (arg == "dinsdale.python.org:80" or arg == "82.94.164.162:80"
+          or arg == "dinsdale.python.org:http"):
         tcp = True
     elif opt == "-u":
-      if (arg == "example.org:53" or arg == "192.0.43.10:53"
-          or arg == "example.org:domain"):
+      if (arg == "dinsdale.python.org:53" or arg == "82.94.164.162:53"
+          or arg == "dinsdale.python.org:domain"):
         udp = True
     elif opt == "-f":
       fwm = True
     elif opt == "-n":
-      full_listing = numeric_listing
+      numeric = True
 
+  path = os.path.abspath(os.path.dirname(__file__))
+  maintenance = path + "/../maintenance"
+  filenames = os.listdir(maintenance)
 
-  list_items = full_listing.split("\n")
+  for index, item in enumerate(numeric_tcp):
+    for filename in filenames:
+      if filename in item:
+        del numeric_tcp[index]
+        del alpha_tcp[index]
+
+  for index, item in enumerate(numeric_udp):
+    for filename in filenames:
+      if filename in item:
+        del numeric_udp[index]
+        del alpha_udp[index]
+
   if tcp:
-    for item in list_items[:6]:
-      print item
+    if numeric:
+      full_list = numeric_tcp
+    else:
+      full_list = alpha_tcp
   elif udp:
-    for item in list_items[:3]:
-      print item
-    for item in list_items[6:]:
-      print item
-  elif listing:
-    print full_listing
+    if numeric:
+      full_list = numeric_udp
+    else:
+      full_list = alpha_udp
+  else:
+    if numeric:
+      full_list = numeric_tcp + numeric_udp
+    else:
+      full_list = alpha_tcp + alpha_udp
+
+  for item in header:
+    print item
+  for item in full_list:
+    print item
 
 if __name__ == '__main__':
   main()
