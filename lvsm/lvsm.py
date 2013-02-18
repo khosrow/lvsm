@@ -40,46 +40,49 @@ class CommandPrompt(cmd.Cmd):
 
     def do_exit(self, line):
         """exit from lvsm shell"""
-        # check to see if any config files are modified using "svn status"
-        # the command will return 'M  filename' if a file is modified
         modified = list()
-        args = ["svn", "status"]
+        if self.config['version_control'] == 'svn':
+            # check to see if any config files are modified using "svn status"
+            # the command will return 'M  filename' if a file is modified
+            args = ["svn", "status"]
 
-        if self.config['director_config']:
-            args.append(self.config['director_config'])
-            try:
-                result = utils.check_output(args)
-            except OSError as e:
-                print"[ERROR] " + e.strerror
-            except subprocess.CalledProcessError as e:
-                print"[ERROR] " + e.output
-            if result and result[0] == "M":
-                modified.append(self.config['director_config'])
-
-        if self.config['firewall_config']:
-            args.append(self.config['firewall_config'])
-            try:
+            if self.config['director_config']:
+                args.append(self.config['director_config'])
                 try:
-                    result = subprocess.check_output(args)
-                except AttributeError as e:
-                    result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-            except OSError as e:
-                print("[ERROR] " + e.strerror)
-            if result and result[0] == "M":
-                modified.append(self.config['firewall_config'])
-        if modified:
-            print "The following config file(s) were not comitted to svn:"
-            for filename in modified:
-                print filename
-            print
-            while True:
-                answer = raw_input("Do you want to quit? (y/n) ")
-                if answer == "y" or answer == "Y":
-                    print "goodbye."
-                    sys.exit(0)
-                elif answer == "n" or answer == "N":
-                    break
-        else:
+                    result = utils.check_output(args)
+                except OSError as e:
+                    print"[ERROR] " + e.strerror
+                except subprocess.CalledProcessError as e:
+                    print"[ERROR] " + e.output
+                if result and result[0] == "M":
+                    modified.append(self.config['director_config'])
+
+            if self.config['firewall_config']:
+                args.append(self.config['firewall_config'])
+                try:
+                    try:
+                        result = subprocess.check_output(args)
+                    except AttributeError as e:
+                        result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
+                except OSError as e:
+                    print("[ERROR] " + e.strerror)
+                if result and result[0] == "M":
+                    modified.append(self.config['firewall_config'])
+
+            if modified:
+                print "The following config file(s) were not comitted to svn:"
+                for filename in modified:
+                    print filename
+                print
+                while True:
+                    answer = raw_input("Do you want to quit? (y/n) ")
+                    if answer == "y" or answer == "Y":
+                        print "goodbye."
+                        sys.exit(0)
+                    elif answer == "n" or answer == "N":
+                        break
+
+        if not modified:
             print "goodbye."
             sys.exit(0)
 
@@ -363,7 +366,7 @@ class ConfigurePrompt(CommandPrompt):
         """Sync all configuration files across the cluster."""
         if line:
             print self.do_sync.__doc__
-        else:
+        elif self.config['version_control'] == 'svn':
             # ask for username and passwd so user isn't bugged on each server
             username = raw_input("Enter SVN username: ")
             password = getpass.getpass("Enter SVN password: ")
@@ -377,6 +380,8 @@ class ConfigurePrompt(CommandPrompt):
                 print "Syncing " + self.config['firewall_config'] + " ..."
                 self.svn_sync(self.config['firewall_config'],
                               username, password)
+        else:
+            print "You need to define version_control in lvsm.conf"
 
 
 class StatusPrompt(CommandPrompt):
