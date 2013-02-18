@@ -302,9 +302,11 @@ class Ldirectord(GenericDirector):
             hostport = hostip
         if self.maintenance_dir:
             filenames = os.listdir(self.maintenance_dir)
+
             for filename in filenames:
                 f = self.convert_filename(filename)
-                if hostport == f or hostip == f or hostip + ":" in f:
+
+                if hostport in f:
                     try:
                         os.unlink(self.maintenance_dir + "/" + filename)
                     except OSError as e:
@@ -342,6 +344,10 @@ class Ldirectord(GenericDirector):
                     # note: even if the real is not showing up, we have remove
                     # the file, so we should still return true
                     return True
+
+            # if we make it out here means the real wasn't in the file list
+            print "[ERROR] Server not found in maintenance_dir!"
+            return False
         else:
             print "[ERROR] maintenance_dir not defined!"
             return False
