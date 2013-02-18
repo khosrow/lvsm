@@ -45,15 +45,16 @@ Otherwise the program will look in the ``/etc`` for **lvsm.conf**
 
 Valid configuration directives are as follows:
 
+* **director**: the type of director used for *ipvs*. Only ``ldirectord`` is supported at the moment
 * **director_config**: location of the director configuration file
 * **director_cmd**: command to restart the director
 * **firewall_config**: location of the iptables configuration file
 * **firewall_cmd**: command restart the iptables firewall
-* **director**: the type of director used for *ipvs*. Only ``ldirectord`` is supported at the moment
-* **maintenance_dir**: directory used by *ldirectord* for disabling servers
 * **ipvsadm**: location of the *ipvsadm* binary. Defaults to ``ipvsadm``
 * **iptables**: location of the *iptables* binary. Defaults to ``iptables``
+* **maintenance_dir**: directory used by *ldirectord* for disabling servers
 * **nodes**: comma separated list of nodes if lvs runs in a cluster
+* **version_control**: scm used for versioning configs. Only ``svn`` is supported at the moment
 
 
 All other directives are invalid and cause an error message. Further, lines beginning with ``#`` are considered
