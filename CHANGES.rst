@@ -1,6 +1,14 @@
 Changes
 ========
 
+0.3.4 (2013-02-17)
+------------------
+
+* Fixed minor issue with enable
+* Fixed minor issue with firewall.show_virtual
+* added config item to define what scm to use
+* director.show now displays disabled hosts 
+
 0.3.3 (2013-02-05)
 ------------------
 
