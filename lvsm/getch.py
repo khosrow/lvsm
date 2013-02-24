@@ -1,3 +1,5 @@
+# Code from: http://code.activestate.com/recipes/134892/
+
 class _GetchUnix():
     """Implementing a getch call to read a single character from stdin"""
     def __init__(self):
