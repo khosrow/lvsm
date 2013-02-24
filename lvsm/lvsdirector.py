@@ -1,4 +1,6 @@
-"""Director specific funcationality"""
+"""
+Director specific funcationality
+"""
 import os
 import socket
 import subprocess
@@ -21,6 +23,11 @@ class Virtual(Server):
 
 
 class GenericDirector(object):
+    """
+    Generic class that knows about ipvsadm. If director isn't defined, this
+    is the fallback. Should be inherited by classes implementing specific
+    director funcationality.
+    """
     def __init__(self, maintenance_dir, ipvsadm,
                  configfile='', restart_cmd='', nodes=''):
         self.maintenance_dir = maintenance_dir
@@ -37,16 +44,35 @@ class GenericDirector(object):
             self.hostname = ''
 
     def disable(self, host, port='', reason=''):
-        """disable a previously disabled server.
-        To be implemented by inheriting classes"""
+        """
+        Disable a previously Enabled server.
+        To be implemented by inheriting classes
+        """
         return False
 
     def enable(self, host, port=''):
-        """enable a previously disabled server.
-        To be implemented by inheriting classes"""
+        """
+        Enable a previously disabled server.
+        To be implemented by inheriting classes
+        """
         return False
 
     def show(self, numeric, color):
+        # Call ipvsadm and do the color highlighting.
+        result = self.show_running(numeric, color)
+
+        # Show a list of disabled real servers.
+        disabled = self.show_real_disabled('', '', numeric)
+        if disabled:
+            header = ["", "Disabled servers:", "-----------------"]
+            disabled = header + disabled
+
+        return result + disabled
+
+    def show_running(self, numeric, color):
+        """
+        Show the running status of IPVS. Basically runs "ipvsadm".
+        """
         args = [self.ipvsadm, '-L']
         if numeric:
             args.append('-n')
@@ -63,22 +89,19 @@ class GenericDirector(object):
         if color:
             result = list()
             for line in output.split('\n'):
-                if line.startswith('TCP') or line.startswith('UDP') or line.startswith('FWM'):
+                if (line.startswith('TCP') or
+                    line.startswith('UDP') or
+                    line.startswith('FWM')):
                     result.append(termcolor.colored(line, attrs=['bold']))
                 else:
                     result.append(line)
         else:
             result = output.split('\n')
-
-        # show a list of disabled real servers
-        disabled = self.show_real_disabled('', '', numeric )
-        if disabled:
-            disabled = ["", "Disabled servers:", "-----------------"] + disabled
-
-        return result + disabled
+        return result
 
     def show_virtual(self, host, port, prot, numeric, color):
-        """show status of virtual server"""
+        """Show status of virtual server.
+        """
         protocols = {'tcp': '-t', 'udp': '-u', 'fwm': '-f'}
         protocol = protocols[prot]
         # make sure we have a valid host
@@ -107,7 +130,9 @@ class GenericDirector(object):
         if color:
             result = list()
             for line in output.split('\n'):
-                if line.startswith('TCP') or line.startswith('UDP') or line.startswith('FWM'):
+                if (line.startswith('TCP') or
+                    line.startswith('UDP') or
+                    line.startswith('FWM')):
                     result.append(termcolor.colored(line, attrs=['bold']))
                 else:
                     result.append(line)
@@ -117,17 +142,21 @@ class GenericDirector(object):
         return result
 
     def show_real(self, host, port, numeric, color):
-        """show status of real server across multiple VIPs"""
+        """Show status of a real server across multiple VIPs.
+        Will consider both active and disabled servers.
+        """
         active = self.show_real_active(host, port, numeric, color)
         if active:
             active = ["", "Active servers:", "---------------"] + active
         disabled = self.show_real_disabled(host, port, numeric)
         if disabled:
-            disabled = ["", "Disabled servers:", "-----------------"] + disabled
+            header = ["", "Disabled servers:", "-----------------"]
+            disabled = header + disabled
         return active + disabled
 
     def show_real_active(self, host, port, numeric, color):
-        """show status of active real server across multiple VIPs"""
+        """Show status of an active real server across multiple VIPs.
+        """
         hostip = utils.gethostname(host)
         if not hostip:
             return
@@ -186,11 +215,13 @@ class GenericDirector(object):
         return output
 
     def show_real_disabled(self, host, port, numeric):
-        """stub funtion. To be implemented by inheriting classes"""
+        """Show status of disabled real server across multiple VIPs.
+        To be implemented by inheriting classes.
+        """
         pass
 
     def convert_filename(self, filename):
-        """convert a filename of format host[:port] to IP[:port]"""
+        """Convert a filename of format host[:port] to IP[:port]"""
         values = filename.split(':')
         portnum = -1
         if not values:
@@ -204,12 +235,12 @@ class GenericDirector(object):
             return hostip
 
     def check_real(self, host, port):
-        """Check a host/port to see if it's in the realserver list"""
+        """Check a host/port to see if it's in the realserver list."""
         # useful with show_real command
         pass
 
     def restart(self):
-        """Restart the director"""
+        """Restart the director."""
         if self.restart_cmd:
             print "restaring director"
             try:
@@ -221,12 +252,16 @@ class GenericDirector(object):
 
 
 class Ldirectord(GenericDirector):
+    """Handles ldirector-specific functionality like enable/disable actions.
+    """
     def __init__(self, maintenance_dir, ipvsadm,
                  configfile='', restart_cmd='', nodes=''):
         super(Ldirectord, self).__init__(maintenance_dir, ipvsadm,
                                          configfile, restart_cmd, nodes)
 
     def disable(self, host, port='', reason=''):
+        # Prepare a canned error message
+        error_msg = "[ERROR] problem disabling on remote node - "
         if self.maintenance_dir:
             hostip = utils.gethostname(host)
             if not hostip:
@@ -263,9 +298,9 @@ class Ldirectord(GenericDirector):
                         try:
                             output = utils.check_output(args)
                         except OSError as e:
-                            print "[ERROR] problem disabling on remote node - " + e.strerror
+                            print error_msg + e.strerror
                         except subprocess.CalledProcessError as e:
-                            print "[ERROR] problem disabling on remote node - " + e.output
+                            print error_msg + e.output
             # now confirm that it's removed from ldirector
             i = 0
             print "Disabling server ",
@@ -274,7 +309,7 @@ class Ldirectord(GenericDirector):
                 sys.stdout.flush()
                 time.sleep(1.5)
                 i = i + 1
-            output = self.show(numeric=True, color=False)
+            output = self.show_running(numeric=True, color=False)
             for line in output:
                 if hostport in line:
                     print " Failed"
@@ -289,20 +324,25 @@ class Ldirectord(GenericDirector):
 
     def enable(self, host, port=''):
         """enable a previously disabled server"""
+        # Prepare a canned error message.
+        error_msg = "[ERROR] problem enabling on remote node - "
         hostip = utils.gethostname(host)
         if not hostip:
             return False
+        # If port was provided the file will be of form xx.xx.xx.xx:nn
         if port:
-            # check that it's a valid port
+            # Check that the port is valid.
             portnum = utils.getportnum(port)
             if portnum == -1:
                 return False
             hostport = hostip + ":" + str(portnum)
+        # If no port was provided the file be of form xx.xx.xx.xx
         else:
             hostport = hostip
         if self.maintenance_dir:
             filenames = os.listdir(self.maintenance_dir)
-
+            # Go through all files in maintenance_dir
+            # and find a matching filename, and remove it.
             for filename in filenames:
                 f = self.convert_filename(filename)
 
@@ -313,7 +353,7 @@ class Ldirectord(GenericDirector):
                         print "[ERROR] " + e.strerror + ": '" +\
                               e.filename + "'"
                         return False
-
+                    # Remove the same file from other nodes in the cluster.
                     if self.nodes is not None:
                         for node in self.nodes:
                             if node != self.hostname:
@@ -322,9 +362,10 @@ class Ldirectord(GenericDirector):
                                 try:
                                     output = utils.check_output(args)
                                 except OSError as e:
-                                    print "[ERROR] problem enabling on remote node - " + e.strerror
+                                    print error_msg + e.strerror
                                 except subprocess.CalledProcessError as e:
-                                    print "[ERROR] problem enabling on remote node - " + e.output
+                                    print error_msg + e.output
+                    # Wait 4.5 seconds before checking output of ipvsadm.
                     i = 0
                     print "Enabling server ",
                     while i < 3:
@@ -333,19 +374,18 @@ class Ldirectord(GenericDirector):
                         time.sleep(1.5)
                         i = i + 1
 
-                    # verify that the host is active in ldirectord
-                    output = self.show(numeric=True, color=False)
+                    # Verify that the host is active in ldirectord.
+                    output = self.show_running(numeric=True, color=False)
                     for line in output:
                         if hostport in line:
                             print " OK"
                             return True
-                    # if we get to this point, means the host is not active
+                    # If we get to this point, means the host is not active.
                     print " Failed"
-                    # note: even if the real is not showing up, we have remove
-                    # the file, so we should still return true
+                    # Note: even if the real isn't showing up, we have removed
+                    # the file, so we should still return true.
                     return True
-
-            # if we make it out here means the real wasn't in the file list
+            # If we make it out here means the real wasn't in the file list.
             print "[ERROR] Server not found in maintenance_dir!"
             return False
         else:
@@ -398,6 +438,9 @@ class Ldirectord(GenericDirector):
 
 
 class Keepalived(GenericDirector):
+    """
+    Implements Keepalived specific functions. Stub for now.
+    """
     def __init__(self, maintenance_dir, ipvsadm,
                  configfile='', restart_cmd='', nodes=''):
         super(Keepalived, self).__init__(maintenance_dir, ipvsadm,
