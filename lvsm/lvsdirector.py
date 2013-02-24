@@ -38,10 +38,7 @@ class GenericDirector(object):
             self.nodes = nodes.replace(' ', '').split(',')
         else:
             self.nodes = None
-        try:
-            self.hostname = utils.check_output(['hostname', '-s']).rstrip()
-        except (OSError, subprocess.CalledProcessError):
-            self.hostname = ''
+        self.hostname = socket.gethostname()
 
     def disable(self, host, port='', reason=''):
         """
