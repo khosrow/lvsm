@@ -1,12 +1,16 @@
 # Code from: http://code.activestate.com/recipes/134892/
 
+
 class _GetchUnix():
     """Implementing a getch call to read a single character from stdin"""
     def __init__(self):
-        import sys, tty
+        import sys
+        import tty
 
     def __call__(self):
-        import sys, tty, termios
+        import sys
+        import tty
+        import termios
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -15,5 +19,6 @@ class _GetchUnix():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
+
 
 getch = _GetchUnix()

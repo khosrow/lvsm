@@ -87,7 +87,8 @@ class Firewall():
                         if color:
                             if line.startswith('ACCEPT'):
                                 result.append(termcolor.colored(line, 'green'))
-                            elif line.startswith('REJECT') or line.startswith('DROP'):
+                            elif (line.startswith('REJECT') or
+                                  line.startswith('DROP')):
                                 result.append(termcolor.colored(line, 'red'))
                             else:
                                 result.append(line)

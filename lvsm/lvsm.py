@@ -260,8 +260,8 @@ class ConfigurePrompt(CommandPrompt):
 
     def svn_sync(self, filename, username, password):
         # commit config locally
-        args = ['svn', 
-                'commit', 
+        args = ['svn',
+                'commit',
                 '--username',
                 username,
                 '--password',
@@ -280,7 +280,7 @@ class ConfigurePrompt(CommandPrompt):
             nodes = n.replace(' ', '').split(',')
         else:
             nodes = None
-        
+
         try:
             hostname = utils.check_output(['hostname', '-s'])
         except (OSError, subprocess.CalledProcessError):
@@ -290,12 +290,12 @@ class ConfigurePrompt(CommandPrompt):
                        ' --password ' + password + ' ' + filename)
             for node in nodes:
                 if node != hostname:
-                    args = 'ssh '+ node + ' ' +  svn_cmd
+                    args = 'ssh ' + node + ' ' + svn_cmd
                     try:
                         result = subprocess.call(args, shell=True)
                     except OSError as e:
                         print "[ERROR] problem with configuration sync - " + e.strerror
-        
+
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
         if len(line) < 14:
