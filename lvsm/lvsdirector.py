@@ -342,8 +342,9 @@ class Ldirectord(GenericDirector):
             # and find a matching filename, and remove it.
             for filename in filenames:
                 f = self.convert_filename(filename)
-
-                if hostport in f:
+                # If user asks to enable xx.xx.xx.xx and xx.xx.xx.xx:nn
+                # is disabled, we enable all ports and remove all the files.
+                if (hostport == f or (not port and hostip in f)):
                     try:
                         os.unlink(self.maintenance_dir + "/" + filename)
                     except OSError as e:
@@ -445,7 +446,9 @@ class Keepalived(GenericDirector):
 
 
 class Director(object):
-    """Factory class to return the right kind of director"""
+    """
+    Factory class that returns a director object based on the name provided
+    """
     directors = {'generic': GenericDirector,
                  'ldirectord': Ldirectord,
                  'keepalived': Keepalived}
