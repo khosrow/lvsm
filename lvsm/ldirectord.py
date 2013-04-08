@@ -195,7 +195,7 @@ class Ldirectord(GenericDirector):
         return output
 
     def parse_config(self, configfile):
-        """read the config file and validate each line"""
+        """Read the config file and validate each line"""
         try:
             f = open(configfile)
         except IOError as e:

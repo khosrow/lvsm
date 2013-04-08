@@ -243,3 +243,10 @@ class GenericDirector(object):
                 print "[ERROR] problem restaring director - " + e.strerror
         else:
             print "[ERROR] 'director_cmd' not defined in config!"
+
+    def parse_config(self, configfile):
+        """Parse config file, and syntax check. 
+        Returns True on success, False on failure.
+        To be implemented by inheriting classes.
+        """
+        return True
