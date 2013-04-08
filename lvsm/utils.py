@@ -1,6 +1,7 @@
 """Common utility functions used by lvsm"""
 import socket
 import subprocess
+import re
 import sys
 import termcolor
 import subprocess
@@ -151,3 +152,25 @@ def check_output(args):
     except AttributeError as e:
         output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         return output
+
+def has_quotes(value):
+    """Check to see if a string is bounded in quotes"""
+    m_re = re.search("^\"(.*)\"", value)
+    if m_re is not None:
+        return True
+    else:
+        return False
+
+def config_check_ipv4(value):
+    """Check that the IPv4 number is in the correct range"""
+    m_re = re.search("^(\d+)\.(\d+)\.(\d+)\.(\d+)$", value)
+    if m_re is not None:
+        if (int(m_re.group(1)) >= 0 and int(m_re.group(1)) <= 255 and
+            int(m_re.group(2)) >= 0 and int(m_re.group(2)) <= 255 and
+            int(m_re.group(3)) >= 0 and int(m_re.group(3)) <= 255 and
+            int(m_re.group(4)) >= 0 and int(m_re.group(4)) <= 255):
+            return True
+        else:
+            return False
+    else:
+        return False
