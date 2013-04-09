@@ -15,7 +15,9 @@ class Configure(unittest.TestCase):
               'director': 'ldirectord',
               'maintenance_dir': '',
               'director_cmd': '',
-              'nodes':''
+              'nodes':'',
+              'ipvsadm': path + '/scripts/ipvsadm',
+              'iptables': path + '/scripts/iptables'
               }
     shell = lvsm.ConfigurePrompt(config)
 
