@@ -41,7 +41,7 @@ The configuration file can be specified on the command line
 
     $ lvsm --config=configfile
     
-Otherwise the program will look in the ``/etc`` for **lvsm.conf**
+Otherwise the program will look for ``/etc/lvsm.conf``
 
 Valid configuration directives are as follows:
 
