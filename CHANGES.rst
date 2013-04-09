@@ -1,6 +1,13 @@
 Changes
 ========
 
+0.3.5 (2013-04-04)
+------------------
+
+* Fixed regression bug with director.show
+* Fixed logic error in director.enable
+* PEP8-ified
+
 0.3.4 (2013-02-17)
 ------------------
 
