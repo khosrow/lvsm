@@ -210,9 +210,10 @@ class GenericDirector(object):
 
     def show_real_disabled(self, host, port, numeric):
         """Show status of disabled real server across multiple VIPs.
-        To be implemented by inheriting classes.
+        To be implemented by inheriting classes. 
+        Return value must be a list
         """
-        pass
+        return list()
 
     def convert_filename(self, filename):
         """Convert a filename of format host[:port] to IP[:port]"""

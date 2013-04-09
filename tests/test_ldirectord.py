@@ -7,7 +7,7 @@ path = os.path.abspath(os.path.dirname(__file__))
 from lvsm import lvsdirector
 
 
-class LdirectordTestCase(unittest.TestCase):
+class Ldirectord(unittest.TestCase):
     def setUp(self):
         # for now only testing ldirectord
         self.director = lvsdirector.Director('ldirectord',
