@@ -259,10 +259,11 @@ class MainPrompt(CommandPrompt):
 
 class ConfigurePrompt(CommandPrompt):
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
-        cmd.Cmd.__init__(self)
-        self.config = config
+        CommandPrompt.__init__(self, config)
+        # List of moduels used in autocomplete function
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm(configure)# "
+        # Setup color related things here
         if self.settings['color']:
             # c = "red"
             c = None
@@ -446,9 +447,7 @@ class ConfigurePrompt(CommandPrompt):
 class StatusPrompt(CommandPrompt):
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
-        # cmd.Cmd.__init__(self)
         CommandPrompt.__init__(self, config)
-        # self.config = config
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.firewall = firewall.Firewall(self.config['iptables'])
