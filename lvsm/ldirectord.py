@@ -60,20 +60,27 @@ class Ldirectord(GenericDirector):
                             print error_msg + e.output
             # now confirm that it's removed from ldirector
             i = 0
+            found = False
             print "Disabling server ",
-            while i < 3:
+            while i < 10:
                 sys.stdout.write(".")
                 sys.stdout.flush()
-                time.sleep(1.5)
+                time.sleep(1)
                 i = i + 1
-            output = self.show_running(numeric=True, color=False)
-            for line in output:
-                if hostport in line:
-                    print " Failed"
-                    # note: even if the real is still showing up, we've created
-                    # the file, so we should still return true
-                    return True
-            print " OK"
+
+                output = self.show_running(numeric=True, color=False)
+                for line in output:
+                    if hostport in line:
+                        # note: even if the real is still showing up, we've created
+                        # the file, so we should still return true
+                        found = True
+                        break
+                        # return True
+                if not found:
+                    print " OK"
+                    break
+            if found: 
+                print " Failed"
             return True
         else:
             print "[ERROR] maintenance_dir not defined in config."
@@ -125,19 +132,20 @@ class Ldirectord(GenericDirector):
                                     print error_msg + e.output
                     # Wait 4.5 seconds before checking output of ipvsadm.
                     i = 0
+                    found = False
                     print "Enabling server ",
-                    while i < 3:
+                    while i < 10:
                         sys.stdout.write(".")
                         sys.stdout.flush()
-                        time.sleep(1.5)
+                        time.sleep(1)
                         i = i + 1
 
-                    # Verify that the host is active in ldirectord.
-                    output = self.show_running(numeric=True, color=False)
-                    for line in output:
-                        if hostport in line:
-                            print " OK"
-                            return True
+                        # Verify that the host is active in ldirectord.
+                        output = self.show_running(numeric=True, color=False)
+                        for line in output:
+                            if hostport in line:
+                                print " OK"
+                                return True
                     # If we get to this point, means the host is not active.
                     print " Failed"
                     # Note: even if the real isn't showing up, we have removed
