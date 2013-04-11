@@ -60,27 +60,26 @@ class Ldirectord(GenericDirector):
                             print error_msg + e.output
             # now confirm that it's removed from ldirector
             i = 0
-            found = False
             print "Disabling server ",
             while i < 10:
                 sys.stdout.write(".")
                 sys.stdout.flush()
                 time.sleep(1)
                 i = i + 1
+                found = False
 
                 output = self.show_running(numeric=True, color=False)
                 for line in output:
                     if hostport in line:
-                        # note: even if the real is still showing up, we've created
-                        # the file, so we should still return true
                         found = True
                         break
-                        # return True
                 if not found:
                     print " OK"
                     break
             if found: 
                 print " Failed"
+            # note: even if the real is still showing up, we've created
+            # the file, so we should still return true
             return True
         else:
             print "[ERROR] maintenance_dir not defined in config."
