@@ -1,6 +1,14 @@
 Changes
 ========
 
+0.4.0 (2013-04-11)
+------------------
+
+* Added ldirectord config parsing
+* Fixed logic errors in "config edit"
+* Fixed bug with genericdirector
+* Updated test cases
+
 0.3.5 (2013-04-04)
 ------------------
 
