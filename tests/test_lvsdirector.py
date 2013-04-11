@@ -20,7 +20,7 @@ class GenericDirector(unittest.TestCase):
                          expected_result)
 
     def test_show(self):
-        expected_result = ("IP Virtual Server version 1.2.1 (size=4096)",
+        expected_result = ["IP Virtual Server version 1.2.1 (size=4096)",
                            "Prot LocalAddress:Port Scheduler Flags",
                            "  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn",
                            "TCP  dinsdale.python.org:http     rr",
@@ -28,12 +28,10 @@ class GenericDirector(unittest.TestCase):
                            "UDP  dinsdale.python.org:domain   rr",
                            "  -> resolver1.opendns.com:domain Masq    1      0          0",
                            "  -> resolver2.opendns.com:domain Masq    1      0          0",
-                           "",
-                           "",
-                           "Disabled servers:",
-                           "-----------------")
+                           ""]
         result = self.director.show(False, False)
         self.assertEqual(result, expected_result)
+        
 
 class Ldirectord(unittest.TestCase):
     def setUp(self):
