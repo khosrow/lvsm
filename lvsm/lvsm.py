@@ -6,6 +6,8 @@ import getpass
 import subprocess
 import sys
 import socket
+import shutil
+import tempfile
 import lvsdirector
 import firewall
 import utils
@@ -76,10 +78,10 @@ class CommandPrompt(cmd.Cmd):
                 print
                 while True:
                     answer = raw_input("Do you want to quit? (y/n) ")
-                    if answer == "y" or answer == "Y":
+                    if answer.lower() == "y":
                         print "goodbye."
                         sys.exit(0)
-                    elif answer == "n" or answer == "N":
+                    elif answer.lower() == "n":
                         break
 
         if not modified:
@@ -257,10 +259,11 @@ class MainPrompt(CommandPrompt):
 
 class ConfigurePrompt(CommandPrompt):
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
-        cmd.Cmd.__init__(self)
-        self.config = config
+        CommandPrompt.__init__(self, config)
+        # List of moduels used in autocomplete function
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm(configure)# "
+        # Setup color related things here
         if self.settings['color']:
             # c = "red"
             c = None
@@ -372,6 +375,39 @@ class ConfigurePrompt(CommandPrompt):
             if not filename:
                 print "[ERROR] '" + key + "' not defined in config file!"
             else:
+                # make a temp copy of the config
+                try:
+                    temp = tempfile.NamedTemporaryFile()
+                    shutil.copyfile(filename, temp.name)
+                except IOError as e:
+                    print "[ERROR] " + e.strerror
+
+                while True:
+                    args = "vi " + temp.name
+                    result = subprocess.call(args, shell=True)
+                    if result != 0:
+                        print "[ERROR] something happened during the edit of " +\
+                              config[line]
+                    # Parse the config file and verify the changes
+                    # If successful, copy changes back to original file
+                    if self.director.parse_config(temp.name):
+                        shutil.copyfile(temp.name, filename)
+                        temp.close()
+                        break
+                    else:
+                        answer = raw_input("You had a syntax error in your config file, edit again? (y/n) ")
+                        if answer.lower() == 'y':
+                            pass
+                        elif answer.lower() == 'n':
+                            print "[WARN] Changes were not saved due to syntax errors."
+                            break
+
+        elif line == "firewall":
+            key = line + "_config"
+            filename = self.config[key]
+            if not filename:
+                print "[ERROR] '" + key + "' not defined in config file!"
+            else:
                 args = "vi " + filename
                 utils.log(str(args))
                 result = subprocess.call(args, shell=True)
@@ -411,9 +447,7 @@ class ConfigurePrompt(CommandPrompt):
 class StatusPrompt(CommandPrompt):
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
-        # cmd.Cmd.__init__(self)
         CommandPrompt.__init__(self, config)
-        # self.config = config
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.firewall = firewall.Firewall(self.config['iptables'])

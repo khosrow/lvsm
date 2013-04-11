@@ -1,0 +1,165 @@
+#
+# Ldirectord will periodically connect to each real server
+# and request a known URL. If the data returned by the server
+# does not contain the the expected response then the
+# test fails and the real server will be taken out of the available
+# pool. The real server will be added back into the pool once the
+# test succeeds. If all real servers are removed from the pool then
+# localhost is added to the pool as a fallback measure.
+#
+# Based on the sample ldirectord.cf provided with ldirectord
+#
+# Prepared: February 2005
+#
+
+# Global Directives
+checktimeout=10
+checkinterval=2
+#fallback=127.0.0.1:80
+autoreload=no
+#logfile="/var/log/ldirectord.log"
+logfile="local0"
+quiescent=yes
+
+# Virtual Server for HTTP
+virtual=192.168.6.240:80
+        fallback=127.0.0.1:80
+        real=192.168.7.4:80 masq
+        real=192.168.7.5:80 masq
+        service=http
+        request="index.html"
+        receive="Test Page"
+        scheduler=rr
+        #persistent=600
+        protocol=tcp
+    checktype=negotiate
+
+# Virtual Service for HTTPS
+virtual=192.168.6.240:443
+        fallback=127.0.0.1:443
+        real=192.168.7.4:443 masq
+        real=192.168.7.5:443 masq
+        service=https
+        request="index.html"
+        receive="Test Page"
+        scheduler=rr
+        #persistent=600
+        protocol=tcp
+    checktype=negotiate
+
+# Virtual Service for FTP
+# Note that peresistancy needs to be turned on for FTP when
+# used with LVS-TUN (ipip) or LVS-DR (gate), but not with LVS-NAT (masq).
+virtual=192.168.6.240:21
+        fallback=127.0.0.1:21
+        real=192.168.7.4:21 masq
+        real=192.168.7.5:21 masq
+        service=ftp
+        request="welcome.msg"
+        receive="Welcome"
+    login="anonymous"
+        passwd="anon@anon.anon"
+        scheduler=rr
+        #persistent=600
+        protocol=tcp
+    checktype=negotiate
+
+## Virtual Service for IMAP
+#virtual=192.168.6.240:143
+#        fallback=127.0.0.1:143
+#        real=192.168.7.4:143 masq
+#        real=192.168.7.5:143 masq
+#        service=imap
+#   #login="test"
+#        #passwd="test"
+#        scheduler=rr
+#        #persistent=600
+#        protocol=tcp
+#        checktype=negotiate
+#
+## Virtual Service for POP
+#virtual=192.168.6.240:110
+#        fallback=127.0.0.1:110
+#        real=192.168.7.4:110 masq
+#        real=192.168.7.5:110 masq
+#        service=pop
+#   #login="test"
+#        #passwd="test"
+#        scheduler=rr
+#        #persistent=600
+#        protocol=tcp
+#
+## Virtual Service for SMTP
+#virtual=192.168.6.240:25
+#        fallback=127.0.0.1:25
+#        real=192.168.7.4:25 masq
+#        real=192.168.7.5:25 masq
+#        service=smtp
+#        scheduler=rr
+#        #persistent=600
+#        protocol=tcp
+#
+## Virtual Service for LDAP
+#virtual=192.168.6.240:389
+#        fallback=127.0.0.1:389
+#        real=192.168.7.4:389 masq
+#        real=192.168.7.5:389 masq
+#        service=ldap
+#        scheduler=rr
+#        #persistent=600
+#        protocol=tcp
+#
+
+#Sample configuration for an nntp virtual service.
+#Fallback setting overides global
+#virtual=192.168.6.240:119
+#   real=192.168.7.4:119 masq
+#   real=192.168.7.5:119 masq
+#   fallback=127.0.0.1:119
+#   service=nntp
+#   scheduler=wlc
+#   #persistent=600
+#   #netmask=255.255.255.255
+#   protocol=tcp
+
+#Sample configuration for a UDP DNS virtual service.
+#Fallback setting overides global
+#virtual=192.168.6.240:53
+#   real=192.168.7.4:53 masq
+#   real=192.168.7.5:53 masq
+#   fallback=127.0.0.1:53
+#   request="some.domain.com.au"
+#   recieve="127.0.0.1"
+#   service=dns
+#   scheduler=wlc
+#   #persistent=600
+#   #netmask=255.255.255.255
+#   protocol=udp
+
+#Sample configuration for a MySQL virtual service.
+#virtual = 192.168.6.240:3306
+#   real=192.168.7.4:3306 masq
+#   real=192.168.7.5:3306 masq
+#   fallback=127.0.0.1:3306 masq
+#   checktype = negotiate
+#   login = "readuser"
+#   passwd = "genericpassword"
+#   database = "portal"
+#   request = "SELECT * FROM link"
+#   scheduler = wrr
+
+#Sample configuration for an unsuported protocol
+#The real servers will just be brought up without checking for availability
+#Fallback setting overides global
+#virtual=192.168.6.240:23
+#   real=192.168.7.4:23 masq 
+#   real=192.168.7.5:23 masq
+#   fallback=127.0.0.1:21
+#   service=none
+#   scheduler=wlc
+#   request="welcome.msg"
+#   receive="test"         
+#   persistent=600
+#   #netmask=255.255.255.255
+#   protocol=tcp
+

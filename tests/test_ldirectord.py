@@ -7,32 +7,6 @@ path = os.path.abspath(os.path.dirname(__file__))
 from lvsm import lvsdirector
 
 
-class GenericDirector(unittest.TestCase):
-    def setUp(self):
-        # for now only testing ldirectord
-        self.director = lvsdirector.Director('generic', '', path + '/scripts/ipvsadm')
-
-        
-    def test_convertfilename(self):
-        filename = 'slashdot.org:http'
-        expected_result = '216.34.181.45:80'
-        self.assertEqual(self.director.convert_filename(filename),
-                         expected_result)
-
-    def test_show(self):
-        expected_result = ["IP Virtual Server version 1.2.1 (size=4096)",
-                           "Prot LocalAddress:Port Scheduler Flags",
-                           "  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn",
-                           "TCP  dinsdale.python.org:http     rr",
-                           "  -> slashdot.org:http            Masq    1      0          0",
-                           "UDP  dinsdale.python.org:domain   rr",
-                           "  -> resolver1.opendns.com:domain Masq    1      0          0",
-                           "  -> resolver2.opendns.com:domain Masq    1      0          0",
-                           ""]
-        result = self.director.show(False, False)
-        self.assertEqual(result, expected_result)
-        
-
 class Ldirectord(unittest.TestCase):
     def setUp(self):
         # for now only testing ldirectord
