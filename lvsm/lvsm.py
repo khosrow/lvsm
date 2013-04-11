@@ -369,7 +369,7 @@ class ConfigurePrompt(CommandPrompt):
 
     def do_edit(self, line):
         """Edit the configuration of an item."""
-        if line == "director" or line == "firewall":
+        if line == "director":
             key = line + "_config"
             filename = self.config[key]
             if not filename:
