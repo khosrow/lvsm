@@ -343,7 +343,7 @@ class ConfigurePrompt(CommandPrompt):
                       "configuration file!")
             else:
                 lines = utils.print_file(self.config[configkey])
-                utils.pager(lines)
+                utils.pager(self.config['pager'],lines)
         else:
             print "syntax: show <module>"
 
@@ -501,11 +501,11 @@ class StatusPrompt(CommandPrompt):
         numeric = self.settings['numeric']
         color = self.settings['color']
         if line == "director":
-            utils.pager(self.director.show(numeric, color))
+            utils.pager(self.config['pager'], self.director.show(numeric, color))
         elif line == "firewall":
-            utils.pager(self.firewall.show(numeric, color))
+            utils.pager(self.config['pager'], self.firewall.show(numeric, color))
         elif line == "nat":
-            utils.pager(self.firewall.show_nat(numeric))
+            utils.pager(self.config['pager'], self.firewall.show_nat(numeric))
         elif line.startswith("virtual"):
             if len(commands) == 4:
                 protocol = commands[1]
@@ -515,7 +515,7 @@ class StatusPrompt(CommandPrompt):
                     d = self.director.show_virtual(vip, port, protocol, numeric, color)
                     if d:
                         f = self.firewall.show_virtual(vip, port, protocol, numeric, color)
-                        utils.pager(d + f)
+                        utils.pager(self.config['pager'], d + f)
                 else:
                     print "syntax: virtual tcp|udp|fwm <vip> <port>"
             else:
@@ -524,7 +524,7 @@ class StatusPrompt(CommandPrompt):
             if len(commands) == 3:
                 host = commands[1]
                 port = commands[2]
-                utils.pager(self.director.show_real(host, port, numeric, color))
+                utils.pager(self.config['pager'], self.director.show_real(host, port, numeric, color))
             else:
                 print "syntax: real <server> <port>"
         else:

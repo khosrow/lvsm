@@ -24,6 +24,7 @@ def parse_config(filename):
     # list of valid config keys and their default values
     config_items = {'ipvsadm': 'ipvsadm',
                     'iptables': 'iptables',
+                    'pager': '/usr/bin/less -r',
                     'director_config': '',
                     'firewall_config': '',
                     'director': '',
@@ -102,30 +103,11 @@ def gethostname(host):
         return hostip
 
 
-def pager(lines):
+def pager(pager,lines):
     """print lines to screen and mimic behaviour of MORE command"""
-    global ROWS
-    i = 0
-    if lines is not None:
-        for line in lines:
-            i = i + 1
-            if ROWS and i == int(ROWS):
-                more = termcolor.colored("-- More --", color=None,
-                                         attrs=["reverse"])
-                print more + "\r",
-                ch = getch()
-                # erase the "-- More --"
-                print "          \r",
-                # pressing 'q' will go back to prompt
-                # pressing 'enter' will advance by 1 line
-                # otherwise show next page
-                if ord(ch) == 113:
-                    return
-                elif ord(ch) == 13:
-                    i = i - 1
-                else:
-                    i = 0
-            print line.rstrip()
+    text = "\n".join(lines)
+    p = subprocess.Popen(pager.split(), stdin=subprocess.PIPE)
+    stdout, stderr = p.communicate(input=text)
 
 
 def sigwinch_handler(signum, frame):
