@@ -11,6 +11,7 @@ class Configure(unittest.TestCase):
     """Verify correct functionality in configure"""
     config = {'director_config': path + '/etc/ldirectord.conf',
               'firewall_config': path + '/etc/iptables.rules',
+              'pager': '/bin/cat',
               'dsh_group': '',
               'director': 'ldirectord',
               'maintenance_dir': '',
@@ -66,6 +67,7 @@ class ConfigureErrors(unittest.TestCase):
 class Status(unittest.TestCase):
     config = {'ipvsadm': path + '/scripts/ipvsadm',
               'iptables': path + '/scripts/iptables',
+              'pager': '/bin/cat',
               'director_config': path + '/etc/ldirectord.conf',
               'firewall_config': path + '/etc/iptables.rules',
               'dsh_group': '',
