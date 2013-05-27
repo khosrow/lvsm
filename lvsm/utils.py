@@ -106,8 +106,12 @@ def gethostname(host):
 def pager(pager,lines):
     """print lines to screen and mimic behaviour of MORE command"""
     text = "\n".join(lines)
-    p = subprocess.Popen(pager.split(), stdin=subprocess.PIPE)
-    stdout, stderr = p.communicate(input=text)
+    try:
+        p = subprocess.Popen(pager.split(), stdin=subprocess.PIPE)
+    except OSError as e:
+        print e
+    else:
+        stdout, stderr = p.communicate(input=text)
 
 
 def sigwinch_handler(signum, frame):
