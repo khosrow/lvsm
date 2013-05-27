@@ -188,13 +188,20 @@ class GenericDirector(object):
                     vip = virtual.split()[1].split(":")[0]
                     (vipname, aliaslist, iplist) = socket.gethostbyaddr(vip)
                     vipport = virtual.split()[1].split(":")[1]
-                    vipportname = socket.getservbyport(int(vipport))
+                    try: 
+                        vipportname = socket.getservbyport(int(vipport))
+                    except socket.error as e:
+                        vipportname = vipport
                     v = virtual.split()[0] + ' ' + vipname + ':' + vipportname
 
                     rip = line.split()[1].split(":")[0]
                     (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
                     ripport = line.split()[1].split(":")[1]
-                    ripportname = socket.getservbyport(int(ripport))
+                    try:
+                        ripportname = socket.getservbyport(int(ripport))
+                    except socket.error as e:
+                        ripportname = ripportname
+
                     r = '  -> ' + ripname + ':' + ripportname
 
                 # colorize output

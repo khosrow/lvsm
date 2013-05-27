@@ -194,7 +194,10 @@ class Ldirectord(GenericDirector):
                         return False
                     if len(filename.split(":")) == 2:
                         ripport = filename.split(":")[1]
-                        ripportname = socket.getservbyport(int(ripport))
+                        try:
+                            ripportname = socket.getservbyport(int(ripport))
+                        except socket.error as e:
+                            ripportname = ripport
                         ripname = ripname + ':' + ripportname
                     else:
                         pass
