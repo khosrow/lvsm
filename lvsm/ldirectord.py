@@ -7,6 +7,9 @@ import sys
 import time
 import utils
 from genericdirector import GenericDirector
+import logging
+
+logger = logging.getLogger('lvsm')
 
 class Ldirectord(GenericDirector):
     """Handles ldirector-specific functionality like enable/disable actions.
@@ -52,6 +55,7 @@ class Ldirectord(GenericDirector):
                     if node != self.hostname:
                         remote = node + ":" + self.maintenance_dir
                         args = ['scp', filename, remote]
+                        logger.debug('Running command : %s' % (' '.join(args)))
                         try:
                             output = utils.check_output(args)
                         except OSError as e:
@@ -123,6 +127,7 @@ class Ldirectord(GenericDirector):
                             if node != self.hostname:
                                 cmd = "rm " + self.maintenance_dir + "/" + filename
                                 args = ['ssh', node, cmd]
+                                logger.debug('Running command : %s' % (' '.join(args)))
                                 try:
                                     output = utils.check_output(args)
                                 except OSError as e:

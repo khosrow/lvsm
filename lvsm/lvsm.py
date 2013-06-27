@@ -12,9 +12,10 @@ import lvsdirector
 import firewall
 import utils
 import termcolor
+import logging
 
-DEBUG = False
 
+logger = logging.getLogger('lvsm')
 
 class CommandPrompt(cmd.Cmd):
     settings = {'numeric': False,
@@ -50,12 +51,13 @@ class CommandPrompt(cmd.Cmd):
 
             if self.config['director_config']:
                 args.append(self.config['director_config'])
+                logger.debug('Running command : %s' % (' '.join(args)))
                 try:
                     result = utils.check_output(args)
                 except OSError as e:
-                    print"[ERROR] " + e.strerror
+                    print"[ERROR]: " + e.strerror
                 except subprocess.CalledProcessError as e:
-                    print"[ERROR] " + e.output
+                    print"[ERROR]: " + e.output
                 if result and result[0] == "M":
                     modified.append(self.config['director_config'])
 
@@ -67,7 +69,7 @@ class CommandPrompt(cmd.Cmd):
                     except AttributeError as e:
                         result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
                 except OSError as e:
-                    print("[ERROR] " + e.strerror)
+                    print("[ERROR]: " + e.strerror)
                 if result and result[0] == "M":
                     modified.append(self.config['firewall_config'])
 
@@ -229,9 +231,9 @@ class MainPrompt(CommandPrompt):
                     result = subprocess.call(self.config['director_cmd'],
                                              shell=True)
                 except OSError as e:
-                    print "[ERROR] problem restaring director - " + e.strerror
+                    print "[ERROR]: problem restaring director - " + e.strerror
             else:
-                print "[ERROR] 'director_cmd' not defined in config!"
+                print "[ERROR]: 'director_cmd' not defined in config!"
         elif line == "firewall":
             if self.config['firewall_cmd']:
                 print "restarting firewall"
@@ -239,9 +241,9 @@ class MainPrompt(CommandPrompt):
                     result = subprocess.call(self.config['firewall_cmd'],
                                              shell=True)
                 except OSError as e:
-                    print "[ERROR] problem restaring firewall - " + e.strerror
+                    print "[ERROR]: problem restaring firewall - " + e.strerror
             else:
-                print "[ERROR] 'firewall_cmd' not defined in config!"
+                print "[ERROR]: 'firewall_cmd' not defined in config!"
         else:
             print "syntax: restart firewall|director"
 
@@ -287,10 +289,11 @@ class ConfigurePrompt(CommandPrompt):
                 filename]
         svn_cmd = ('svn commit --username ' + username +
                    ' --password ' + password + ' ' + filename)
+        logger.debug('Running command : %s' % svn_cmd )
         try:
             result = subprocess.call(svn_cmd, shell=True)
         except OSError as e:
-            print "[ERROR] problem with configuration sync - " + e.strerror
+            print "[ERROR]: problem with configuration sync - " + e.strerror
 
         # update config on all nodes
         n = self.config['nodes']
@@ -309,10 +312,11 @@ class ConfigurePrompt(CommandPrompt):
             for node in nodes:
                 if node != hostname:
                     args = 'ssh ' + node + ' ' + svn_cmd
+                    logger.debug('Running command : %s' % (' '.join(args)))
                     try:
                         result = subprocess.call(args, shell=True)
                     except OSError as e:
-                        print "[ERROR] problem with configuration sync - " + e.strerror
+                        print "[ERROR]: problem with configuration sync - " + e.strerror
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command."""
@@ -339,7 +343,7 @@ class ConfigurePrompt(CommandPrompt):
         if line == "director" or line == "firewall":
             configkey = line + "_config"
             if not self.config[configkey]:
-                print("[ERROR] '" + configkey + "' not defined in " +
+                print("[ERROR]: '" + configkey + "' not defined in " +
                       "configuration file!")
             else:
                 lines = utils.print_file(self.config[configkey])
@@ -373,20 +377,21 @@ class ConfigurePrompt(CommandPrompt):
             key = line + "_config"
             filename = self.config[key]
             if not filename:
-                print "[ERROR] '" + key + "' not defined in config file!"
+                print "[ERROR]: '" + key + "' not defined in config file!"
             else:
                 # make a temp copy of the config
                 try:
                     temp = tempfile.NamedTemporaryFile()
                     shutil.copyfile(filename, temp.name)
                 except IOError as e:
-                    print "[ERROR] " + e.strerror
+                    print "[ERROR]: " + e.strerror
 
                 while True:
                     args = "vi " + temp.name
+                    logger.debug('Running command : %s' % (' '.join(args)))
                     result = subprocess.call(args, shell=True)
                     if result != 0:
-                        print "[ERROR] something happened during the edit of " +\
+                        print "[ERROR]: something happened during the edit of " +\
                               config[line]
                     # Parse the config file and verify the changes
                     # If successful, copy changes back to original file
@@ -406,13 +411,13 @@ class ConfigurePrompt(CommandPrompt):
             key = line + "_config"
             filename = self.config[key]
             if not filename:
-                print "[ERROR] '" + key + "' not defined in config file!"
+                print "[ERROR]: '" + key + "' not defined in config file!"
             else:
                 args = "vi " + filename
-                utils.log(str(args))
+                logger.debug(str(args))
                 result = subprocess.call(args, shell=True)
                 if result != 0:
-                    print "[ERROR] something happened during the edit of " +\
+                    print "[ERROR]: something happened during the edit of " +\
                           config[line]
         else:
             print "syntax: edit <module>"
@@ -567,7 +572,7 @@ class StatusPrompt(CommandPrompt):
             # ask for an optional reason for disabling
             reason = raw_input("Reason for disabling [default = None]: ")
             if not self.director.disable(host, port, reason):
-                print "[ERROR] could not disable " + host
+                print "[ERROR]: could not disable " + host
         else:
             print "syntax: disable real|virtual <host> [<port>]"
 
@@ -606,6 +611,6 @@ class StatusPrompt(CommandPrompt):
                 print "syntax: enable real <host> [<port>]"
                 return
             if not self.director.enable(host, port):
-                print "[ERROR] could not enable " + host
+                print "[ERROR]: could not enable " + host
         else:
             print "syntax: enable real|virtual <host> [<port>]"
