@@ -5,7 +5,6 @@ import cmd
 import getpass
 import subprocess
 import sys
-import socket
 import shutil
 import tempfile
 import lvsdirector
@@ -228,8 +227,7 @@ class MainPrompt(CommandPrompt):
             if self.config['director_cmd']:
                 print "restaring director"
                 try:
-                    result = subprocess.call(self.config['director_cmd'],
-                                             shell=True)
+                    subprocess.call(self.config['director_cmd'], shell=True)
                 except OSError as e:
                     print "[ERROR]: problem restaring director - " + e.strerror
             else:
@@ -238,8 +236,7 @@ class MainPrompt(CommandPrompt):
             if self.config['firewall_cmd']:
                 print "restarting firewall"
                 try:
-                    result = subprocess.call(self.config['firewall_cmd'],
-                                             shell=True)
+                    subprocess.call(self.config['firewall_cmd'], shell=True)
                 except OSError as e:
                     print "[ERROR]: problem restaring firewall - " + e.strerror
             else:
@@ -314,7 +311,7 @@ class ConfigurePrompt(CommandPrompt):
                     args = 'ssh ' + node + ' ' + svn_cmd
                     logger.debug('Running command : %s' % (' '.join(args)))
                     try:
-                        result = subprocess.call(args, shell=True)
+                        subprocess.call(args, shell=True)
                     except OSError as e:
                         print "[ERROR]: problem with configuration sync - " + e.strerror
 
@@ -391,8 +388,7 @@ class ConfigurePrompt(CommandPrompt):
                     logger.debug('Running command : %s' % (' '.join(args)))
                     result = subprocess.call(args, shell=True)
                     if result != 0:
-                        print "[ERROR]: something happened during the edit of " +\
-                              config[line]
+                        print "[ERROR]: something happened during the edit of %s" % self.config[key]
                     # Parse the config file and verify the changes
                     # If successful, copy changes back to original file
                     if self.director.parse_config(temp.name):
@@ -417,8 +413,7 @@ class ConfigurePrompt(CommandPrompt):
                 logger.debug(str(args))
                 result = subprocess.call(args, shell=True)
                 if result != 0:
-                    print "[ERROR]: something happened during the edit of " +\
-                          config[line]
+                    print "[ERROR]: something happened during the edit of %s" % self.config[key]
         else:
             print "syntax: edit <module>"
 

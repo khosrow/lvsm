@@ -4,7 +4,6 @@ import subprocess
 import re
 import sys
 import termcolor
-import subprocess
 import logging
 
 
