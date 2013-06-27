@@ -11,7 +11,7 @@ class Configure(unittest.TestCase):
     """Verify correct functionality in configure"""
     config = {'director_config': path + '/etc/ldirectord.conf',
               'firewall_config': path + '/etc/iptables.rules',
-              'pager': '/bin/cat',
+              'pager': 'none',
               'dsh_group': '',
               'director': 'ldirectord',
               'maintenance_dir': '',
@@ -25,7 +25,7 @@ class Configure(unittest.TestCase):
     def test_showdirector(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = "# director config\n"
+        expected_result = "# director config\n\n"
         self.shell.onecmd(' show director')
         result = output.getvalue()
         self.assertEqual(result, expected_result)
@@ -33,7 +33,7 @@ class Configure(unittest.TestCase):
     def test_showfirewall(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = "# iptables\n"
+        expected_result = "# iptables\n\n"
         self.shell.onecmd(' show firewall')
         result = output.getvalue()
         self.assertEqual(result, expected_result)
@@ -67,7 +67,7 @@ class ConfigureErrors(unittest.TestCase):
 class Status(unittest.TestCase):
     config = {'ipvsadm': path + '/scripts/ipvsadm',
               'iptables': path + '/scripts/iptables',
-              'pager': '/bin/cat',
+              'pager': 'none',
               'director_config': path + '/etc/ldirectord.conf',
               'firewall_config': path + '/etc/iptables.rules',
               'dsh_group': '',
