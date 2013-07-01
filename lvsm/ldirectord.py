@@ -1,15 +1,17 @@
 
 import os
-import re
 import socket
 import subprocess
 import sys
 import time
+import logging
 import utils
+from pyparsing import *
 from genericdirector import GenericDirector
 import logging
 
 logger = logging.getLogger('lvsm')
+
 
 class Ldirectord(GenericDirector):
     """Handles ldirector-specific functionality like enable/disable actions.
@@ -210,298 +212,246 @@ class Ldirectord(GenericDirector):
         return output
 
     def parse_config(self, configfile):
-        """Read the config file and validate each line"""
+        """Read the config file and validate configuration syntax"""
         try:
             f = open(configfile)
         except IOError as e:
             print "[ERROR] " + e.strerror
             return False
 
-        in_vip = False
-        counter = 0
-        
-        for line in f:
-            counter = counter + 1
-            # Remove comment lines and empty lines
-            (text, sep, comment) = line.partition('#')
-            if text.strip() == '':
-                continue
-            else:
-                line = text.rstrip()
-                # print line
-            (k, sep, v) = text.partition("=")
-            keyword = k.rstrip()
-            value = v.lstrip().rstrip()
-            # If we are in a virtual section, parse the input accordingly.
-            if in_vip:
-                # Replace tabs with 4 spaces
-                line = re.sub("\t", "    ", line)
+        conf = "".join(f.readlines())
+        tokens = self.tokenize_config(conf)
 
-                # If a line begins with 4 spaces process it
-                m_re = re.search("^ {4,}(.+)", line)
-                if m_re is not None:
-                    text = m_re.group(1)
-                    if not self.parse_virtual(text, counter, af_inet6):
-                        return False
-                else:
-                    # A new line without spaces means we exited the virtual section
-                    in_vip = False
-            
-            if not in_vip:
-                if keyword == "virtual" or keyword == "virtual6":
-                    # Set a flag that all subsequent config items are part of a VIP
-                    in_vip = True
-
-                    # Check address family of the VIP
-                    if keyword == "virtual":
-                        af_inet6 = None
-                    else:
-                        af_inet6 = 6
-
-                    ipport = value
-                    # Perform regexp matches to get the ip/port
-                    ip4_re = re.search("^(\d+\.\d+\.\d+\.\d+):([0-9a-zA-Z-_]+)", ipport)
-                    host_re = re.search("^([0-9a-zA-Z._+-]+):([0-9a-zA-Z-_]+)", ipport)
-                    ip6_re = re.search("^\[([0-9A-Fa-f:]+)\]:([0-9a-zA-Z-_]+)", ipport)
-                    fwm_re = re.search("^(\d+)", ipport)
-
-                    # Verify the IPv4 address and port are correct
-                    if ip4_re is not None and af_inet6 is None:
-                        ip_port = ip4_re.group(1) + ":" + ip4_re.group(2)
-                        virtual_port = ip4_re.group(2)
-                    # If hostname is given
-                    elif host_re is not None:
-                        ip_port = host_re.group(1) + ":" + host_re.group(2)
-                        virtual_port = host_re.group(2)
-                    # If IPv6 address was given verify
-                    elif ip6_re is not None and af_inet6 is None:
-                        print "[PARSE ERROR] Line: " + str(counter) + " - Cannot specify IPv6 address with virtual="
-                        print line
-                        return False
-                    elif ip6_re is not None and af_inet6 is not None:
-                        # TODO: code to ensure ipv6 addr is in the right range
-                        ip_port = "[" + ip6_re.group(1) + "]:" + ip6_re.group(2)
-                        virtual_port = ip6_re.group(2)
-                    # If fwm was defined
-                    elif fwm_re is not None:
-                        fwm = fwm_re.group(1)
-                    else:
-                        print "[PARSE ERROR] Line: " + str(counter) + "  - Invalid address for virtual server."
-                        print line
-                elif keyword == "checktimeout" and value.isdigit():
-                    pass
-                elif keyword == "negotiatetimeout" and value.isdigit():
-                    pass
-                elif keyword == "checkinterval" and value.isdigit():
-                    pass
-                elif keyword == "failurecount" and value.isdigit():
-                    pass
-                elif keyword == "fallback":
-                    #do some checks to make sure IPv4 is active
-                    pass
-                elif keyword == "fallback6":
-                    # do checks to make sure IPv6 is active
-                    pass
-                elif keyword == "fallbackcommand":
-                    pass
-                elif keyword == "autoreload" and value in ('yes', 'no'):
-                    pass
-                elif keyword == "callback" and utils.has_quotes(value):
-                    pass
-                elif keyword == "logfile" and utils.has_quotes(value):
-                    pass
-                elif keyword == "execute":
-                    pass
-                elif keyword == "fork" and value in ('yes', 'no'):
-                    pass
-                elif keyword == "supervised" and value in ('yes', 'no'):
-                    pass
-                elif keyword == "quiescent" and value in ('yes', 'no'):
-                    pass
-                elif keyword == "readdquiescent" and value in ('yes', 'no'):
-                    pass
-                elif keyword == "emailalert":
-                    # verify email address format
-                    pass
-                elif keyword == "emailalertfreq" and value.isdigit():
-                    pass
-                elif keyword == "emailalertstatus":
-                    pass
-                elif keyword == "emailalertfrom":
-                    # verify email address
-                    pass
-                elif keyword == "cleanstop" and value in ('yes', 'no'):
-                    pass
-                elif keyword == "smtp":
-                    # valide server address
-                    pass
-                elif keyword == "maintenancedir":
-                    pass
-                else:
-                    print "[PARSE ERROR] Line: " + str(counter) + " - unkown directive"
-                    print line
-                    return False
-        return True
-
-    def parse_virtual(self, text, counter, af_inet6):
-        """Parse contents of the virutal section"""
-        # Various regexp to match directives under virtual
-        (k, sep, v) = text.partition("=")
-        keyword = k.rstrip()
-        value = v.lstrip().rstrip()
-
-        if value == '':
-            print "[PARSE ERROR] no value provided in line: " + str(counter)
-
-        if keyword == "real" :
-            if af_inet6 is not None:
-                print "[PARSE ERROR] Line: " + str(counter) + " - Please use the correct address family in real server section."
-                print text
-                return False
-        elif keyword == "real6":
-            if af_inet6 is None:
-                print "[PARSE ERROR] Line: " + str(counter) + " - Please use the correct address family in real server section."
-                print text
-                return False
-        elif keyword == "request" and utils.has_quotes(value):
-            pass
-        elif keyword == "receive" and utils.has_quotes(value):
-            pass
-        elif keyword == "checktype":
-            checktypes = ("connect", "negotiate", "ping", "off", "on", "external", "external-perl")
-            if value.isdigit() or value in checktypes:
-                pass
-            else:
-                print "[PARSE ERROR] Line: " + str(counter) + " - checktype must be one of " + str(checktypes)
-                return False
-        elif keyword == "checkcommand" and utils.has_quotes(value):
-            pass
-        elif keyword == "checktimeout" and value.isdigit():
-            pass
-        elif keyword == "negotiatetimeout" and value.isdigit():
-            pass
-        elif keyword == "checkcount" and value.isdigit():
-            pass
-        elif keyword == "failurecount" and value.isdigit():
-            pass
-        elif keyword == "checkinterval" and value.isdigit():
-            pass
-        elif keyword == "checkport" and value.isdigit():
-            if int(value) < 1 or int(value) > 65536:
-                print "[PARSE ERROR] Line: " + str(counter) + " - checkport must be in range 1-65536"
-                return False
-        elif keyword == "login" and utils.has_quotes(value):
-            pass
-        elif keyword == "passwd" and utils.has_quotes(value):
-            pass
-        elif keyword == "database" and utils.has_quotes(value):
-            pass
-        elif keyword == "secret" and utils.has_quotes(value):
-            pass
-        elif keyword == "load" and utils.has_quotes(value):
-            pass
-        elif keyword == "scheduler" and value.isalpha() and value.islower():
-            schedulers = ('rr', 'wrr', 'lc', 'wlc', 'lblc', 'lblcr', 'dh', 'sh', 'sed', 'nq')
-            if value in schedulers:
-                pass
-            else:
-                print "[PARSE ERROR] Line: " + str(counter) + " - scheduler must be one of " + str(schedulers)
-                return False
-        elif keyword == "persistent" and value.isdigit():
-            pass
-        elif keyword == "netmask":
-            if af_inet6:
-                if value.isdigit() and int(value) >= 1 and int(value) <= 128:
-                    pass
-                else:
-                    print "[PARSE ERROR] Line: " + str(counter) + " - value must be between 1 and 128"
-                    return False
-            else:
-                if utils.check_ipv4(value):
-                    pass
-                else:
-                    print "[PARSE ERROR] Line: " + str(counter) + " - dotted quad notation is required for netmask"
-                    return False
-        elif keyword == "protocol":
-            if value == "fwm":
-                # we also have to compare it to the virtual FWM value
-                pass
-            elif value == "tcp" or value == "udp":
-                pass
-            else:
-                print "[PARSE ERROR] Line: " + str(counter) + " - protocol must be one of udp, tcp, or fwm"
-                return False
-        elif keyword == "service":
-            services = ("dns" ,
-                   "ftp"   ,
-                   "http"  ,
-                   "https" ,
-                   "http_proxy" ,
-                   "imap"  ,
-                   "imaps" ,
-                   "ldap"  ,
-                   "nntp"  ,
-                   "mysql" ,
-                   "none"  ,
-                   "oracle",
-                   "pop"   ,
-                   "pops"  ,
-                   "radius",
-                   "pgsql" ,
-                   "sip"   ,
-                   "smtp"  ,
-                   "submission" ,
-                   "simpletcp")
-            if value in services:
-                pass
-            else:
-                print "[PARSE ERROR] Line: " + str(counter) + " - service must be one of " + str(services)
-                return False
-        elif keyword == "httpmethod":
-            if value.upper() == "GET" or value.upper() == "HEAD":
-                pass
-            else:
-                print "[PARSE ERROR] Line: " + str(counter) + " - httpmethod must be one of ('GET', 'HEAD')"
-                return False
-        elif keyword == "virtualhost":
-            pass
-        elif keyword == "fallback":
-            if af_inet6:
-                print "[PARSE ERROR] Line: " + str(counter) + " - cannot define IPv4 fallback"
-                return False
-            else:
-                # validate IPv6 address format
-                pass
-        elif keyword == "fallback6":
-            if af_inet6:
-                # validate IPv4 address format
-                pass
-            else:
-                print "[PARSE ERROR] Line: " + str(counter) + " - cannot define IPv6 fallback"
-                return False
-        elif keyword == "fallbackcommand":
-            pass
-        elif keyword == "quiescent" and value in ('yes', 'no'):
-            pass
-        elif keyword == "emailalert":
-            # validate email address formatting
-            pass
-        elif keyword == "emailalertfreq" and value.isdigit():
-            pass
-        elif keyword == "emailalertstatus":
-            # validate status
-            pass
-        elif keyword == "monitorfile":
-            try:
-                open(value)
-            except IOError as e:
-                print "[ERROR] problem reading monitor file"
-                return False
-        elif keyword == "cleanstop" and value in ('yes', 'no'):
-            pass
-        elif keyword == "smtp":
-            pass
+        if tokens:
+            return True
         else:
-            print text.rstrip()
             return False
-        return True
+
+    def validate_ip4(self, s, loc, tokens):
+        """Helper function to validate IPv4 addresses"""
+        octets = tokens[0].split(".")
+
+        logger = logging.getLogger('ldparser')
+        logger.debug('IP4 octets: %s', octets)
+
+        for octet in octets:
+            if int(octet) <= 255 and int(octet) >= 0:
+                pass
+            else:
+                errmsg = "invalid IPv4 address"
+                raise ParseFatalException(s, loc, errmsg)
+        return tokens
+
+    def validate_port(self, s, loc, tokens):
+        """Helper function that verifies we have a valid port number"""
+        # port = tokens[1]
+        port = tokens[0]
+        if int(port) < 65535 and int(port) > 0:
+            return tokens
+        else:
+            errmsg = "Invalid port number!"
+            raise ParseFatalException(s, loc, errmsg)
+        
+    def validate_scheduler(self, s, loc, tokens):
+        schedulers = ['rr', 'wrr', 'lc', 'wlc', 'lblc', 'lblcr', 'dh', 'sh', 'sed', 'nq']
+
+        logger = logging.getLogger('ldparser')
+        logger.debug('Tokens: %s', tokens)
+
+        if tokens[0][1] in schedulers:
+            return tokens
+        else:
+            errmsg = "Invalid scheduler type!"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_checktype(self, s, loc, tokens):
+        checktypes = ["connect", "negotiate", "ping", "off", "on", "external", "external-perl"]
+        if ((tokens[0][1] in checktypes) or (tokens[0][1].isdigit() and int(tokens[0][1]) > 0)):
+            return tokens
+        else:
+            errmsg = "Invalid checktype!"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_int(self, s, loc, tokens):
+        # if tokens[0][1].isdigit() and int(tokens[0][1]) > 0:
+        if tokens[0].isdigit() and int(tokens[0]) > 0:
+            return tokens
+        else:
+            errmsg = "Value must be an integer!"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_protocol(self, s, loc, tokens):
+        protocols = ['fwm', 'udp', 'tcp']
+        if tokens[0][1] in protocols:
+            return tokens
+        else:
+            errmsg = "Invalid protocol!"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_service(self, s, loc, tokens):
+        services = ["dns", "ftp", "http", "https", "http_proxy", "imap", "imaps"
+                    ,"ldap", "nntp", "mysql", "none", "oracle", "pop" , "pops"
+                    , "radius", "pgsql" , "sip" , "smtp", "submission", "simpletcp"]
+        if tokens[0][1] in services:
+            return tokens
+        else:
+            errmsg = "Invalid service type!"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_yesno(self, s, loc, tokens):
+        if tokens[0] == "yes" or tokens[0] == "no":
+            return tokens
+        else:
+            errmsg = "Value must be 'yes' or 'no'"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_httpmethod(self, s, loc, tokens):
+        if tokens[0] in ['GET', 'HEAD']:
+            return tokens
+        else:
+            errmsg = "Value must be 'GET' or 'HEAD'"
+            raise ParseFatalException(s, loc, errmsg)
+
+    def validate_lbmethod(self, s, loc, tokens):
+        """Validate the load balancing method used for real servers"""
+        methods = ['gate', 'masq', 'ipip']
+        if tokens[0] in methods:
+            return tokens
+        else:
+            errmsg = "Loadbalancing method must be one of %s " % methods
+            raise ParseFatalException(s, loc, errmsg)
+
+    def tokenize_config(self, configfile):
+        """Tokenize the config file. This method will do the bulk of the 
+        parsing. Additional verifications can be made in parse_config"""
+        # Needed to parse the tabbed ldirector config
+        indentStack = [1]
+
+        # Define statics
+        EQUAL = Literal("=").suppress()
+        COLON = Literal(":").suppress()
+        # INDENT = White("    ").suppress()
+        # INDENT = Regex("^ {4,}").suppress()
+
+        ## Define parsing rules for single lines
+        hostname = Word(alphanums + '._+-')
+        ip4_address = Combine(Word(nums) - ('.' + Word(nums)) * 3)
+        ip4_address.setParseAction(self.validate_ip4)
+
+        port = Word(alphanums)
+        port.setParseAction(self.validate_port)
+
+        lbmethod = Word(alphas)
+        lbmethod.setParseAction(self.validate_lbmethod)
+
+        ip4_addrport = (ip4_address | hostname) + COLON + port
+        # Validate port numbers
+        # ip4_addrport.setParseAction(validate_port)
+
+        yesno = Literal("yes") | Literal("no")
+        yesno.setParseAction(self.validate_yesno)
+
+        integer = Word(printables)
+        integer.setParseAction(self.validate_int)
+
+        send_receive = dblQuotedString + Literal(",") + dblQuotedString
+
+        real4 = Group(Literal("real") + EQUAL + ip4_addrport + lbmethod + Optional(Word(nums)) + Optional(send_receive))
+        # real4 = Group(Literal("real") + EQUAL + ip4_addrport + lbmethod + Optional(Word(nums)) + Optional(Word(dblQuotedString) + Word(dblQuotedString)))
+        virtual4 = Group(Literal("virtual") + EQUAL + ip4_addrport)
+        comment = Literal("#") + Optional(restOfLine)
+
+        # Optional keywords
+        optionals = Forward()
+        autoreload = Group(Literal("autoreload") + EQUAL + yesno)
+        callback = Group(Literal("callback") + EQUAL + dblQuotedString)
+        checkcommand = Group(Literal("checkcommand") + EQUAL + (dblQuotedString | Word(printables)))
+        # checkinterval = Group(Literal("checkinterval") + EQUAL + Word(alphanums))
+        checkinterval = Group(Literal("checkinterval") + EQUAL + integer)
+        checktimeout = Group(Literal("checktimeout") + EQUAL + integer)
+        checktype = Group(Literal("checktype") + EQUAL + Word(alphanums))
+        checkport = Group(Literal("checkport") + EQUAL + Word(alphanums))
+        cleanstop = Group(Literal("cleanstop") + EQUAL + yesno)
+        database = Group(Literal("database") + EQUAL + dblQuotedString)
+        emailalert = Group(Literal("emailalert") + EQUAL + Word(printables))
+        emailalertfreq = Group(Literal("emailalertfreq") + EQUAL + integer)
+        emailalertfrom = Group(Literal("emailalertfrom") + EQUAL + Word(printables))
+        emailalertstatus = Group(Literal("emailalertstatus") + EQUAL + Word(printables))
+        execute = Group(Literal("execute") + EQUAL + Word(printables))
+        failurecount = Group(Literal("failurecount") + EQUAL + integer)
+        fallback = Group(Literal("fallback") + EQUAL + ip4_addrport)
+        fallbackcommand = Group(Literal("fallbackcommand") + EQUAL + (dblQuotedString | Word(printables)))
+        fork = Group(Literal("fork") + EQUAL + yesno)
+        httpmethod = Group(Literal("httpmethod") + EQUAL + Word(alphanums))
+        load = Group(Literal("load") + EQUAL + dblQuotedString)
+        logfile = Group(Literal("logfile") + EQUAL + dblQuotedString)
+        login = Group(Literal("login") + EQUAL + dblQuotedString)
+        maintenance_dir = Group(Literal("maintenance_dir") + EQUAL + Word(printables))
+        monitorfile = Group(Literal("monitorfile") + EQUAL + (dblQuotedString | Word(printables)))
+        negotiatetimeout = Group(Literal("negotiatetimeout") + EQUAL + integer)
+        netmask = Group(Literal("netmask") + EQUAL + ip4_address)
+        passwd = Group(Literal("passwd") + EQUAL + dblQuotedString)
+        persistent = Group(Literal("persistent") + EQUAL + integer)
+        protocol = Group(Literal("protocol") + EQUAL + Word(alphas))
+        quiescent = Group(Literal("quiescent") + EQUAL + yesno)
+        readdquiescent = Group(Literal("readdquiescent") + EQUAL + yesno)
+        receive = Group(Literal("receive") + EQUAL + dblQuotedString)
+        request = Group(Literal("request") + EQUAL + dblQuotedString)
+        scheduler = Group(Literal("scheduler") + EQUAL + Word(alphas))
+        secret = Group(Literal("secret") + EQUAL + dblQuotedString)
+        service = Group(Literal("service") + EQUAL + Word(alphas))
+        supervised = Group(Literal("supervised") + EQUAL + yesno)
+        smtp = Group(Literal("smtp") + EQUAL + (ip4_address | hostname))
+        virtualhost = Group(Literal("virtualhost") + EQUAL + hostname )
+
+        # Validate all the matched elements
+        checkport.setParseAction(self.validate_port)
+        checktype.setParseAction(self.validate_checktype)
+        httpmethod.setParseAction(self.validate_httpmethod)
+        protocol.setParseAction(self.validate_protocol)
+        scheduler.setParseAction(self.validate_scheduler)
+        service.setParseAction(self.validate_service)
+
+        # TODO: validate protocol with respect to the virtual directive
+        # TODO: implement virtual6, real6, fallback6
+
+        optionals << ( checkcommand | checkinterval | checktimeout | checktype | checkport | cleanstop
+                    | database | emailalert | emailalertfreq | emailalertstatus | failurecount | fallback
+                    | fallbackcommand | httpmethod | load | login | monitorfile | negotiatetimeout | netmask
+                    | passwd | persistent | protocol | quiescent | receive | request | scheduler | secret
+                    | service | smtp | virtualhost)
+        # optionals = ( checkcommand | checkinterval | checktimeout | checktype | checkport | cleanstop
+        #             | database | emailalert | emailalertfreq | emailalertstatus | failurecount | fallback
+        #             | fallbackcommand | httpmethod | load | login | monitorfile | negotiatetimeout | netmask
+        #             | passwd | persistent | protocol | quiescent | receive | request | scheduler | secret
+        #             | service | smtp | virtualhost)
+
+        glb_optionals = ( checktimeout | negotiatetimeout | checkinterval | failurecount | fallback
+                        | fallbackcommand | autoreload | callback | logfile | execute | fork | supervised
+                        | quiescent | readdquiescent | emailalert | emailalertfreq | emailalertstatus
+                        | emailalertfrom | cleanstop | smtp | maintenance_dir )
+
+        ## Define block of config
+        # both of the next two styles works
+        # virtual4_keywords = indentedBlock(OneOrMore(real4 & ZeroOrMore(optionals)), indentStack, True)
+        # virtual4_block = virtual4 + virtual4_keywords
+        virtual4_keywords = OneOrMore(real4) & ZeroOrMore(optionals)
+        virtual4_block = virtual4 + indentedBlock(virtual4_keywords, indentStack, True)
+
+        virtual4_block.ignore(comment)
+
+        allconfig = OneOrMore(virtual4_block) & ZeroOrMore(glb_optionals)
+        allconfig.ignore(comment)
+
+        try:
+            tokens = allconfig.parseString(configfile)
+        except ParseException as pe:
+            print "[ERROR] While parsing config file"
+            print pe
+        except ParseFatalException as pe:
+            print "[ERROR] While parsing config file"
+            print pe
+        else:
+            return tokens
+        finally:
+            pass
