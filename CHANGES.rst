@@ -1,6 +1,12 @@
 Changes
 ========
 
+0.4.1 (2013-06-21)
+------------------
+
+* Added use of logging module
+* Fixed bug where non-standard port number would crash the app
+
 0.4.0 (2013-04-11)
 ------------------
 
