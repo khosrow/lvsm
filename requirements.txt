@@ -1,2 +1,3 @@
 # these requirements are for testing only
 # nose
+pyparsing>=1.5.7
