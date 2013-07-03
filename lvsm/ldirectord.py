@@ -306,7 +306,7 @@ class Ldirectord(GenericDirector):
             raise ParseFatalException(s, loc, errmsg)
 
     def validate_httpmethod(self, s, loc, tokens):
-        if tokens[0] in ['GET', 'HEAD']:
+        if tokens[0][1] in ['GET', 'HEAD']:
             return tokens
         else:
             errmsg = "Value must be 'GET' or 'HEAD'"
@@ -348,7 +348,7 @@ class Ldirectord(GenericDirector):
         # Validate port numbers
         # ip4_addrport.setParseAction(validate_port)
 
-        yesno = Literal("yes") | Literal("no")
+        yesno = Word(printables)
         yesno.setParseAction(self.validate_yesno)
 
         integer = Word(printables)
@@ -379,14 +379,15 @@ class Ldirectord(GenericDirector):
         emailalertstatus = Group(Literal("emailalertstatus") + EQUAL + Word(printables))
         execute = Group(Literal("execute") + EQUAL + Word(printables))
         failurecount = Group(Literal("failurecount") + EQUAL + integer)
-        fallback = Group(Literal("fallback") + EQUAL + ip4_addrport)
+        # fallback = Group(Literal("fallback") + EQUAL + ip4_addrport + Optional(lbmethod, default=''))
+        fallback = Group(Literal("fallback") + EQUAL + ip4_addrport )
         fallbackcommand = Group(Literal("fallbackcommand") + EQUAL + (dblQuotedString | Word(printables)))
         fork = Group(Literal("fork") + EQUAL + yesno)
         httpmethod = Group(Literal("httpmethod") + EQUAL + Word(alphanums))
         load = Group(Literal("load") + EQUAL + dblQuotedString)
-        logfile = Group(Literal("logfile") + EQUAL + dblQuotedString)
+        logfile = Group(Literal("logfile") + EQUAL + Word(printables))
         login = Group(Literal("login") + EQUAL + dblQuotedString)
-        maintenance_dir = Group(Literal("maintenance_dir") + EQUAL + Word(printables))
+        maintenancedir = Group(Literal("maintenancedir") + EQUAL + Word(printables))
         monitorfile = Group(Literal("monitorfile") + EQUAL + (dblQuotedString | Word(printables)))
         negotiatetimeout = Group(Literal("negotiatetimeout") + EQUAL + integer)
         netmask = Group(Literal("netmask") + EQUAL + ip4_address)
@@ -402,7 +403,7 @@ class Ldirectord(GenericDirector):
         service = Group(Literal("service") + EQUAL + Word(alphas))
         supervised = Group(Literal("supervised") + EQUAL + yesno)
         smtp = Group(Literal("smtp") + EQUAL + (ip4_address | hostname))
-        virtualhost = Group(Literal("virtualhost") + EQUAL + hostname )
+        virtualhost = Group(Literal("virtualhost") + EQUAL + '"' + hostname + '"' )
 
         # Validate all the matched elements
         checkport.setParseAction(self.validate_port)
@@ -429,7 +430,7 @@ class Ldirectord(GenericDirector):
         glb_optionals = ( checktimeout | negotiatetimeout | checkinterval | failurecount | fallback
                         | fallbackcommand | autoreload | callback | logfile | execute | fork | supervised
                         | quiescent | readdquiescent | emailalert | emailalertfreq | emailalertstatus
-                        | emailalertfrom | cleanstop | smtp | maintenance_dir )
+                        | emailalertfrom | cleanstop | smtp | maintenancedir )
 
         ## Define block of config
         # both of the next two styles works
