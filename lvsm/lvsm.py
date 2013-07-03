@@ -385,7 +385,7 @@ class ConfigurePrompt(CommandPrompt):
 
                 while True:
                     args = "vi " + temp.name
-                    logger.debug('Running command : %s' % (' '.join(args)))
+                    logger.debug('Running command : %s' % args)
                     result = subprocess.call(args, shell=True)
                     if result != 0:
                         print "[ERROR]: something happened during the edit of %s" % self.config[key]
