@@ -20,8 +20,8 @@ class Firewall():
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
-            print "[ERROR] problem with iptables - " + e.strerror
-            return
+            print "[ERROR] problem with iptables - " + e.strerror + ": " + args[0]
+            return list()
 
         if color:
             result = list()
@@ -48,8 +48,8 @@ class Firewall():
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
-            print ("[ERROR] problem with iptables - " + e.strerror)
-            return
+            print "[ERROR] problem with iptables - " + e.strerror + ": " + args[0] 
+            return list()
         return output.split("\n")
 
     def show_virtual(self, host, port, protocol, numeric, color):
@@ -69,8 +69,8 @@ class Firewall():
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
-            print "[ERROR] problem with iptables - " + e.strerror
-            return
+            print "[ERROR] problem with iptables - " + e.strerror + ": " + args[0]
+            return list()
         if output:
             lines = output.split('\n')
             for line in lines:
