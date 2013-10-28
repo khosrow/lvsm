@@ -8,7 +8,6 @@ import logging
 import utils
 from pyparsing import *
 from genericdirector import GenericDirector
-import logging
 
 logger = logging.getLogger('lvsm')
 
@@ -23,7 +22,7 @@ class Ldirectord(GenericDirector):
 
     def disable(self, host, port='', reason=''):
         # Prepare a canned error message
-        error_msg = "[ERROR] problem disabling on remote node - "
+        error_msg = "Problem disabling on remote node"
         if self.maintenance_dir:
             hostip = utils.gethostname(host)
             if not hostip:
@@ -47,8 +46,7 @@ class Ldirectord(GenericDirector):
                 f = open(self.maintenance_dir + "/" + hostport, 'w')
                 f.write(reason)
             except IOError as e:
-                print "[ERROR] " + e.strerror + ": '" + e.filename +\
-                      "'"
+                logger.error(e)
                 return False
 
             if self.nodes is not None:
@@ -61,9 +59,13 @@ class Ldirectord(GenericDirector):
                         try:
                             output = utils.check_output(args)
                         except OSError as e:
-                            print error_msg + e.strerror
+                            # print error_msg + e.strerror
+                            logger.error(error_msg)
+                            logger.error(e)
                         except subprocess.CalledProcessError as e:
-                            print error_msg + e.output
+                            # print error_msg + e.output
+                            logger.error(error_msg)
+                            logger.error(e)
             # now confirm that it's removed from ldirector
             i = 0
             print "Disabling server ",
@@ -88,13 +90,14 @@ class Ldirectord(GenericDirector):
             # the file, so we should still return true
             return True
         else:
-            print "[ERROR] maintenance_dir not defined in config."
+            # print "[ERROR] maintenance_dir not defined in config."
+            logger.error("maintenance_dir not defined in config.")
             return False
 
     def enable(self, host, port=''):
         """enable a previously disabled server"""
         # Prepare a canned error message.
-        error_msg = "[ERROR] problem enabling on remote node - "
+        error_msg = "Problem enabling on remote node"
         hostip = utils.gethostname(host)
         if not hostip:
             return False
@@ -120,8 +123,7 @@ class Ldirectord(GenericDirector):
                     try:
                         os.unlink(self.maintenance_dir + "/" + filename)
                     except OSError as e:
-                        print "[ERROR] " + e.strerror + ": '" +\
-                              e.filename + "'"
+                        logger.error(e)
                         return False
                     # Remove the same file from other nodes in the cluster.
                     if self.nodes is not None:
@@ -133,9 +135,13 @@ class Ldirectord(GenericDirector):
                                 try:
                                     output = utils.check_output(args)
                                 except OSError as e:
-                                    print error_msg + e.strerror
+                                    # print error_msg + e.strerror
+                                    logger.error(error_msg)
+                                    logger.error(e)
                                 except subprocess.CalledProcessError as e:
-                                    print error_msg + e.output
+                                    # print error_msg + e.output
+                                    logger.error(error_msg)
+                                    logger.error(e)
                     # Wait 4.5 seconds before checking output of ipvsadm.
                     i = 0
                     found = False
@@ -158,10 +164,12 @@ class Ldirectord(GenericDirector):
                     # the file, so we should still return true.
                     return True
             # If we make it out here means the real wasn't in the file list.
-            print "[ERROR] Server not found in maintenance_dir!"
+            # print "[ERROR] Server not found in maintenance_dir!"
+            logger.error("Server not found in maintenance_dir!")
             return False
         else:
-            print "[ERROR] maintenance_dir not defined!"
+            # print "[ERROR] maintenance_dir not defined!"
+            logger.error("maintenance_dir not defined!")
             return False
 
     def show_real_disabled(self, host, port, numeric):
@@ -177,14 +185,26 @@ class Ldirectord(GenericDirector):
             hostport = hostip + ":" + str(portnum)
         # output = ["", "Disabled servers:", "-----------------"]
         output = list()
-        filenames = os.listdir(self.maintenance_dir)
+
+        if not self.maintenance_dir:
+            logger.error("maintenance_dir not defined!")
+            return output
+
+        # make sure to catch errors like related to maint_dir
+        try:
+            filenames = os.listdir(self.maintenance_dir)
+        except (IOError, OSError) as e:
+            logger.error("Config item maintenance_dir")
+            logger.error(e)
+            return output
+
         for filename in filenames:
             try:
                 f = open(self.maintenance_dir + "/" + filename)
                 reason = 'Reason: ' + f.readline()
             except IOError as e:
                 reason = ''
-                print "[ERROR] " + e.strerror + ' \'' + e.filename + '\''
+                logger.error(e)
             if ((not host and not port) or
                 self.convert_filename(filename) == hostip or
                 self.convert_filename(filename) == hostip + ":" +
