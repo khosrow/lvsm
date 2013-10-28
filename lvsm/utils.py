@@ -6,6 +6,7 @@ import sys
 import termcolor
 import logging
 
+logger = logging.getLogger('lvsm')
 
 def parse_config(filename):
     #open config file and read it
@@ -32,7 +33,8 @@ def parse_config(filename):
             key = k.lstrip().rstrip()
             value = v.lstrip().rstrip()
             if config_items.get(key) is None:
-                print "[ERROR]: configuration file line %d: invalid variable '%s'"  % (linenum, key)
+                # print "[ERROR]: configuration file line %d: invalid variable '%s'"  % (linenum, key)
+                logger.error("configuration file line %d: invalid variable '%s'"  % (linenum, key))
                 sys.exit(1)
             else:
                 config_items[key] = value
@@ -42,8 +44,10 @@ def parse_config(filename):
                         file = open(value)
                         file.close()
                     except IOError as e:
-                        print "[ERROR]: in lvsm configuration file line %d" % linenum
-                        print "[ERROR]: %s: '%s'" % (e.strerror, e.filename)
+                        # print "[ERROR]: in lvsm configuration file line %d" % linenum
+                        # print "[ERROR]: %s: '%s'" % (e.strerror, e.filename)
+                        logger.error("in lvsm configuration file line %d" % linenum)
+                        logger.error(e)
                         sys.exit(1)
     return config_items
 
@@ -56,8 +60,9 @@ def print_file(filename):
         lines = file.readlines()
         file.close()
     except IOError as e:
-        print "[ERROR]: Unable to read '%s'" % e.filename
-        print "[ERROR]: %s: '%s'" % (e.strerror, e.filename)
+        # print "[ERROR]: Unable to read '%s'" % e.filename
+        # print "[ERROR]: %s: '%s'" % (e.strerror, e.filename)
+        logger.error(e)
     return lines
 
 
@@ -67,14 +72,16 @@ def getportnum(port):
     try:
         portnum = int(port)
         if portnum < 0 or portnum > 65535:
-            print "[ERROR]: invalid port number"
+            # print "[ERROR]: invalid port number"
+            logger.error("invalid port number")
             portnum = -1
     except:
         try:
             p = socket.getservbyname(port)
             portnum = int(p)
         except socket.error, e:
-            print "[ERROR]: %s" % str(e)
+            # print "[ERROR]: %s" % str(e)
+            logger.error(e)
             portnum = -1
     return portnum
 
@@ -83,7 +90,8 @@ def gethostname(host):
     try:
         hostip = socket.gethostbyname(host)
     except socket.gaierror as e:
-        print "[ERROR]: %s" % e.strerror
+        logger.error(e.strerror)
+        # print "[ERROR]: %s" % e.strerror
         return ''
     else:
         return hostip
@@ -98,13 +106,15 @@ def pager(pager,lines):
         try:
             p = subprocess.Popen(pager.split(), stdin=subprocess.PIPE)
         except OSError as e:
-            print e
+            logger.error("Problem with pager")
+            logger.error(e)
         else:
             stdout, stderr = p.communicate(input=text)
 
 
 def check_output(args):
     """Wrapper for subprocess.check_output"""
+    logger.debug("Running: %s " % " ".join(args))
     try:
         output = subprocess.check_output(args)
         return output
