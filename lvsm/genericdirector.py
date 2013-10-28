@@ -5,7 +5,9 @@ import socket
 import subprocess
 import utils
 import termcolor
+import logging
 
+logger = logging.getLogger('lvsm')
 
 class Server():
     def __init__(self, ip, port):
@@ -75,10 +77,10 @@ class GenericDirector(object):
             output = utils.check_output(args)
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-            return
+            return list()
         except subprocess.CalledProcessError as e:
             print "[ERROR] problem with ipvsadm - " + e.output
-            return
+            return list()
 
         if color:
             result = list()
@@ -101,11 +103,11 @@ class GenericDirector(object):
         # make sure we have a valid host
         hostip = utils.gethostname(host)
         if not hostip:
-            return
+            return list()
         # make sure the port is valid
         portnum = utils.getportnum(port)
         if portnum == -1:
-            return
+            return list()
         args = [self.ipvsadm, '-L']
         if numeric:
             args.append('-n')
@@ -116,10 +118,10 @@ class GenericDirector(object):
             output = utils.check_output(args)
         except OSError as e:
             print "[ERROR] problem with ipvsadm - " + e.strerror
-            return
+            return list()
         except subprocess.CalledProcessError as e:
             print "[ERROR] problem with ipvsadm - " + e.output
-            return
+            return list()
 
         if color:
             result = list()
@@ -153,20 +155,20 @@ class GenericDirector(object):
         """
         hostip = utils.gethostname(host)
         if not hostip:
-            return
+            return list()
         portnum = utils.getportnum(port)
         if portnum == -1:
-            return
+            return list()
         hostport = hostip + ":" + str(portnum)
         args = [self.ipvsadm, '-L', '-n']
         try:
             lines = utils.check_output(args)
         except OSError as e:
             print "[ERROR] " + e.strerror
-            return
+            return list()
         except subprocess.CalledProcessError as e:
             print "[ERROR] problem with ipvsadm - " + e.output
-            return
+            return list()
 
         virtual = ""
         real = ""
@@ -258,3 +260,27 @@ class GenericDirector(object):
         To be implemented by inheriting classes.
         """
         return True
+
+    def get_virtual(self, protocol):
+        """return a list of the virtual servers by protocol. 
+        Used for autocomplete mode in the shell.
+        """
+        args = [self.ipvsadm, '-L']
+        result = list()
+        try:
+            output = utils.check_output(args)
+        except OSError as e:
+            logger.error(" %s" % e.strerror)
+            return result
+
+        for line in output.splitlines():
+            if line.startswith(protocol):
+                r, sep, temp = line.partition(':')
+                result.append(r[5:])
+
+        return result
+
+    def get_real(self):
+        """return a list of all real servers.
+        Used for autocomplete mode in the shell."""
+        return list()
