@@ -272,9 +272,9 @@ class GenericDirector(object):
         except OSError as e:
             logger.error(" %s" % e.strerror)
             return result
-
-        for line in output.splitlines():
-            if line.startswith(protocol):
+        lines = output.splitlines()
+        for line in lines:
+            if line.startswith(protocol.upper()):
                 r, sep, temp = line.partition(':')
                 result.append(r[5:])
 
