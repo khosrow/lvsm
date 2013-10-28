@@ -470,6 +470,18 @@ class StatusPrompt(CommandPrompt):
                 completions = self.protocols[:]
             elif len(line) < 16:
                 completions = [p for p in self.protocols if p.startswith(text)]
+            # elif line.startswith("show virtual ") and len(line) > 16:
+                # completions = [p for p in self.director.get_virutal('tcp') if p.startswith(text)]
+            # elif line == "show virtual tcp ":
+            #     virtuals = self.director.get_virtual('tcp')
+            #     completions = [p for p in virtuals if p.startswith(text)]
+            # elif line == "show virtual tcp ":
+            elif line.startswith("show virtual tcp "):
+                virtuals = self.director.get_virtual('tcp')
+                completions = [p for p in virtuals if p.startswith(text)]
+            elif line == "show virtual udp ":
+                virtuals = self.director.get_virtual('udp')
+                completions = [p for p in virtuals if p.startswith(text)]
             else:
                 completions = []
         elif (line.startswith("show director") or
