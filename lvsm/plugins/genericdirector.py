@@ -55,7 +55,9 @@ class GenericDirector(object):
 
     def show(self, numeric, color):
         # Call ipvsadm and do the color highlighting.
-        result = self.show_running(numeric, color)
+        result = ["", "Layer 4 Load balancing"]
+        result += ["======================"]
+        result += self.show_running(numeric, color)
 
         # Show a list of disabled real servers.
         disabled = self.show_real_disabled('', '', numeric)
@@ -76,15 +78,15 @@ class GenericDirector(object):
         try:
             output = utils.check_output(args)
         except OSError as e:
-            print "[ERROR] problem with ipvsadm - " + e.strerror
+            logger.error("Problem with ipvsadm - %s" % e.strerror)
             return list()
         except subprocess.CalledProcessError as e:
-            print "[ERROR] problem with ipvsadm - " + e.output
+            logger.error("Problem with ipvsadm - %s " % e.output)
             return list()
 
         if color:
             result = list()
-            for line in output.split('\n'):
+            for line in output.split('\n')[3:]:
                 if (line.startswith('TCP') or
                     line.startswith('UDP') or
                     line.startswith('FWM')):
@@ -92,7 +94,7 @@ class GenericDirector(object):
                 else:
                     result.append(line)
         else:
-            result = output.split('\n')
+            result = output.split('\n')[3:]
         return result
 
     def show_virtual(self, host, port, prot, numeric, color):
@@ -117,15 +119,16 @@ class GenericDirector(object):
         try:
             output = utils.check_output(args)
         except OSError as e:
-            print "[ERROR] problem with ipvsadm - " + e.strerror
+            logger.error("Problem with ipvsadm - %s" % e.strerror)
             return list()
         except subprocess.CalledProcessError as e:
-            print "[ERROR] problem with ipvsadm - " + e.output
+            logger.error("Problem with ipvsadm - %s" % e.output)
             return list()
 
+        result = ["", "Layer 4 Load balancing"]
+        result += ["======================"]
         if color:
-            result = list()
-            for line in output.split('\n'):
+            for line in output.split('\n')[2:]:
                 if (line.startswith('TCP') or
                     line.startswith('UDP') or
                     line.startswith('FWM')):
@@ -133,7 +136,7 @@ class GenericDirector(object):
                 else:
                     result.append(line)
         else:
-            result = output.split('\n')
+            result += output.split('\n')[2:]
 
         return result
 
@@ -146,9 +149,10 @@ class GenericDirector(object):
             active = ["", "Active servers:", "---------------"] + active
         disabled = self.show_real_disabled(host, port, numeric)
         if disabled:
-            header = ["", "Disabled servers:", "-----------------"]
-            disabled = header + disabled
-        return active + disabled
+            disabled = ["", "Disabled servers:", "-----------------"] + disabled
+            # disabled = header + disabled
+        header = ["", "Layer 4 Load balancing" , "======================"]
+        return header + active + disabled + ["\n"]
 
     def show_real_active(self, host, port, numeric, color):
         """Show status of an active real server across multiple VIPs.
@@ -172,7 +176,6 @@ class GenericDirector(object):
 
         virtual = ""
         real = ""
-        # output = ["", "Active servers:", "---------------"]
         output = list()
         # find the output line that contains the rip
         for line in lines.split('\n'):
