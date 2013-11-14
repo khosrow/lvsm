@@ -14,7 +14,7 @@ def parse_config(filename):
     # list of valid config keys and their default values
     config_items = {'ipvsadm': 'ipvsadm',
                     'iptables': 'iptables',
-                    'pager': '/usr/bin/more',
+                    'pager': '/bin/more',
                     'director_config': '',
                     'firewall_config': '',
                     'director': '',
@@ -106,7 +106,7 @@ def pager(pager,lines):
         try:
             p = subprocess.Popen(pager.split(), stdin=subprocess.PIPE)
         except OSError as e:
-            logger.error("Problem with pager")
+            logger.error("Problem with pager: %s" % pager)
             logger.error(e)
         else:
             stdout, stderr = p.communicate(input=text)
