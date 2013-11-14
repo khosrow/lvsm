@@ -12,10 +12,10 @@ Usage: lvsm [-h] [-c <conffile>][commands]
 
 Options:
   -h, --help            Show this help message and exit
-
-  -c <conffile>         Specify which configuration file to use.
-  -config=<connfile>    The default is /etc/lvsm.conf
-
+  -c <conffile>, -config=<connfile>         
+                        Specify which configuration file to use
+                        The default is /etc/lvsm.conf
+  -d, --debug           Enable debug messages during runtime
   -v, --version         Display lvsm version
 
 Commands:
@@ -29,7 +29,7 @@ Use 'lvsm help <command>' for information on a specific command.
 import getopt
 import sys
 import __init__ as appinfo
-import lvsm
+import prompts.live
 import utils
 import logging
 
@@ -73,7 +73,8 @@ def main():
     logger.debug(str(config))
 
     try:
-        shell = lvsm.MainPrompt(config)
+        # shell = lvsm.MainPrompt(config)
+        shell = prompts.live.LivePrompt(config)
         if args:
             shell.onecmd(' '.join(args[:]))
         else:
