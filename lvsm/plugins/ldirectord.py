@@ -5,14 +5,16 @@ import subprocess
 import sys
 import time
 import logging
-import utils
 from pyparsing import *
-from genericdirector import GenericDirector
+
+# from lvsm import utils
+# from lvsm import genericdirector
+import lvsm
 
 logger = logging.getLogger('lvsm')
 
 
-class Ldirectord(GenericDirector):
+class Ldirectord(lvsm.genericdirector.GenericDirector):
     """Handles ldirector-specific functionality like enable/disable actions.
     """
     def __init__(self, maintenance_dir, ipvsadm,
@@ -24,12 +26,12 @@ class Ldirectord(GenericDirector):
         # Prepare a canned error message
         error_msg = "Problem disabling on remote node"
         if self.maintenance_dir:
-            hostip = utils.gethostname(host)
+            hostip = lvsm.utils.gethostname(host)
             if not hostip:
                 return False
             if port:
                 # check that it's a valid port
-                portnum = utils.getportnum(port)
+                portnum = lvsm.utils.getportnum(port)
                 if portnum == -1:
                     return False
                 hostport = hostip + ":" + str(portnum)
@@ -57,7 +59,7 @@ class Ldirectord(GenericDirector):
                         args = ['scp', filename, remote]
                         logger.debug('Running command : %s' % (' '.join(args)))
                         try:
-                            output = utils.check_output(args)
+                            output = lvsm.utils.check_output(args)
                         except OSError as e:
                             # print error_msg + e.strerror
                             logger.error(error_msg)
@@ -98,13 +100,13 @@ class Ldirectord(GenericDirector):
         """enable a previously disabled server"""
         # Prepare a canned error message.
         error_msg = "Problem enabling on remote node"
-        hostip = utils.gethostname(host)
+        hostip = lvsm.utils.gethostname(host)
         if not hostip:
             return False
         # If port was provided the file will be of form xx.xx.xx.xx:nn
         if port:
             # Check that the port is valid.
-            portnum = utils.getportnum(port)
+            portnum = lvsm.utils.getportnum(port)
             if portnum == -1:
                 return False
             hostport = hostip + ":" + str(portnum)
@@ -133,7 +135,7 @@ class Ldirectord(GenericDirector):
                                 args = ['ssh', node, cmd]
                                 logger.debug('Running command : %s' % (' '.join(args)))
                                 try:
-                                    output = utils.check_output(args)
+                                    output = lvsm.utils.check_output(args)
                                 except OSError as e:
                                     # print error_msg + e.strerror
                                     logger.error(error_msg)
@@ -176,10 +178,10 @@ class Ldirectord(GenericDirector):
         """show status of disabled real server across multiple VIPs"""
         # note that host='' and port='' returns all disabled server
         if host and port:
-            hostip = utils.gethostname(host)
+            hostip = lvsm.utils.gethostname(host)
             if not hostip:
                 return
-            portnum = utils.getportnum(port)
+            portnum = lvsm.utils.getportnum(port)
             if portnum == -1:
                 return
             hostport = hostip + ":" + str(portnum)
@@ -246,100 +248,6 @@ class Ldirectord(GenericDirector):
             return True
         else:
             return False
-
-    def validate_ip4(self, s, loc, tokens):
-        """Helper function to validate IPv4 addresses"""
-        octets = tokens[0].split(".")
-
-        logger = logging.getLogger('ldparser')
-        logger.debug('IP4 octets: %s', octets)
-
-        for octet in octets:
-            if int(octet) <= 255 and int(octet) >= 0:
-                pass
-            else:
-                errmsg = "invalid IPv4 address"
-                raise ParseFatalException(s, loc, errmsg)
-        return tokens
-
-    def validate_port(self, s, loc, tokens):
-        """Helper function that verifies we have a valid port number"""
-        # port = tokens[1]
-        port = tokens[0]
-        if int(port) < 65535 and int(port) > 0:
-            return tokens
-        else:
-            errmsg = "Invalid port number!"
-            raise ParseFatalException(s, loc, errmsg)
-        
-    def validate_scheduler(self, s, loc, tokens):
-        schedulers = ['rr', 'wrr', 'lc', 'wlc', 'lblc', 'lblcr', 'dh', 'sh', 'sed', 'nq']
-
-        logger = logging.getLogger('ldparser')
-        logger.debug('Tokens: %s', tokens)
-
-        if tokens[0][1] in schedulers:
-            return tokens
-        else:
-            errmsg = "Invalid scheduler type!"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_checktype(self, s, loc, tokens):
-        checktypes = ["connect", "negotiate", "ping", "off", "on", "external", "external-perl"]
-        if ((tokens[0][1] in checktypes) or (tokens[0][1].isdigit() and int(tokens[0][1]) > 0)):
-            return tokens
-        else:
-            errmsg = "Invalid checktype!"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_int(self, s, loc, tokens):
-        # if tokens[0][1].isdigit() and int(tokens[0][1]) > 0:
-        if tokens[0].isdigit() and int(tokens[0]) > 0:
-            return tokens
-        else:
-            errmsg = "Value must be an integer!"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_protocol(self, s, loc, tokens):
-        protocols = ['fwm', 'udp', 'tcp']
-        if tokens[0][1] in protocols:
-            return tokens
-        else:
-            errmsg = "Invalid protocol!"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_service(self, s, loc, tokens):
-        services = ["dns", "ftp", "http", "https", "http_proxy", "imap", "imaps"
-                    ,"ldap", "nntp", "mysql", "none", "oracle", "pop" , "pops"
-                    , "radius", "pgsql" , "sip" , "smtp", "submission", "simpletcp"]
-        if tokens[0][1] in services:
-            return tokens
-        else:
-            errmsg = "Invalid service type!"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_yesno(self, s, loc, tokens):
-        if tokens[0] == "yes" or tokens[0] == "no":
-            return tokens
-        else:
-            errmsg = "Value must be 'yes' or 'no'"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_httpmethod(self, s, loc, tokens):
-        if tokens[0][1] in ['GET', 'HEAD']:
-            return tokens
-        else:
-            errmsg = "Value must be 'GET' or 'HEAD'"
-            raise ParseFatalException(s, loc, errmsg)
-
-    def validate_lbmethod(self, s, loc, tokens):
-        """Validate the load balancing method used for real servers"""
-        methods = ['gate', 'masq', 'ipip']
-        if tokens[0] in methods:
-            return tokens
-        else:
-            errmsg = "Loadbalancing method must be one of %s " % methods
-            raise ParseFatalException(s, loc, errmsg)
 
     def tokenize_config(self, configfile):
         """Tokenize the config file. This method will do the bulk of the 
