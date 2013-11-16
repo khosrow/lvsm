@@ -1,28 +1,24 @@
 import subprocess
 import sys
-import plugins.firewall
-import prompts.configure
-import prompts.virtual
-import prompts.real
-import termcolor
 import logging
 
-from prompt import CommandPrompt
+from lvsm import firewall, termcolor
+from lvsm.prompts import configure, virtual, real, prompt
 
 logger = logging.getLogger('lvsm')
 
 
-class LivePrompt(CommandPrompt):
+class LivePrompt(prompt.CommandPrompt):
     """
     Class for the live command prompt. This is the main landing point
     and is called from __main__.py
     """
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
-        CommandPrompt.__init__(self, config)
+        prompt.CommandPrompt.__init__(self, config)
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
-        self.firewall = plugins.firewall.Firewall(self.config['iptables'])
+        self.firewall = firewall.Firewall(self.config['iptables'])
         self.rawprompt = "lvsm(live)# "
         if self.settings['color']:
             c = "red"
@@ -38,7 +34,8 @@ class LivePrompt(CommandPrompt):
     def do_configure(self, line):
         """Enter configuration level."""
         commands = line.split()
-        configshell = prompts.configure.ConfigurePrompt(self.config)
+        # configshell = prompts.configure.ConfigurePrompt(self.config)
+        configshell = configure.ConfigurePrompt(self.config)
         if not line:
             configshell.cmdloop()
         else:
@@ -50,11 +47,12 @@ class LivePrompt(CommandPrompt):
         \rLevel providing information on virtual IPs
         """
         commands = line.split()
-        virutalshell = prompts.virtual.VirtualPrompt(self.config)
+        # virtualshell = prompts.virtual.VirtualPrompt(self.config)
+        virtualshell = virtual.VirtualPrompt(self.config)
         if not line:
-            virutalshell.cmdloop()
+            virtualshell.cmdloop()
         else:
-            virutalshell.onecmd(' '.join(commands[0:]))
+            virtualshell.onecmd(' '.join(commands[0:]))
 
     def do_real(self,line):
         """
@@ -62,7 +60,8 @@ class LivePrompt(CommandPrompt):
         \rLevel providing information on real servers
         """
         commands = line.split()
-        realshell = prompts.real.RealPrompt(self.config)
+        # realshell = prompts.real.RealPrompt(self.config)
+        realshell = real.RealPrompt(self.config)
         if not line:
             realshell.cmdloop()
         else:

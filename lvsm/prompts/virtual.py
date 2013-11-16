@@ -2,10 +2,11 @@
 functionality form one location."""
 
 import sys
-import plugins.firewall
-import utils
-import termcolor
 import logging
+
+from lvsm import firewall
+from lvsm import utils
+from lvsm import termcolor
 
 from prompt import CommandPrompt
 
@@ -25,7 +26,7 @@ class VirtualPrompt(CommandPrompt):
         CommandPrompt.__init__(self, config)
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
-        self.firewall = plugins.firewall.Firewall(self.config['iptables'])
+        self.firewall = firewall.Firewall(self.config['iptables'])
         self.rawprompt = "lvsm(live)(virtual)# "
         if self.settings['color']:
             c = "red"

@@ -4,9 +4,9 @@ import cmd
 import logging
 import subprocess
 import sys
-import plugins.lvs
-import utils
-import termcolor
+from lvsm import lvs
+from lvsm import utils
+from lvsm import termcolor
 
 
 logger = logging.getLogger('lvsm')
@@ -26,12 +26,12 @@ class CommandPrompt(cmd.Cmd):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
-        self.director = plugins.lvs.Director(self.config['director'],
-                                             self.config['maintenance_dir'],
-                                             self.config['ipvsadm'],
-                                             self.config['director_config'],
-                                             self.config['director_cmd'],
-                                             self.config['nodes'])
+        self.director = lvs.Director(self.config['director'],
+                                     self.config['maintenance_dir'],
+                                     self.config['ipvsadm'],
+                                     self.config['director_config'],
+                                     self.config['director_cmd'],
+                                     self.config['nodes'])
         # disable color if the terminal doesn't support it
         if not sys.stdout.isatty():
             self.settings['color'] = False

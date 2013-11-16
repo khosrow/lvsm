@@ -2,7 +2,7 @@
 Parse a ldirector configuration file. The config specs are defined in ldirectord.cf(5)
 """
 import logging
-import parseactions
+from lvsm.plugins import parseactions
 from pyparsing import *
 
 logging.basicConfig(format='[%(levelname)s]: %(message)s')

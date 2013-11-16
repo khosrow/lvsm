@@ -3,23 +3,21 @@ import subprocess
 import sys
 import shutil
 import tempfile
-import utils
-import termcolor
 import logging
-
-from prompt import CommandPrompt
+from lvsm import utils, termcolor
+from lvsm.prompts import prompt
 
 
 logger = logging.getLogger('lvsm')
 
 
-class ConfigurePrompt(CommandPrompt):
+class ConfigurePrompt(prompt.CommandPrompt):
     """
     Configure prompt class. Handles commands for manipulating configuration
     items in the various plugins.
     """
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
-        CommandPrompt.__init__(self, config)
+        prompt.CommandPrompt.__init__(self, config)
         # List of moduels used in autocomplete function
         self.modules = ['director', 'firewall']
         self.rawprompt = "lvsm(configure)# "
