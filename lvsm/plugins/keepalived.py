@@ -1,6 +1,7 @@
-from genericdirector import GenericDirector
+# from genericdirector import GenericDirector
+import lvsm
 
-class Keepalived(GenericDirector):
+class Keepalived(lvsm.genericdirector.GenericDirector):
     """
     Implements Keepalived specific functions. Stub for now.
     """
