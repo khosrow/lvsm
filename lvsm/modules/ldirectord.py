@@ -6,15 +6,13 @@ import sys
 import time
 import logging
 from pyparsing import *
-
-# from lvsm import utils
-# from lvsm import genericdirector
-import lvsm
+from lvsm import utils, genericdirector
+from lvsm.modules import ldparser
 
 logger = logging.getLogger('lvsm')
 
 
-class Ldirectord(lvsm.genericdirector.GenericDirector):
+class Ldirectord(genericdirector.GenericDirector):
     """Handles ldirector-specific functionality like enable/disable actions.
     """
     def __init__(self, maintenance_dir, ipvsadm,
@@ -26,12 +24,12 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
         # Prepare a canned error message
         error_msg = "Problem disabling on remote node"
         if self.maintenance_dir:
-            hostip = lvsm.utils.gethostname(host)
+            hostip = utils.gethostname(host)
             if not hostip:
                 return False
             if port:
                 # check that it's a valid port
-                portnum = lvsm.utils.getportnum(port)
+                portnum = utils.getportnum(port)
                 if portnum == -1:
                     return False
                 hostport = hostip + ":" + str(portnum)
@@ -59,7 +57,7 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
                         args = ['scp', filename, remote]
                         logger.debug('Running command : %s' % (' '.join(args)))
                         try:
-                            output = lvsm.utils.check_output(args)
+                            output = utils.check_output(args)
                         except OSError as e:
                             # print error_msg + e.strerror
                             logger.error(error_msg)
@@ -100,13 +98,13 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
         """enable a previously disabled server"""
         # Prepare a canned error message.
         error_msg = "Problem enabling on remote node"
-        hostip = lvsm.utils.gethostname(host)
+        hostip = utils.gethostname(host)
         if not hostip:
             return False
         # If port was provided the file will be of form xx.xx.xx.xx:nn
         if port:
             # Check that the port is valid.
-            portnum = lvsm.utils.getportnum(port)
+            portnum = utils.getportnum(port)
             if portnum == -1:
                 return False
             hostport = hostip + ":" + str(portnum)
@@ -135,7 +133,7 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
                                 args = ['ssh', node, cmd]
                                 logger.debug('Running command : %s' % (' '.join(args)))
                                 try:
-                                    output = lvsm.utils.check_output(args)
+                                    output = utils.check_output(args)
                                 except OSError as e:
                                     # print error_msg + e.strerror
                                     logger.error(error_msg)
@@ -145,6 +143,7 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
                                     logger.error(error_msg)
                                     logger.error(e)
                     # Wait 4.5 seconds before checking output of ipvsadm.
+                    # This is an arbitrary number and could possibly be changed
                     i = 0
                     found = False
                     print "Enabling server ",
@@ -166,7 +165,6 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
                     # the file, so we should still return true.
                     return True
             # If we make it out here means the real wasn't in the file list.
-            # print "[ERROR] Server not found in maintenance_dir!"
             logger.error("Server not found in maintenance_dir!")
             return False
         else:
@@ -178,10 +176,10 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
         """show status of disabled real server across multiple VIPs"""
         # note that host='' and port='' returns all disabled server
         if host and port:
-            hostip = lvsm.utils.gethostname(host)
+            hostip = utils.gethostname(host)
             if not hostip:
                 return
-            portnum = lvsm.utils.getportnum(port)
+            portnum = utils.getportnum(port)
             if portnum == -1:
                 return
             hostport = hostip + ":" + str(portnum)
@@ -242,145 +240,9 @@ class Ldirectord(lvsm.genericdirector.GenericDirector):
             return False
 
         conf = "".join(f.readlines())
-        tokens = self.tokenize_config(conf)
+        tokens = ldparser.tokenize_config(conf)
 
         if tokens:
             return True
         else:
             return False
-
-    def tokenize_config(self, configfile):
-        """Tokenize the config file. This method will do the bulk of the 
-        parsing. Additional verifications can be made in parse_config"""
-        # Needed to parse the tabbed ldirector config
-        indentStack = [1]
-
-        # Define statics
-        EQUAL = Literal("=").suppress()
-        COLON = Literal(":").suppress()
-        # INDENT = White("    ").suppress()
-        # INDENT = Regex("^ {4,}").suppress()
-
-        ## Define parsing rules for single lines
-        hostname = Word(alphanums + '._+-')
-        ip4_address = Combine(Word(nums) - ('.' + Word(nums)) * 3)
-        ip4_address.setParseAction(self.validate_ip4)
-
-        port = Word(alphanums)
-        port.setParseAction(self.validate_port)
-
-        lbmethod = Word(alphas)
-        lbmethod.setParseAction(self.validate_lbmethod)
-
-        ip4_addrport = (ip4_address | hostname) + COLON + port
-        # Validate port numbers
-        # ip4_addrport.setParseAction(validate_port)
-
-        yesno = Word(printables)
-        yesno.setParseAction(self.validate_yesno)
-
-        integer = Word(printables)
-        integer.setParseAction(self.validate_int)
-
-        send_receive = dblQuotedString + Literal(",") + dblQuotedString
-
-        real4 = Group(Literal("real") + EQUAL + ip4_addrport + lbmethod + Optional(Word(nums)) + Optional(send_receive))
-        # real4 = Group(Literal("real") + EQUAL + ip4_addrport + lbmethod + Optional(Word(nums)) + Optional(Word(dblQuotedString) + Word(dblQuotedString)))
-        virtual4 = Group(Literal("virtual") + EQUAL + ip4_addrport)
-        comment = Literal("#") + Optional(restOfLine)
-
-        # Optional keywords
-        optionals = Forward()
-        autoreload = Group(Literal("autoreload") + EQUAL + yesno)
-        callback = Group(Literal("callback") + EQUAL + dblQuotedString)
-        checkcommand = Group(Literal("checkcommand") + EQUAL + (dblQuotedString | Word(printables)))
-        # checkinterval = Group(Literal("checkinterval") + EQUAL + Word(alphanums))
-        checkinterval = Group(Literal("checkinterval") + EQUAL + integer)
-        checktimeout = Group(Literal("checktimeout") + EQUAL + integer)
-        checktype = Group(Literal("checktype") + EQUAL + Word(alphanums))
-        checkport = Group(Literal("checkport") + EQUAL + Word(alphanums))
-        cleanstop = Group(Literal("cleanstop") + EQUAL + yesno)
-        database = Group(Literal("database") + EQUAL + dblQuotedString)
-        emailalert = Group(Literal("emailalert") + EQUAL + Word(printables))
-        emailalertfreq = Group(Literal("emailalertfreq") + EQUAL + integer)
-        emailalertfrom = Group(Literal("emailalertfrom") + EQUAL + Word(printables))
-        emailalertstatus = Group(Literal("emailalertstatus") + EQUAL + Word(printables))
-        execute = Group(Literal("execute") + EQUAL + Word(printables))
-        failurecount = Group(Literal("failurecount") + EQUAL + integer)
-        # fallback = Group(Literal("fallback") + EQUAL + ip4_addrport + Optional(lbmethod, default=''))
-        fallback = Group(Literal("fallback") + EQUAL + ip4_addrport )
-        fallbackcommand = Group(Literal("fallbackcommand") + EQUAL + (dblQuotedString | Word(printables)))
-        fork = Group(Literal("fork") + EQUAL + yesno)
-        httpmethod = Group(Literal("httpmethod") + EQUAL + Word(alphanums))
-        load = Group(Literal("load") + EQUAL + dblQuotedString)
-        logfile = Group(Literal("logfile") + EQUAL + Word(printables))
-        login = Group(Literal("login") + EQUAL + dblQuotedString)
-        maintenancedir = Group(Literal("maintenancedir") + EQUAL + Word(printables))
-        monitorfile = Group(Literal("monitorfile") + EQUAL + (dblQuotedString | Word(printables)))
-        negotiatetimeout = Group(Literal("negotiatetimeout") + EQUAL + integer)
-        netmask = Group(Literal("netmask") + EQUAL + ip4_address)
-        passwd = Group(Literal("passwd") + EQUAL + dblQuotedString)
-        persistent = Group(Literal("persistent") + EQUAL + integer)
-        protocol = Group(Literal("protocol") + EQUAL + Word(alphas))
-        quiescent = Group(Literal("quiescent") + EQUAL + yesno)
-        readdquiescent = Group(Literal("readdquiescent") + EQUAL + yesno)
-        receive = Group(Literal("receive") + EQUAL + dblQuotedString)
-        request = Group(Literal("request") + EQUAL + dblQuotedString)
-        scheduler = Group(Literal("scheduler") + EQUAL + Word(alphas))
-        secret = Group(Literal("secret") + EQUAL + dblQuotedString)
-        service = Group(Literal("service") + EQUAL + Word(alphas))
-        supervised = Group(Literal("supervised") + EQUAL + yesno)
-        smtp = Group(Literal("smtp") + EQUAL + (ip4_address | hostname))
-        virtualhost = Group(Literal("virtualhost") + EQUAL + '"' + hostname + '"' )
-
-        # Validate all the matched elements
-        checkport.setParseAction(self.validate_port)
-        checktype.setParseAction(self.validate_checktype)
-        httpmethod.setParseAction(self.validate_httpmethod)
-        protocol.setParseAction(self.validate_protocol)
-        scheduler.setParseAction(self.validate_scheduler)
-        service.setParseAction(self.validate_service)
-
-        # TODO: validate protocol with respect to the virtual directive
-        # TODO: implement virtual6, real6, fallback6
-
-        optionals << ( checkcommand | checkinterval | checktimeout | checktype | checkport | cleanstop
-                    | database | emailalert | emailalertfreq | emailalertstatus | failurecount | fallback
-                    | fallbackcommand | httpmethod | load | login | monitorfile | negotiatetimeout | netmask
-                    | passwd | persistent | protocol | quiescent | receive | request | scheduler | secret
-                    | service | smtp | virtualhost)
-        # optionals = ( checkcommand | checkinterval | checktimeout | checktype | checkport | cleanstop
-        #             | database | emailalert | emailalertfreq | emailalertstatus | failurecount | fallback
-        #             | fallbackcommand | httpmethod | load | login | monitorfile | negotiatetimeout | netmask
-        #             | passwd | persistent | protocol | quiescent | receive | request | scheduler | secret
-        #             | service | smtp | virtualhost)
-
-        glb_optionals = ( checktimeout | negotiatetimeout | checkinterval | failurecount | fallback
-                        | fallbackcommand | autoreload | callback | logfile | execute | fork | supervised
-                        | quiescent | readdquiescent | emailalert | emailalertfreq | emailalertstatus
-                        | emailalertfrom | cleanstop | smtp | maintenancedir )
-
-        ## Define block of config
-        # both of the next two styles works
-        # virtual4_keywords = indentedBlock(OneOrMore(real4 & ZeroOrMore(optionals)), indentStack, True)
-        # virtual4_block = virtual4 + virtual4_keywords
-        virtual4_keywords = OneOrMore(real4) & ZeroOrMore(optionals)
-        virtual4_block = virtual4 + indentedBlock(virtual4_keywords, indentStack, True)
-
-        virtual4_block.ignore(comment)
-
-        allconfig = OneOrMore(virtual4_block) & ZeroOrMore(glb_optionals)
-        allconfig.ignore(comment)
-
-        try:
-            tokens = allconfig.parseString(configfile)
-        except ParseException as pe:
-            print "[ERROR] While parsing config file"
-            print pe
-        except ParseFatalException as pe:
-            print "[ERROR] While parsing config file"
-            print pe
-        else:
-            return tokens
-        finally:
-            pass
