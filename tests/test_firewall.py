@@ -72,5 +72,7 @@ target     prot opt source               destination"""
             result = result + line + '\n'
 
         self.assertEqual(result.rstrip(), expected_result.rstrip())
+
+
 if __name__ == "__main__":
     unittest.main()
