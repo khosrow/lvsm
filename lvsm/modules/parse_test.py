@@ -18,7 +18,6 @@ t = kaparser.tokenize_config(conf)
 if t:
 	print "%s parsed OK!" % c
 	print t.dump()
-	# for i in t:
-		# print i
+
 else:
 	print "%s didn't parse OK!" % c
