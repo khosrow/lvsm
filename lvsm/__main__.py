@@ -73,7 +73,6 @@ def main():
     logger.debug(str(config))
 
     try:
-        # shell = lvsm.MainPrompt(config)
         shell = prompts.live.LivePrompt(config)
         if args:
             shell.onecmd(' '.join(args[:]))
