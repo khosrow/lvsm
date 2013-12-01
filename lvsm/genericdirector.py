@@ -47,6 +47,7 @@ class Virtual(Server):
             output.append(r.__str__(numeric, color))
         return '\n'.join(output)
 
+        
 class Real(Server):
     def __init__(self, ip, port, weight, method, active, inactive):
         Server.__init__(self, ip,port)
@@ -82,9 +83,7 @@ class GenericDirector(object):
     is the fallback. Should be inherited by classes implementing specific
     director funcationality.
     """
-    def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd='', nodes=''):
-        self.maintenance_dir = maintenance_dir
+    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes=''):
         self.ipvsadm = ipvsadm
         self.configfile = configfile
         self.restart_cmd = restart_cmd
