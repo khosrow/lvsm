@@ -29,10 +29,10 @@ Use 'lvsm help <command>' for information on a specific command.
 import getopt
 import sys
 import __init__ as appinfo
-import prompts.live
-import utils
 import logging
 
+from lvsm import utils
+from lvsm import shell
 
 def usage(code, msg=''):
     if code:
@@ -73,11 +73,11 @@ def main():
     logger.debug(str(config))
 
     try:
-        shell = prompts.live.LivePrompt(config)
+        lvsshell = shell.LivePrompt(config)
         if args:
-            shell.onecmd(' '.join(args[:]))
+            lvsshell.onecmd(' '.join(args[:]))
         else:
-            shell.cmdloop()
+            lvsshell.cmdloop()
     except KeyboardInterrupt:
         print "\nleaving abruptly!"
         sys.exit(1)
