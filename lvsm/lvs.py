@@ -3,9 +3,7 @@ Director specific funcationality
 """
 from genericdirector import GenericDirector
 from modules.ldirectord import Ldirectord
-# from ldirectord import Ldirectord
 from modules.keepalived import Keepalived
-# from keepalived import Keepalived
 
 class Director(object):
     """
