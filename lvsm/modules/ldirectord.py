@@ -15,10 +15,19 @@ logger = logging.getLogger('lvsm')
 class Ldirectord(genericdirector.GenericDirector):
     """Handles ldirector-specific functionality like enable/disable actions.
     """
-    def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd='', nodes=''):
-        super(Ldirectord, self).__init__(maintenance_dir, ipvsadm,
-                                         configfile, restart_cmd, nodes)
+    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes=''):
+        super(Ldirectord, self).__init__(ipvsadm, configfile, restart_cmd, nodes)
+        try:
+            f = open(self.configfile)
+        except OSError as e:
+            logger.error(e)
+
+        self.maintenance_dir = ""
+
+        for line in f:
+            if line.find("maintenancedir") > -1:
+                s, sep, path = line.partition('=')
+                self.maintenance_dir = path.strip()
 
     def disable(self, host, port='', reason=''):
         # Prepare a canned error message
