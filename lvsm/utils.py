@@ -1,9 +1,7 @@
 """Common utility functions used by lvsm"""
 import socket
 import subprocess
-import re
 import sys
-import termcolor
 import logging
 
 logger = logging.getLogger('lvsm')
@@ -18,7 +16,6 @@ def parse_config(filename):
                     'director_config': '',
                     'firewall_config': '',
                     'director': '',
-                    'maintenance_dir': '',
                     'director_cmd': '',
                     'firewall_cmd': '',
                     'nodes': '',
@@ -33,7 +30,6 @@ def parse_config(filename):
             key = k.lstrip().rstrip()
             value = v.lstrip().rstrip()
             if config_items.get(key) is None:
-                # print "[ERROR]: configuration file line %d: invalid variable '%s'"  % (linenum, key)
                 logger.error("configuration file line %d: invalid variable '%s'"  % (linenum, key))
                 sys.exit(1)
             else:
@@ -44,8 +40,6 @@ def parse_config(filename):
                         file = open(value)
                         file.close()
                     except IOError as e:
-                        # print "[ERROR]: in lvsm configuration file line %d" % linenum
-                        # print "[ERROR]: %s: '%s'" % (e.strerror, e.filename)
                         logger.error("in lvsm configuration file line %d" % linenum)
                         logger.error(e)
                         sys.exit(1)
@@ -60,8 +54,6 @@ def print_file(filename):
         lines = file.readlines()
         file.close()
     except IOError as e:
-        # print "[ERROR]: Unable to read '%s'" % e.filename
-        # print "[ERROR]: %s: '%s'" % (e.strerror, e.filename)
         logger.error(e)
     return lines
 
@@ -72,7 +64,6 @@ def getportnum(port):
     try:
         portnum = int(port)
         if portnum < 0 or portnum > 65535:
-            # print "[ERROR]: invalid port number"
             logger.error("invalid port number")
             portnum = -1
     except:
@@ -80,7 +71,6 @@ def getportnum(port):
             p = socket.getservbyname(port)
             portnum = int(p)
         except socket.error, e:
-            # print "[ERROR]: %s" % str(e)
             logger.error(e)
             portnum = -1
     return portnum
@@ -91,7 +81,6 @@ def gethostname(host):
         hostip = socket.gethostbyname(host)
     except socket.gaierror as e:
         logger.error(e.strerror)
-        # print "[ERROR]: %s" % e.strerror
         return ''
     else:
         return hostip
@@ -119,28 +108,6 @@ def check_output(args):
         output = subprocess.check_output(args)
         return output
     # python 2.6 compatibility code
-    except AttributeError as e:
+    except AttributeError:
         output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         return output
-
-def has_quotes(value):
-    """Check to see if a string is bounded in quotes"""
-    m_re = re.search("^\"(.*)\"", value)
-    if m_re is not None:
-        return True
-    else:
-        return False
-
-def config_check_ipv4(value):
-    """Check that the IPv4 number is in the correct range"""
-    m_re = re.search("^(\d+)\.(\d+)\.(\d+)\.(\d+)$", value)
-    if m_re is not None:
-        if (int(m_re.group(1)) >= 0 and int(m_re.group(1)) <= 255 and
-            int(m_re.group(2)) >= 0 and int(m_re.group(2)) <= 255 and
-            int(m_re.group(3)) >= 0 and int(m_re.group(3)) <= 255 and
-            int(m_re.group(4)) >= 0 and int(m_re.group(4)) <= 255):
-            return True
-        else:
-            return False
-    else:
-        return False
