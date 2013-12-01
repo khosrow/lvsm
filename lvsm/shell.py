@@ -1,22 +1,30 @@
-"""Various levels of command line shells for accessing ipvs and iptables
-functionality form one location."""
+"""Generic lvsm CommandPrompt"""
 
 import cmd
 import getpass
+import logging
+import shutil
 import subprocess
 import sys
-import shutil
 import tempfile
-import lvsdirector
-import firewall
-import utils
-import termcolor
-import logging
+
+from lvsm import lvs
+from lvsm import utils
+from lvsm import termcolor
+from lvsm import firewall
+
+
+# from lvsm.prompts import configure, virtual, real, prompt
 
 
 logger = logging.getLogger('lvsm')
 
+
 class CommandPrompt(cmd.Cmd):
+    """
+    Generic Class for all command prompts used in lvsm. All prompts should
+    inherit from CommandPrompt and not from cmd.Cmd directly.
+    """
     settings = {'numeric': False,
                 'color': True}
     variables = ['numeric', 'color']
@@ -26,19 +34,29 @@ class CommandPrompt(cmd.Cmd):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
-        self.director = lvsdirector.Director(self.config['director'],
-                                             self.config['maintenance_dir'],
-                                             self.config['ipvsadm'],
-                                             self.config['director_config'],
-                                             self.config['director_cmd'],
-                                             self.config['nodes'])
+        self.director = lvs.Director(self.config['director'],
+                                     # self.config['maintenance_dir'],
+                                     self.config['ipvsadm'],
+                                     self.config['director_config'],
+                                     self.config['director_cmd'],
+                                     self.config['nodes'])
         # disable color if the terminal doesn't support it
         if not sys.stdout.isatty():
             self.settings['color'] = False
 
-    def help_help(self):
-        print
-        print "show help"
+    def emptyline(self):
+        """Override the default emptyline and return a blank line."""
+        pass
+
+    def postcmd(self, stop, line):
+        """Hook method executed just after a command dispatch is finished."""
+        # check to see if the prompt should be colorized
+        if self.settings['color']:
+            self.prompt = termcolor.colored(self.rawprompt, #attrs=None)
+                                            color="red", attrs=["bold"])
+        else:
+            self.prompt = self.rawprompt
+        return stop
 
     def do_exit(self, line):
         """Exit from lvsm shell."""
@@ -97,16 +115,6 @@ class CommandPrompt(cmd.Cmd):
         """Return to previous context."""
         return True
 
-    def help_set(self):
-        print "Set or display different variables."
-        print ""
-        print "syntax: set [<variable>] [<value>]"
-        print ""
-        print "<variable> can be one of:"
-        print "\tnumeric on|off          Toggle numeric ipvsadm display ON/OFF"
-        print "\tcolor on|off            Toggle color display ON/OFF"
-        print ""
-
     def do_set(self, line):
         """Set or display different variables."""
         if not line:
@@ -130,6 +138,7 @@ class CommandPrompt(cmd.Cmd):
                     if tokens[1] == "on":
                         self.settings['color'] = True
                         self.prompt = termcolor.colored(self.rawprompt,
+                                                        color="red",
                                                         attrs=["bold"])
                     elif tokens[1] == "off":
                         self.settings['color'] = False
@@ -140,6 +149,20 @@ class CommandPrompt(cmd.Cmd):
                     self.help_set()
             else:
                 self.help_set()
+
+    def help_help(self):
+        print
+        print "show help"
+
+    def help_set(self):
+        print "Set or display different variables."
+        print ""
+        print "syntax: set [<variable>] [<value>]"
+        print ""
+        print "<variable> can be one of:"
+        print "\tnumeric on|off          Toggle numeric ipvsadm display ON/OFF"
+        print "\tcolor on|off            Toggle color display ON/OFF"
+        print ""
 
     def complete_set(self, text, line, begidx, endidx):
         """Tab completion for the set command."""
@@ -152,74 +175,73 @@ class CommandPrompt(cmd.Cmd):
             completions = []
         return completions
 
-    def emptyline(self):
-        """Override the default emptyline and return a blank line."""
-        pass
 
-    def postcmd(self, stop, line):
-        """Hook method executed just after a command dispatch is finished."""
-        # check to see if the prompt should be colorized
-        if self.settings['color']:
-            self.prompt = termcolor.colored(self.rawprompt, attrs=None)
-                                            # attrs=["bold"])
-        else:
-            self.prompt = self.rawprompt
-        return stop
-
-
-class MainPrompt(CommandPrompt):
-    """Class to handle the top level prompt in lvsm."""
+class LivePrompt(CommandPrompt):
+    """
+    Class for the live command prompt. This is the main landing point
+    and is called from __main__.py
+    """
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+        # super(CommandPrompt, self).__init__()
         CommandPrompt.__init__(self, config)
-        self.modules = ['director', 'firewall']
-        self.rawprompt = "lvsm# "
+        self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
+        self.protocols = ['tcp', 'udp', 'fwm']
+        self.firewall = firewall.Firewall(self.config['iptables'])
+        self.rawprompt = "lvsm(live)# "
         if self.settings['color']:
-            # c = "red"
-            c = None
-            # a = ["bold"]
-            a = None
+            c = "red"
+            # c = None
+            a = ["bold"]
+            # a = None
         else:
             c = None
             a = None
-        self.prompt = termcolor.colored("lvsm# ", color=c, attrs=a)
-
-    def help_configure(self):
-        print "The configuration level."
-        print ""
-        print "Items related to configuration of IPVS and iptables are available here."
+        self.prompt = termcolor.colored(self.rawprompt, color=c,
+                                        attrs=a)
 
     def do_configure(self, line):
         """Enter configuration level."""
         commands = line.split()
+        # configshell = prompts.configure.ConfigurePrompt(self.config)
         configshell = ConfigurePrompt(self.config)
         if not line:
             configshell.cmdloop()
         else:
             configshell.onecmd(' '.join(commands[0:]))
 
-    def help_status(self):
-        print "The status level."
-        print ""
-        print "Running status of IPVS and iptables are available here."
-
-    def do_status(self, line):
-        """Enter status level."""
-
-        # Running status of IPVS and iptables are available here.
-        # """
+    def do_virtual(self, line):
+        """
+        \rVirtual IP level. 
+        \rLevel providing information on virtual IPs
+        """
         commands = line.split()
-        statshell = StatusPrompt(self.config)
-        if not line:
-            statshell.cmdloop()
-        else:
-            statshell.onecmd(' '.join(commands[0:]))
 
-    def help_restart(self):
-        print "Restart the given module."
-        print ""
-        print "Module must be one of director or firewall."
-        print ""
-        print "syntax: restart director|firewall"
+        # virtualshell = prompts.virtual.VirtualPrompt(self.config)
+        # virtualshell = virtual.VirtualPrompt(self.config)
+
+        if self.config['director'] == 'ldirectord':
+            from lvsm.modules import ldirectordprompts
+            virtualshell = ldirectordprompts.VirtualPrompt(self.config)
+        else:
+            virtualshell = VirtualPrompt(self.config)
+
+        if not line:
+            virtualshell.cmdloop()
+        else:
+            virtualshell.onecmd(' '.join(commands[0:]))
+
+    def do_real(self,line):
+        """
+        \rReal Server level.
+        \rLevel providing information on real servers
+        """
+        commands = line.split()
+        # realshell = prompts.real.RealPrompt(self.config)
+        realshell = RealPrompt(self.config)
+        if not line:
+            realshell.cmdloop()
+        else:
+            realshell.onecmd(' '.join(commands[0:]))
 
     def do_restart(self, line):
         """Restart the direcotr or firewall module."""
@@ -229,20 +251,33 @@ class MainPrompt(CommandPrompt):
                 try:
                     subprocess.call(self.config['director_cmd'], shell=True)
                 except OSError as e:
-                    print "[ERROR]: problem restaring director - " + e.strerror
+                    logger.error("probmel while restaring director - %s" % e.strerror)
             else:
-                print "[ERROR]: 'director_cmd' not defined in config!"
+                logger.error("'director_cmd' not defined in lvsm configuration!")
         elif line == "firewall":
             if self.config['firewall_cmd']:
                 print "restarting firewall"
                 try:
                     subprocess.call(self.config['firewall_cmd'], shell=True)
                 except OSError as e:
-                    print "[ERROR]: problem restaring firewall - " + e.strerror
+                    logger.error("problem restaring firewall - %s" % e.strerror)
             else:
-                print "[ERROR]: 'firewall_cmd' not defined in config!"
+                logger.error("'firewall_cmd' not defined in lvsm configuration!")
         else:
             print "syntax: restart firewall|director"
+
+    def help_configure(self):
+        print ""
+        print "The configuration level."
+        print "Items related to configuration of IPVS and iptables are available here."
+        print ""
+
+    def help_restart(self):
+        print "Restart the given module."
+        print ""
+        print "Module must be one of director or firewall."
+        print ""
+        print "syntax: restart director|firewall"
 
     def complete_restart(self, text, line, begix, endidx):
         """Tab completion for restart command."""
@@ -257,6 +292,10 @@ class MainPrompt(CommandPrompt):
 
 
 class ConfigurePrompt(CommandPrompt):
+    """
+    Configure prompt class. Handles commands for manipulating configuration
+    items in the various plugins.
+    """
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         CommandPrompt.__init__(self, config)
         # List of moduels used in autocomplete function
@@ -264,14 +303,14 @@ class ConfigurePrompt(CommandPrompt):
         self.rawprompt = "lvsm(configure)# "
         # Setup color related things here
         if self.settings['color']:
-            # c = "red"
-            c = None
-            # a = ["bold"]
-            a = None
+            c = "red"
+            # c = None
+            a = ["bold"]
+            # a = None
         else:
             c = None
             a = None
-        self.prompt = termcolor.colored("lvsm(configure)# ", color=c,
+        self.prompt = termcolor.colored(self.rawprompt, color=c,
                                         attrs=a)
 
     def svn_sync(self, filename, username, password):
@@ -286,11 +325,11 @@ class ConfigurePrompt(CommandPrompt):
                 filename]
         svn_cmd = ('svn commit --username ' + username +
                    ' --password ' + password + ' ' + filename)
-        logger.debug('Running command : %s' % svn_cmd )
+        logger.debug('Running command : %s' % svn_cmd)
         try:
             result = subprocess.call(svn_cmd, shell=True)
         except OSError as e:
-            print "[ERROR]: problem with configuration sync - " + e.strerror
+            logger.error("Problem with configuration sync - %s" % e.strerror)
 
         # update config on all nodes
         n = self.config['nodes']
@@ -313,7 +352,7 @@ class ConfigurePrompt(CommandPrompt):
                     try:
                         subprocess.call(args, shell=True)
                     except OSError as e:
-                        print "[ERROR]: problem with configuration sync - " + e.strerror
+                        logger.error("Problem with configuration sync - %s" % e.strerror)
 
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command."""
@@ -327,26 +366,25 @@ class ConfigurePrompt(CommandPrompt):
         return completions
 
     def help_show(self):
+        ""
         print "Show configuration for an item. The configuration files are defined in lvsm.conf"
-        print ""
-        
         print ""
         print "<module> can be one of the following"
         print "\tdirector                the IPVS director config file"
         print "\tfirewall                the iptables firewall config file"
+        print ""
 
     def do_show(self, line):
         """Show director or firewall configuration."""
         if line == "director" or line == "firewall":
             configkey = line + "_config"
             if not self.config[configkey]:
-                print("[ERROR]: '" + configkey + "' not defined in " +
-                      "configuration file!")
+                logger.error("'%s' not defined in configuration file!" % configkey)
             else:
                 lines = utils.print_file(self.config[configkey])
-                utils.pager(self.config['pager'],lines)
+                utils.pager(self.config['pager'], lines)
         else:
-            print "syntax: show <module>"
+            print "\nsyntax: show <module>\n"
 
     def complete_edit(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
@@ -360,13 +398,14 @@ class ConfigurePrompt(CommandPrompt):
         return completions
 
     def help_edit(self):
-        print "Edit the configuration of an item. The configuration files are defined in lvsm.conf"
         print ""
+        print "Edit the configuration of an item. The configuration files are defined in lvsm.conf"
         print "syntax: edit <module>"
         print ""
         print "<module> can be one of the follwoing"
         print "\tdirector                the IPVS director config file"
         print "\tfirewall                the iptables firewall config file"
+        print ""
 
     def do_edit(self, line):
         """Edit the configuration of an item."""
@@ -374,21 +413,21 @@ class ConfigurePrompt(CommandPrompt):
             key = line + "_config"
             filename = self.config[key]
             if not filename:
-                print "[ERROR]: '" + key + "' not defined in config file!"
+                logger.error("'%s' not defined in config file!" % key)
             else:
                 # make a temp copy of the config
                 try:
                     temp = tempfile.NamedTemporaryFile()
                     shutil.copyfile(filename, temp.name)
                 except IOError as e:
-                    print "[ERROR]: " + e.strerror
+                    logger.error(e.strerror)
 
                 while True:
                     args = "vi " + temp.name
                     logger.debug('Running command : %s' % args)
                     result = subprocess.call(args, shell=True)
                     if result != 0:
-                        print "[ERROR]: something happened during the edit of %s" % self.config[key]
+                        logger.error("Something happened during the edit of %s" % self.config[key])
                     # Parse the config file and verify the changes
                     # If successful, copy changes back to original file
                     if self.director.parse_config(temp.name):
@@ -400,20 +439,20 @@ class ConfigurePrompt(CommandPrompt):
                         if answer.lower() == 'y':
                             pass
                         elif answer.lower() == 'n':
-                            print "[WARN] Changes were not saved due to syntax errors."
+                            logger.warn("Changes were not saved due to syntax errors.")
                             break
 
         elif line == "firewall":
             key = line + "_config"
             filename = self.config[key]
             if not filename:
-                print "[ERROR]: '" + key + "' not defined in config file!"
+                logger.error("'%s' not defined in config file!" % key)
             else:
                 args = "vi " + filename
                 logger.debug(str(args))
                 result = subprocess.call(args, shell=True)
                 if result != 0:
-                    print "[ERROR]: something happened during the edit of %s" % self.config[key]
+                    logger.error("Something happened during the edit of %s" % self.config[key])
         else:
             print "syntax: edit <module>"
 
@@ -442,182 +481,236 @@ class ConfigurePrompt(CommandPrompt):
                               username, password)
         else:
             print "You need to define version_control in lvsm.conf"
+"""Various levels of command line shells for accessing ipvs and iptables
+functionality form one location."""
 
 
-class StatusPrompt(CommandPrompt):
+class VirtualPrompt(CommandPrompt):
+    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+        # Change the word delimiters so that - or . don't cause a new match
+        try:
+            import readline
+            readline.set_completer_delims(' ')
+        except ImportError:
+            pass
+        # super(CommandPrompt, self).__init__()
+        CommandPrompt.__init__(self, config)
+        self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
+        self.protocols = ['tcp', 'udp', 'fwm']
+        self.firewall = firewall.Firewall(self.config['iptables'])
+        self.rawprompt = "lvsm(live)(virtual)# "
+        if self.settings['color']:
+            c = "red"
+            # c = None
+            a = ["bold"]
+            # a = None
+        else:
+            c = None
+            a = None
+        self.prompt = termcolor.colored(self.rawprompt, color=c,
+                                        attrs=a)
+
+    def do_status(self,line):
+        """
+        \rDisplay status of all virtual servers
+        """
+        syntax = "\nstatus\n"
+        numeric = self.settings['numeric']
+        color = self.settings['color']
+
+        if not line:
+            d = self.director.show(numeric, color)
+            f = self.firewall.show(numeric, color)
+            utils.pager(self.config['pager'], d + f)
+        else:
+            print syntax            
+
+    def do_show(self, line):
+        """
+        \rShow status of a virtual server
+        \rsyntax: show tcp|udp|fwm <vip> <port>
+        """
+        syntax = "\nsyntax: show tcp|udp|fwm <vip> <port>\n"
+        commands = line.split()
+        numeric = self.settings['numeric']
+        color = self.settings['color']
+        
+        if len(commands) == 3:
+            protocol = commands[0]
+            vip = commands[1]
+            port = commands[2]
+            if protocol in self.protocols:
+                d = self.director.show_virtual(vip, port, protocol, numeric, color)
+                f = self.firewall.show_virtual(vip, port, protocol, numeric, color)
+                utils.pager(self.config['pager'], d + f)
+            else:
+                print syntax
+        else:
+            print syntax
+
+    def complete_show(self, text, line, begidx, endidx):
+        """Tab completion for the show command"""
+        if len(line) < 8:
+            completions = [p for p in self.protocols if p.startswith(text)]
+        elif len(line.split()) == 2:
+            prot = line.split()[1]
+            virtuals = self.director.get_virtual(prot)
+            if not text:
+                completions = virtuals[:]
+        elif len(line.split()) == 3 and text:
+            prot = line.split()[1]
+            virtuals = self.director.get_virtual(prot)
+            completions = [p for p in virtuals if p.startswith(text)]
+
+        return completions
+"""Various levels of command line shells for accessing ipvs and iptables
+functionality form one location."""
+
+
+class RealPrompt(CommandPrompt):
     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
         CommandPrompt.__init__(self, config)
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.firewall = firewall.Firewall(self.config['iptables'])
-        self.rawprompt = "lvsm(status)# "
+        self.rawprompt = "lvsm(live)(real)# "
         if self.settings['color']:
-            # c = "red"
-            c = None
-            # a = ["bold"]
-            a = None
+            c = "red"
+            # c = None
+            a = ["bold"]
+            # a = None
         else:
             c = None
             a = None
-        self.prompt = termcolor.colored("lvsm(status)# ", color=c,
+        self.prompt = termcolor.colored(self.rawprompt, color=c,
                                         attrs=a)
 
-    def complete_show(self, text, line, begidx, endidx):
-        """Tab completion for the show command"""
-        if line.startswith("show virtual "):
-            if line == "show virtual ":
-                completions = self.protocols[:]
-            elif len(line) < 16:
-                completions = [p for p in self.protocols if p.startswith(text)]
-            # elif line.startswith("show virtual ") and len(line) > 16:
-                # completions = [p for p in self.director.get_virutal('tcp') if p.startswith(text)]
-            # elif line == "show virtual tcp ":
-            #     virtuals = self.director.get_virtual('tcp')
-            #     completions = [p for p in virtuals if p.startswith(text)]
-            # elif line == "show virtual tcp ":
-            elif line.startswith("show virtual tcp "):
-                virtuals = self.director.get_virtual('tcp')
-                completions = [p for p in virtuals if p.startswith(text)]
-            elif line == "show virtual udp ":
-                virtuals = self.director.get_virtual('udp')
-                completions = [p for p in virtuals if p.startswith(text)]
-            else:
-                completions = []
-        elif (line.startswith("show director") or
-              line.startswith("show firewall") or
-              line.startswith("show nat") or
-              line.startswith("show real")):
-            completions = []
-        elif not text:
-            completions = self.modules[:]
-        else:
-            completions = [m for m in self.modules if m.startswith(text)]
-        return completions
-
-    def help_show(self):
-        print "Show information about a specific item."
-        print ""
-        print "syntax: show <module>"
-        print ""
-        print "<module> can be one of the following"
-        print "\tdirector                the running ipvs status"
-        print "\tfirewall                the iptables firewall status"
-        print "\tnat                     the NAT done by iptables"
-        print "\treal <server> <port>    the status of a realserver"
-        print "\tvirtual tcp|udp|fwm <vip> <port>    the status of a specific VIP"
-
     def do_show(self, line):
-        """Show information about a specific item."""
+        """Show information about a specific real server."""
+        syntax = "\nsyntax: show <server> <port>\n"
         commands = line.split()
         numeric = self.settings['numeric']
         color = self.settings['color']
-        if line == "director":
-            utils.pager(self.config['pager'], self.director.show(numeric, color))
-        elif line == "firewall":
-            utils.pager(self.config['pager'], self.firewall.show(numeric, color))
-        elif line == "nat":
-            utils.pager(self.config['pager'], self.firewall.show_nat(numeric))
-        elif line.startswith("virtual"):
-            if len(commands) == 4:
-                protocol = commands[1]
-                vip = commands[2]
-                port = commands[3]
-                if protocol in self.protocols:
-                    d = self.director.show_virtual(vip, port, protocol, numeric, color)
-                    if d:
-                        f = self.firewall.show_virtual(vip, port, protocol, numeric, color)
-                        utils.pager(self.config['pager'], d + f)
-                else:
-                    print "syntax: virtual tcp|udp|fwm <vip> <port>"
-            else:
-                print "syntax: virtual tcp|udp|fwm <vip> <port>"
-        elif line.startswith("real"):
-            if len(commands) == 3:
-                host = commands[1]
-                port = commands[2]
-                utils.pager(self.config['pager'], self.director.show_real(host, port, numeric, color))
-            else:
-                print "syntax: real <server> <port>"
+        if len(commands) == 2:
+            host = commands[0]
+            port = commands[1]
+            utils.pager(self.config['pager'], self.director.show_real(host, port, numeric, color))
         else:
-            print "syntax: show <module>"
-
-    def complete_disable(self, text, line, begidx, endidx):
-        """Tab completion for disable command."""
-        servers = ['real', 'virtual']
-        if  (line.startswith("disable real") or
-             line.startswith("disable virtual")):
-            completions = []
-        elif not text:
-            completions = servers[:]
-        else:
-            completions = [s for s in servers if s.startswith(text)]
-        return completions
-
-    def help_disable(self):
-        print "Disable a real or virtual server."
-        print ""
-        print "syntax: disable real|virtual <host> [<port>]"
+            print syntax
 
     def do_disable(self, line):
         """Disable a real or virtual server."""
+        syntax = "\nsyntax: disable <host> [<port>]\n"
         commands = line.split()
-        if len(commands) < 2 or len(commands) > 3:
-            print "syntax: disable real|virtual <host> [<port>]"
-        elif line.startswith("virtual"):
-            host = commands[1]
-            print "Not implemented yet!"
-        elif line.startswith("real"):
-            host = commands[1]
-            if len(commands) == 2:
+        if len(commands) > 2:
+            print syntax
+        elif len(commands) <= 2:
+            host = commands[0]
+            if len(commands) == 1:
                 port = ''
-            elif len(commands) == 3:
-                port = commands[2]
+            elif len(commands) == 2:
+                port = commands[1]
             else:
-                print "syntax: disable real <host> [<port>]"
+                print syntax
                 return
             # ask for an optional reason for disabling
             reason = raw_input("Reason for disabling [default = None]: ")
             if not self.director.disable(host, port, reason):
-                print "[ERROR]: could not disable " + host
+                logger.error("Could not disable %s" % host)
         else:
-            print "syntax: disable real|virtual <host> [<port>]"
-
-    def complete_enable(self, text, line, begidx, endidx):
-        """Tab completion for enable command."""
-        servers = ['real', 'virtual']
-        if  (line.startswith("enable real") or
-             line.startswith("enable virtual")):
-            completions = []
-        elif not text:
-            completions = servers[:]
-        else:
-            completions = [s for s in servers if s.startswith(text)]
-        return completions
-
-    def help_enable(self):
-        print "Enable a real or virtual server."
-        print ""
-        print "syntax: enable real|virtual <host> [<port>]"
+            print syntax
 
     def do_enable(self, line):
         """Enable a real or virtual server."""
+        syntax = "\nsyntax: enable <host> [<port>]\n"
         commands = line.split()
-        if len(commands) < 2 or len(commands) > 3:
-            print "syntax: enable real|virtual <host> [<port>]"
-        elif line.startswith("virtual"):
-            host = commands[1]
-            print "Not implemented yet!"
-        elif line.startswith("real"):
-            host = commands[1]
-            if len(commands) == 2:
+        if len(commands) > 2:
+            print syntax
+        elif len(commands) <= 2:
+            host = commands[0]
+            if len(commands) == 1:
                 port = ''
-            elif len(commands) == 3:
-                port = commands[2]
+            elif len(commands) == 2:
+                port = commands[0]
             else:
-                print "syntax: enable real <host> [<port>]"
+                print syntax
                 return
             if not self.director.enable(host, port):
-                print "[ERROR]: could not enable " + host
+                logger.error("Could not enable %s" % host)
         else:
-            print "syntax: enable real|virtual <host> [<port>]"
+            print syntax
+
+    def help_show(self):
+        print ""
+        print "Show information about a specific real server."
+        print "syntax: show <server> <port>"
+        print ""
+
+    def help_disable(self):
+        print ""
+        print "Disable a real server."
+        print "syntax: disable <host> [<port>]"
+        print ""
+
+    def help_enable(self):
+        print ""
+        print "Enable a real server."
+        print "syntax: enable <host> [<port>]"
+        print ""
+
+    # def complete_show(self, text, line, begidx, endidx):
+    #     """Tab completion for the show command"""
+    #     if line.startswith("show virtual "):
+    #         if line == "show virtual ":
+    #             completions = self.protocols[:]
+    #         elif len(line) < 16:
+    #             completions = [p for p in self.protocols if p.startswith(text)]
+    #         # elif line.startswith("show virtual ") and len(line) > 16:
+    #             # completions = [p for p in self.director.get_virutal('tcp') if p.startswith(text)]
+    #         # elif line == "show virtual tcp ":
+    #         #     virtuals = self.director.get_virtual('tcp')
+    #         #     completions = [p for p in virtuals if p.startswith(text)]
+    #         # elif line == "show virtual tcp ":
+    #         elif line.startswith("show virtual tcp "):
+    #             virtuals = self.director.get_virtual('tcp')
+    #             completions = [p for p in virtuals if p.startswith(text)]
+    #         elif line == "show virtual udp ":
+    #             virtuals = self.director.get_virtual('udp')
+    #             completions = [p for p in virtuals if p.startswith(text)]
+    #         else:
+    #             completions = []
+    #     elif (line.startswith("show director") or
+    #           line.startswith("show firewall") or
+    #           line.startswith("show nat") or
+    #           line.startswith("show real")):
+    #         completions = []
+    #     elif not text:
+    #         completions = self.modules[:]
+    #     else:
+    #         completions = [m for m in self.modules if m.startswith(text)]
+    #     return completions
+
+    # def complete_disable(self, text, line, begidx, endidx):
+    #     """Tab completion for disable command."""
+    #     servers = ['real', 'virtual']
+    #     if  (line.startswith("disable real") or
+    #          line.startswith("disable virtual")):
+    #         completions = []
+    #     elif not text:
+    #         completions = servers[:]
+    #     else:
+    #         completions = [s for s in servers if s.startswith(text)]
+    #     return completions
+
+    # def complete_enable(self, text, line, begidx, endidx):
+    #     """Tab completion for enable command."""
+    #     if  (line.startswith("enable real") or
+    #          line.startswith("enable virtual")):
+    #         completions = []
+    #     elif not text:
+    #         completions = servers[:]
+    #     else:
+    #         completions = [s for s in servers if s.startswith(text)]
+    #     return completions
+
