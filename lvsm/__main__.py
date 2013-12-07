@@ -16,6 +16,8 @@ Options:
                         Specify which configuration file to use
                         The default is /etc/lvsm.conf
   -d, --debug           Enable debug messages during runtime
+  -m, --monochrome      Disable color display
+  -n, --numeric         Enable numeric host names, and avoid using DNS
   -v, --version         Display lvsm version
 
 Commands:
@@ -30,6 +32,7 @@ import getopt
 import sys
 import __init__ as appinfo
 import logging
+import os
 
 from lvsm import utils
 from lvsm import shell
@@ -51,11 +54,13 @@ def main():
     logger = logging.getLogger('lvsm')  
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hvc:d",
-                                   ["help", "version", "config=", "debug"])
+        opts, args = getopt.getopt(sys.argv[1:], "hvc:dmn",
+                                   ["help", "version", "config=", "debug", "monochrome", "numeric"])
     except getopt.error, msg:
         usage(2, msg)
 
+    color = True
+    numeric = False
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             usage(0)
@@ -66,14 +71,25 @@ def main():
             CONFFILE = arg
         elif opt in ("-d", "--debug"):
             logger.setLevel(logging.DEBUG)
+        elif opt in ("-m", "--monochrome"):
+            color = False
+        elif opt in ("-n", "--numeric"):
+            numeric = True
 
     # open config file and read it
-    config = utils.parse_config(CONFFILE)
+    # config = utils.parse_config(CONFFILE)
+    config = utils.parse_config(os.path.expanduser(os.path.expandvars(CONFFILE)))
     logger.debug('Parsed config file')
     logger.debug(str(config))
 
     try:
         lvsshell = shell.LivePrompt(config)
+
+        if not color:
+            lvsshell.do_set("color off")
+        if numeric:
+            lvsshell.do_set("numeric on")
+
         if args:
             lvsshell.onecmd(' '.join(args[:]))
         else:
