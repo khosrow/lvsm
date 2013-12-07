@@ -15,7 +15,7 @@ def parse_config(filename):
                     'pager': '/bin/more',
                     'director_config': '',
                     'firewall_config': '',
-                    'director': '',
+                    'director': 'generic',
                     'director_cmd': '',
                     'firewall_cmd': '',
                     'nodes': '',
