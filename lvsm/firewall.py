@@ -56,7 +56,9 @@ class Firewall():
         except OSError as e:
             logger.error("Problem with iptables - %s : %s " % (e.strerror, args[0]))
             return list()
-        return output.split("\n")
+        result = ['', 'NAT rules', '=========']
+        result += output.split('\n')
+        return result
 
     def show_virtual(self, host, port, protocol, numeric, color):
         result = list()
