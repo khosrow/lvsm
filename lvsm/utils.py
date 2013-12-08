@@ -1,5 +1,6 @@
 """Common utility functions used by lvsm"""
 import socket
+import struct
 import subprocess
 import sys
 import logging
@@ -17,6 +18,7 @@ def parse_config(filename):
                     'firewall_config': '',
                     'director': 'generic',
                     'director_cmd': '',
+                    'director_bin': '',
                     'firewall_cmd': '',
                     'nodes': '',
                     'version_control': ''
@@ -60,6 +62,7 @@ def print_file(filename):
 
 def getportnum(port):
     """accepts a port name or number and returns the port number as an int.
+except
     returns -1 in case of invalid port name"""
     try:
         portnum = int(port)
@@ -84,6 +87,12 @@ def gethostname(host):
         return ''
     else:
         return hostip
+
+
+def hextoip(hexip):
+    """Convert a hex format IPv4 to a dotted notation"""
+    ip = int(hexip, 16)
+    return socket.inet_ntoa(struct.pack("!L",ip))
 
 
 def pager(pager,lines):
