@@ -28,21 +28,30 @@ class CommandPrompt(cmd.Cmd):
     settings = {'numeric': False,
                 'color': True}
     variables = ['numeric', 'color']
-    rawprompt = ''
 
-    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+    def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
         self.director = lvs.Director(self.config['director'],
-                                     # self.config['maintenance_dir'],
                                      self.config['ipvsadm'],
                                      self.config['director_config'],
                                      self.config['director_cmd'],
                                      self.config['nodes'])
+        
+        self.rawprompt = rawprompt
         # disable color if the terminal doesn't support it
         if not sys.stdout.isatty():
             self.settings['color'] = False
+
+        if self.settings['color']:
+            c = "red"
+            a = ["bold"]
+        else:
+            c = None
+            a = None
+        self.prompt = termcolor.colored(self.rawprompt, color=c,
+                                        attrs=a)    
 
     def emptyline(self):
         """Override the default emptyline and return a blank line."""
@@ -181,23 +190,12 @@ class LivePrompt(CommandPrompt):
     Class for the live command prompt. This is the main landing point
     and is called from __main__.py
     """
-    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+    def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
-        CommandPrompt.__init__(self, config)
+        CommandPrompt.__init__(self, config, rawprompt="lvsm(live)# ")
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.firewall = firewall.Firewall(self.config['iptables'])
-        self.rawprompt = "lvsm(live)# "
-        if self.settings['color']:
-            c = "red"
-            # c = None
-            a = ["bold"]
-            # a = None
-        else:
-            c = None
-            a = None
-        self.prompt = termcolor.colored(self.rawprompt, color=c,
-                                        attrs=a)
 
     def do_configure(self, line):
         """Enter configuration level."""
@@ -216,32 +214,44 @@ class LivePrompt(CommandPrompt):
         """
         commands = line.split()
 
-        # virtualshell = prompts.virtual.VirtualPrompt(self.config)
-        # virtualshell = virtual.VirtualPrompt(self.config)
+        from lvsm.modules import ldirectordprompts
+        from lvsm.modules import keepalivedprompts
+        prompts = {'generic': VirtualPrompt,
+                   'ldirectord': ldirectordprompts.VirtualPrompt,
+                   'keepalived': keepalivedprompts.VirtualPrompt}
 
-        if self.config['director'] == 'ldirectord':
-            from lvsm.modules import ldirectordprompts
-            virtualshell = ldirectordprompts.VirtualPrompt(self.config)
-        else:
-            virtualshell = VirtualPrompt(self.config)
+        virtualshell = prompts[self.config['director']](self.config)
 
         if not line:
             virtualshell.cmdloop()
         else:
             virtualshell.onecmd(' '.join(commands[0:]))
 
-    def do_real(self,line):
+    # def do_real(self,line):
+    #     """
+    #     \rReal Server level.
+    #     \rLevel providing information on real servers
+    #     """
+    #     commands = line.split()
+    #     # realshell = prompts.real.RealPrompt(self.config)
+    #     realshell = RealPrompt(self.config)
+    #     if not line:
+    #         realshell.cmdloop()
+    #     else:
+    #         realshell.onecmd(' '.join(commands[0:]))
+
+    def do_firewall(self, line):
         """
-        \rReal Server level.
-        \rLevel providing information on real servers
+        \rFirewall level.
+        \riptables information is available at this level.
         """
         commands = line.split()
-        # realshell = prompts.real.RealPrompt(self.config)
-        realshell = RealPrompt(self.config)
+
+        fwshell = FirewallPrompt(self.config)
         if not line:
-            realshell.cmdloop()
+            fwshell.cmdloop()
         else:
-            realshell.onecmd(' '.join(commands[0:]))
+            fwshell.onecmd(' '.join(commands[0:]))
 
     def do_restart(self, line):
         """Restart the direcotr or firewall module."""
@@ -251,7 +261,7 @@ class LivePrompt(CommandPrompt):
                 try:
                     subprocess.call(self.config['director_cmd'], shell=True)
                 except OSError as e:
-                    logger.error("probmel while restaring director - %s" % e.strerror)
+                    logger.error("problem while restaring director - %s" % e.strerror)
             else:
                 logger.error("'director_cmd' not defined in lvsm configuration!")
         elif line == "firewall":
@@ -265,6 +275,46 @@ class LivePrompt(CommandPrompt):
                 logger.error("'firewall_cmd' not defined in lvsm configuration!")
         else:
             print "syntax: restart firewall|director"
+
+    def do_version(self, line):
+        """
+        \rDisplay version information about modules
+        """
+        pager = self.config['pager']
+        args = [self.config['ipvsadm'], '--version']
+        output = list()
+        ipvsadm = utils.check_output(args)
+        header = ["", "Linux Virtual Server",
+                  "===================="]
+
+        output += header
+        output.append(ipvsadm)
+        output.append("")
+
+        if not self.config['director_bin'] :
+            director =  'director binary not defined. Unable to get version!'
+        else:
+            args = [self.config['director_bin'], '--version']
+            director = utils.check_output(args).split('\n')[0]
+
+        header = ["Director",
+                  "========"]
+
+        output += header
+        output.append(director)
+        output.append("")
+
+        args = [self.config['iptables'], '--version']
+        iptables = utils.check_output(args)
+        header = ["Packet Filtering",
+                  "================"]
+
+        output += header
+        output.append(iptables)
+        output.append("")
+
+        print output
+        utils.pager(pager, output)
 
     def help_configure(self):
         print ""
@@ -296,22 +346,10 @@ class ConfigurePrompt(CommandPrompt):
     Configure prompt class. Handles commands for manipulating configuration
     items in the various plugins.
     """
-    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
-        CommandPrompt.__init__(self, config)
+    def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
+        CommandPrompt.__init__(self, config, rawprompt="lvsm(configure)# ")
         # List of moduels used in autocomplete function
         self.modules = ['director', 'firewall']
-        self.rawprompt = "lvsm(configure)# "
-        # Setup color related things here
-        if self.settings['color']:
-            c = "red"
-            # c = None
-            a = ["bold"]
-            # a = None
-        else:
-            c = None
-            a = None
-        self.prompt = termcolor.colored(self.rawprompt, color=c,
-                                        attrs=a)
 
     def svn_sync(self, filename, username, password):
         """Commit changed configs to svn and do update on remote node."""
@@ -486,7 +524,7 @@ functionality form one location."""
 
 
 class VirtualPrompt(CommandPrompt):
-    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+    def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
         # Change the word delimiters so that - or . don't cause a new match
         try:
             import readline
@@ -494,21 +532,10 @@ class VirtualPrompt(CommandPrompt):
         except ImportError:
             pass
         # super(CommandPrompt, self).__init__()
-        CommandPrompt.__init__(self, config)
+        CommandPrompt.__init__(self, config, rawprompt="lvsm(live)(virtual)# ")
         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
         self.protocols = ['tcp', 'udp', 'fwm']
         self.firewall = firewall.Firewall(self.config['iptables'])
-        self.rawprompt = "lvsm(live)(virtual)# "
-        if self.settings['color']:
-            c = "red"
-            # c = None
-            a = ["bold"]
-            # a = None
-        else:
-            c = None
-            a = None
-        self.prompt = termcolor.colored(self.rawprompt, color=c,
-                                        attrs=a)
 
     def do_status(self,line):
         """
@@ -520,8 +547,10 @@ class VirtualPrompt(CommandPrompt):
 
         if not line:
             d = self.director.show(numeric, color)
-            f = self.firewall.show(numeric, color)
-            utils.pager(self.config['pager'], d + f)
+            d.append('')
+            # f = self.firewall.show(numeric, color)
+            # utils.pager(self.config['pager'], d + f)
+            utils.pager(self.config['pager'], d)
         else:
             print syntax            
 
@@ -563,101 +592,98 @@ class VirtualPrompt(CommandPrompt):
             completions = [p for p in virtuals if p.startswith(text)]
 
         return completions
-"""Various levels of command line shells for accessing ipvs and iptables
-functionality form one location."""
 
+# class RealPrompt(CommandPrompt):
+#     def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
+#         # super(CommandPrompt, self).__init__()
+#         CommandPrompt.__init__(self, config)
+#         self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
+#         self.protocols = ['tcp', 'udp', 'fwm']
+#         self.firewall = firewall.Firewall(self.config['iptables'])
+#         self.rawprompt = "lvsm(live)(real)# "
+#         if self.settings['color']:
+#             c = "red"
+#             # c = None
+#             a = ["bold"]
+#             # a = None
+#         else:
+#             c = None
+#             a = None
+#         self.prompt = termcolor.colored(self.rawprompt, color=c,
+#                                         attrs=a)
 
-class RealPrompt(CommandPrompt):
-    def __init__(self, config, stdin=sys.stdin, stdout=sys.stdout):
-        # super(CommandPrompt, self).__init__()
-        CommandPrompt.__init__(self, config)
-        self.modules = ['director', 'firewall', 'nat', 'virtual', 'real']
-        self.protocols = ['tcp', 'udp', 'fwm']
-        self.firewall = firewall.Firewall(self.config['iptables'])
-        self.rawprompt = "lvsm(live)(real)# "
-        if self.settings['color']:
-            c = "red"
-            # c = None
-            a = ["bold"]
-            # a = None
-        else:
-            c = None
-            a = None
-        self.prompt = termcolor.colored(self.rawprompt, color=c,
-                                        attrs=a)
+#     def do_show(self, line):
+#         """Show information about a specific real server."""
+#         syntax = "\nsyntax: show <server> <port>\n"
+#         commands = line.split()
+#         numeric = self.settings['numeric']
+#         color = self.settings['color']
+#         if len(commands) == 2:
+#             host = commands[0]
+#             port = commands[1]
+#             utils.pager(self.config['pager'], self.director.show_real(host, port, numeric, color))
+#         else:
+#             print syntax
 
-    def do_show(self, line):
-        """Show information about a specific real server."""
-        syntax = "\nsyntax: show <server> <port>\n"
-        commands = line.split()
-        numeric = self.settings['numeric']
-        color = self.settings['color']
-        if len(commands) == 2:
-            host = commands[0]
-            port = commands[1]
-            utils.pager(self.config['pager'], self.director.show_real(host, port, numeric, color))
-        else:
-            print syntax
+#     def do_disable(self, line):
+#         """Disable a real or virtual server."""
+#         syntax = "\nsyntax: disable <host> [<port>]\n"
+#         commands = line.split()
+#         if len(commands) > 2:
+#             print syntax
+#         elif len(commands) <= 2:
+#             host = commands[0]
+#             if len(commands) == 1:
+#                 port = ''
+#             elif len(commands) == 2:
+#                 port = commands[1]
+#             else:
+#                 print syntax
+#                 return
+#             # ask for an optional reason for disabling
+#             reason = raw_input("Reason for disabling [default = None]: ")
+#             if not self.director.disable(host, port, reason):
+#                 logger.error("Could not disable %s" % host)
+#         else:
+#             print syntax
 
-    def do_disable(self, line):
-        """Disable a real or virtual server."""
-        syntax = "\nsyntax: disable <host> [<port>]\n"
-        commands = line.split()
-        if len(commands) > 2:
-            print syntax
-        elif len(commands) <= 2:
-            host = commands[0]
-            if len(commands) == 1:
-                port = ''
-            elif len(commands) == 2:
-                port = commands[1]
-            else:
-                print syntax
-                return
-            # ask for an optional reason for disabling
-            reason = raw_input("Reason for disabling [default = None]: ")
-            if not self.director.disable(host, port, reason):
-                logger.error("Could not disable %s" % host)
-        else:
-            print syntax
+#     def do_enable(self, line):
+#         """Enable a real or virtual server."""
+#         syntax = "\nsyntax: enable <host> [<port>]\n"
+#         commands = line.split()
+#         if len(commands) > 2:
+#             print syntax
+#         elif len(commands) <= 2:
+#             host = commands[0]
+#             if len(commands) == 1:
+#                 port = ''
+#             elif len(commands) == 2:
+#                 port = commands[0]
+#             else:
+#                 print syntax
+#                 return
+#             if not self.director.enable(host, port):
+#                 logger.error("Could not enable %s" % host)
+#         else:
+#             print syntax
 
-    def do_enable(self, line):
-        """Enable a real or virtual server."""
-        syntax = "\nsyntax: enable <host> [<port>]\n"
-        commands = line.split()
-        if len(commands) > 2:
-            print syntax
-        elif len(commands) <= 2:
-            host = commands[0]
-            if len(commands) == 1:
-                port = ''
-            elif len(commands) == 2:
-                port = commands[0]
-            else:
-                print syntax
-                return
-            if not self.director.enable(host, port):
-                logger.error("Could not enable %s" % host)
-        else:
-            print syntax
+#     def help_show(self):
+#         print ""
+#         print "Show information about a specific real server."
+#         print "syntax: show <server> <port>"
+#         print ""
 
-    def help_show(self):
-        print ""
-        print "Show information about a specific real server."
-        print "syntax: show <server> <port>"
-        print ""
+#     def help_disable(self):
+#         print ""
+#         print "Disable a real server."
+#         print "syntax: disable <host> [<port>]"
+#         print ""
 
-    def help_disable(self):
-        print ""
-        print "Disable a real server."
-        print "syntax: disable <host> [<port>]"
-        print ""
-
-    def help_enable(self):
-        print ""
-        print "Enable a real server."
-        print "syntax: enable <host> [<port>]"
-        print ""
+#     def help_enable(self):
+#         print ""
+#         print "Enable a real server."
+#         print "syntax: enable <host> [<port>]"
+#         print ""
 
     # def complete_show(self, text, line, begidx, endidx):
     #     """Tab completion for the show command"""
@@ -714,3 +740,41 @@ class RealPrompt(CommandPrompt):
     #         completions = [s for s in servers if s.startswith(text)]
     #     return completions
 
+class FirewallPrompt(CommandPrompt):
+    """Class handling shell prompt for firewall (iptables) related actions"""
+    def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
+        # super(CommandPrompt, self).__init__()
+        CommandPrompt.__init__(self, config, rawprompt="lvsm(live)(firewall)# ")
+        self.firewall = firewall.Firewall(self.config['iptables'])
+
+    def do_status(self, line):
+        """
+        \rDisplay status of all packet filtering rules
+        """
+        ports = self.firewall.show(self.settings['numeric'], self.settings['color'])
+        nat = self.firewall.show_nat(self.settings['numeric'])
+
+        utils.pager(self.config['pager'], ports + nat + [''])
+
+    def do_show(self, line):
+        """
+        \rShow the NAT table or the packet filter table
+        \rsyntax: show nat|filters
+        """
+        if line == "nat":
+            output = self.firewall.show_nat(self.settings['numeric'])
+        elif line == "filters":
+            output = self.firewall.show(self.settings['numeric'], self.settings['color'])
+        else:
+            print "\nsyntax: show nat|filters"
+            return
+        utils.pager(self.config['pager'], output + [''])
+
+    def do_complete(self, text, line, begidx, endidx):
+        """Command completion for the show command"""
+        args = ['nat', 'filters']
+        if not text:
+            completions = args[:]
+        else:
+            completions = [s for s in args if s.startswith(text)]
+        return completions
