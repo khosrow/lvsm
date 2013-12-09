@@ -22,7 +22,7 @@ class Virtual(Server):
         self.realServers = list()
         self.sched = sched
 
-    def __str__(self, numeric=False, color=False):
+    def __str__(self, numeric=True, color=False):
         """provide an easy way to print this object"""
         proto = self.proto.upper().ljust(4)
         host = self.ip
@@ -45,7 +45,29 @@ class Virtual(Server):
         output = [line]
         for r in self.realServers:
             output.append(r.__str__(numeric, color))
+        output.append('')
         return '\n'.join(output)
+
+        # # line = "IP: %s  Port: %s  Protocol: %s  Scheduler: %s" % (host, service, self.proto, self.sched)
+        # header = "Protocol  IP:port                                  Scheduler  Flags"
+        # hr = "--------  ---------------------------------------  ---------  --------"
+        # proto = self.proto.upper().ljust(8)
+        # ipport = (host + ":" + service).ljust(39)
+        # line = "%s  %s  %s" % (proto, ipport, self.sched)
+        # if color:
+        #     line = termcolor.colored(line, attrs=['bold'])
+
+        # output = [header, hr, line]
+        # header = "Label     IP:port                                  Method   Weight  ActiveConn  InactiveConn"
+        # hr = "--------  ---------------------------------------  -------  ------  ----------  ------------"
+        # output.append('')
+        # output.append(header)
+        # output.append(hr)
+        # for r in self.realServers:
+        #     output.append(r.__str__(numeric,color))
+        # output.append('')
+        # output.append('')
+        # return '\n'.join(output)
 
         
 class Real(Server):
@@ -74,6 +96,7 @@ class Real(Server):
         active = self.active.ljust(10)
         inactive = self.inactive.ljust(10)
         line = "  -> %s %s %s %s %s" % (ipport, method, weight, active, inactive)
+        # line = "          %s %s  %s  %s  %s" % (ipport, method, weight, active, inactive)
         return line
 
 
