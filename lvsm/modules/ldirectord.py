@@ -27,7 +27,7 @@ class Ldirectord(genericdirector.GenericDirector):
         for line in f:
             if line.find("maintenancedir") > -1:
                 s, sep, path = line.partition('=')
-                self.maintenance_dir = path.strip()
+                self.maintenance_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(path.strip())))
 
     def disable(self, host, port='', reason=''):
         # Prepare a canned error message
