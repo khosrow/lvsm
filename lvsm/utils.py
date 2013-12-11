@@ -80,6 +80,7 @@ except
 
 
 def gethostname(host):
+    """Accepts a hostname and return it's IPv4 address"""
     try:
         hostip = socket.gethostbyname(host)
     except socket.gaierror as e:
@@ -90,7 +91,7 @@ def gethostname(host):
 
 
 def hextoip(hexip):
-    """Convert a hex format IPv4 to a dotted notation"""
+    """Convert a packed hex format IPv4 to a dotted notation"""
     ip = int(hexip, 16)
     return socket.inet_ntoa(struct.pack("!L",ip))
 
