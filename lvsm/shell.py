@@ -620,7 +620,7 @@ class VirtualPrompt(CommandPrompt):
             if len(commands) == 1:
                 port = ''
             elif len(commands) == 2:
-                port = commands[0]
+                port = commands[1]
             else:
                 print syntax
                 return
