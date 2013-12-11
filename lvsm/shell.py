@@ -313,7 +313,6 @@ class LivePrompt(CommandPrompt):
         output.append(iptables)
         output.append("")
 
-        print output
         utils.pager(pager, output)
 
     def help_configure(self):
@@ -822,7 +821,7 @@ class FirewallPrompt(CommandPrompt):
             return
         utils.pager(self.config['pager'], output + [''])
 
-    def do_complete(self, text, line, begidx, endidx):
+    def complete_show(self, text, line, begidx, endidx):
         """Command completion for the show command"""
         args = ['nat', 'filters']
         if not text:
