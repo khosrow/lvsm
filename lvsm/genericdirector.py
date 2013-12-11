@@ -172,6 +172,7 @@ class GenericDirector(object):
         Disable a previously Enabled server.
         To be implemented by inheriting classes
         """
+        logger.error("Disable not implemented for 'generic' director")
         return False
 
     def enable(self, host, port=''):
@@ -179,6 +180,7 @@ class GenericDirector(object):
         Enable a previously disabled server.
         To be implemented by inheriting classes
         """
+        logger.error("enable not implemented for 'generic' director")
         return False
 
     def show(self, numeric, color):
