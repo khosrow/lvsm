@@ -18,7 +18,7 @@ class Firewall():
             args.append("-n")
         try:
             try:
-                logger.debug("Running: %s" % " ".join(args))
+                logger.info("Running: %s" % " ".join(args))
                 output = subprocess.check_output(args)
             # python 2.6 compatibility code
             except AttributeError as e:
@@ -43,12 +43,12 @@ class Firewall():
         return result
 
     def show_nat(self, numeric):
-        args = [self.iptables, "-t", "nat", "-L"]
+        args = [self.iptables, "-t", "nat", "-L", "-v"]
         if numeric:
             args.append("-n")
         try:
             try:
-                logger.debug("Running: %s" % " ".join(args))
+                logger.info("Running: %s" % " ".join(args))
                 output = subprocess.check_output(args)
             # python 2.6 compatibility code
             except AttributeError as e:
@@ -72,7 +72,7 @@ class Firewall():
             portname = port
         try:
             try:
-                logger.debug("Running: %s" % " ".join(args))
+                logger.info("Running: %s" % " ".join(args))
                 output = subprocess.check_output(args)
             # python 2.6 compatibility code
             except AttributeError as e:
