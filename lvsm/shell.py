@@ -8,14 +8,9 @@ import subprocess
 import sys
 import tempfile
 
-from lvsm import lvs
-from lvsm import utils
-from lvsm import termcolor
-from lvsm import firewall
-
-
-# from lvsm.prompts import configure, virtual, real, prompt
-
+import utils
+import termcolor
+import firewall
 
 logger = logging.getLogger('lvsm')
 
@@ -34,12 +29,32 @@ class CommandPrompt(cmd.Cmd):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
-        self.director = lvs.Director(self.config['director'],
-                                     self.config['ipvsadm'],
-                                     self.config['director_config'],
-                                     self.config['director_cmd'],
-                                     self.config['nodes'])
+        #self.director = lvs.Director(self.config['director'],
+        #                             self.config['ipvsadm'],
+        #                             self.config['director_config'],
+        #                             self.config['director_cmd'],
+        #                             self.config['nodes'])
         
+        if self.config['director'] == 'keepalived':
+            from modules.keepalived import Keepalived
+            self.director = Keepalived(self.config['ipvsadm'],
+                                       self.config['director_config'],
+                                       self.config['director_cmd'],
+                                       self.config['nodes'])
+        elif self.config['director'] == 'ldirectord':
+            from modules.ldirectord import Ldirectord
+            self.director = Ldirectord(self.config['ipvsadm'],
+                                       self.config['director_config'],
+                                       self.config['director_cmd'],
+                                       self.config['nodes'])
+        else:
+            from genericdirector import GenericDirector
+            self.director = GenericDirector(self.config['ipvsadm'],
+                                            self.config['director_config'],
+                                            self.config['director_cmd'],
+                                            self.config['nodes'])
+            
+ 
         self.rawprompt = rawprompt
         # disable color if the terminal doesn't support it
         if not sys.stdout.isatty():
