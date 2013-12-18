@@ -88,7 +88,7 @@ class Keepalived(genericdirector.GenericDirector):
                                     logger.debug('Current weight: %s' % weight)
 
                                     if weight == 0:
-                                        print "Real server %s:%s is already disabled on VIP %s:%s" % (rip, rp, vip, vp)
+                                        logger.warning("Real server %s:%s is already disabled on VIP %s:%s" % (rip, rp, vip, vp))
                                         idx += 1
                                         continue
 
@@ -177,7 +177,7 @@ class Keepalived(genericdirector.GenericDirector):
                                     logger.debug('Current weight: %s' % weight)
                                     if weight > 0:
                                         msg = "Real server %s:%s on VIP %s:%s is already enabled with a weight of %s" % (rip, rp, vip, vp, weight)
-                                        print msg
+                                        logger.warning(msg)
                                         idx += 1 
                                         next
 
@@ -193,8 +193,8 @@ class Keepalived(genericdirector.GenericDirector):
                                         # make sure the weight is a valid int 
                                         orig_weight = int(str_weight) 
                                     except IOError as e:
-                                        logger.error("%s. Using 1 as default weight!" % e)
-                                        logger.error("To ensure the correct wieght is set, please restart Keepalived.")
+                                        logger.warning("%s. Using 1 as default weight!" % e)
+                                        logger.warning("To ensure the correct wieght is set, please restart Keepalived.")
                                         orig_weight = 1
                                    
                                     # set the weight to zero
