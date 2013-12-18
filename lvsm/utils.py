@@ -52,9 +52,11 @@ def print_file(filename):
     """opens a file and returns its contents as list"""
     lines = list()
     try:
-        file = open(filename)
-        lines = file.readlines()
-        file.close()
+        f = open(filename)
+        #lines = f.readlines()
+        for line in f:
+            lines.append(line.rstrip('\n'))
+        f.close()
     except IOError as e:
         logger.error(e)
     return lines
@@ -67,14 +69,14 @@ except
     try:
         portnum = int(port)
         if portnum < 0 or portnum > 65535:
-            logger.error("invalid port number")
+            logger.error("invalid port number: %s" % port) 
             portnum = -1
     except:
         try:
             p = socket.getservbyname(port)
             portnum = int(p)
         except socket.error, e:
-            logger.error(e)
+            logger.error("%s: %s" % (e, port))
             portnum = -1
     return portnum
 
@@ -84,7 +86,7 @@ def gethostname(host):
     try:
         hostip = socket.gethostbyname(host)
     except socket.gaierror as e:
-        logger.error(e.strerror)
+        logger.error("%s: %s" % (e.strerror, host))
         return ''
     else:
         return hostip
@@ -113,7 +115,8 @@ def pager(pager,lines):
 
 def check_output(args):
     """Wrapper for subprocess.check_output"""
-    logger.debug("Running: %s " % " ".join(args))
+    #logger.debug("Running: %s " % " ".join(args))
+    logger.info("Running: %s " % " ".join(args))
     try:
         output = subprocess.check_output(args)
         return output
