@@ -26,8 +26,9 @@ class CommandPrompt(cmd.Cmd):
     inherit from CommandPrompt and not from cmd.Cmd directly.
     """
     settings = {'numeric': False,
-                'color': True}
-    variables = ['numeric', 'color']
+                'color': True,
+                'commands': False}
+    variables = ['numeric', 'color', 'commands']
 
     def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
@@ -51,7 +52,9 @@ class CommandPrompt(cmd.Cmd):
             c = None
             a = None
         self.prompt = termcolor.colored(self.rawprompt, color=c,
-                                        attrs=a)    
+                                        attrs=a) 
+        if logger.getEffectiveLevel() < 30:
+            self.settings['commands'] = True
 
     def emptyline(self):
         """Override the default emptyline and return a blank line."""
@@ -77,7 +80,7 @@ class CommandPrompt(cmd.Cmd):
 
             if self.config['director_config']:
                 args.append(self.config['director_config'])
-                logger.debug('Running command : %s' % (' '.join(args)))
+                logger.info('Running command : %s' % (' '.join(args)))
                 try:
                     result = utils.check_output(args)
                 except OSError as e:
@@ -142,7 +145,7 @@ class CommandPrompt(cmd.Cmd):
                     elif tokens[1] == "off":
                         self.settings['numeric'] = False
                     else:
-                        print "syntax: set numeric on|off"
+                        print "*** Syntax: set numeric on|off"
                 elif tokens[0] == "color":
                     if tokens[1] == "on":
                         self.settings['color'] = True
@@ -153,7 +156,23 @@ class CommandPrompt(cmd.Cmd):
                         self.settings['color'] = False
                         self.prompt = self.rawprompt
                     else:
-                        print "syntax: set color on|off"
+                        print "*** Syntax: set color on|off"
+                elif tokens[0] == "commands":
+                    if tokens[1] == "on":
+                        self.settings['commands'] = True
+                        # logging.INFO = 20
+                        if logger.getEffectiveLevel() > 20:
+                            logger.setLevel(logging.INFO)
+                    elif tokens[1] == "off":
+                        # logging.INFO = 20
+                        # logging.DEBUG = 10
+                        if logger.getEffectiveLevel() >= 20:
+                            logger.setLevel(logging.WARNING)
+                            self.settings['commands'] = False
+                        else:
+                            logger.error("Running in DEBUG mode, cannot disable commands display.")
+                    else:
+                        print "*** Syntax: set numeric on|off"
                 else:
                     self.help_set()
             else:
@@ -166,11 +185,12 @@ class CommandPrompt(cmd.Cmd):
     def help_set(self):
         print "Set or display different variables."
         print ""
-        print "syntax: set [<variable>] [<value>]"
+        print "syntax: set [<variable> <value>]"
         print ""
         print "<variable> can be one of:"
-        print "\tnumeric on|off          Toggle numeric ipvsadm display ON/OFF"
         print "\tcolor on|off            Toggle color display ON/OFF"
+        print "\tcommands on|off         Toggle running commands display ON/OFF"
+        print "\tnumeric on|off          Toggle numeric ipvsadm display ON/OFF"
         print ""
 
     def complete_set(self, text, line, begidx, endidx):
@@ -282,14 +302,17 @@ class LivePrompt(CommandPrompt):
         """
         pager = self.config['pager']
         args = [self.config['ipvsadm'], '--version']
-        output = list()
         ipvsadm = utils.check_output(args)
         header = ["", "Linux Virtual Server",
                   "===================="]
 
-        output += header
-        output.append(ipvsadm)
-        output.append("")
+        print '\n'.join(header)
+        print ipvsadm
+        print
+
+        header = ["Director",
+                  "========"]
+        print '\n'.join(header)
 
         if not self.config['director_bin'] :
             director =  'director binary not defined. Unable to get version!'
@@ -297,23 +320,17 @@ class LivePrompt(CommandPrompt):
             args = [self.config['director_bin'], '--version']
             director = utils.check_output(args).split('\n')[0]
 
-        header = ["Director",
-                  "========"]
-
-        output += header
-        output.append(director)
-        output.append("")
+        print director
+        print 
 
         args = [self.config['iptables'], '--version']
         iptables = utils.check_output(args)
         header = ["Packet Filtering",
                   "================"]
 
-        output += header
-        output.append(iptables)
-        output.append("")
-
-        utils.pager(pager, output)
+        print '\n'.join(header)
+        print iptables
+        print 
 
     def help_configure(self):
         print ""
@@ -362,7 +379,7 @@ class ConfigurePrompt(CommandPrompt):
                 filename]
         svn_cmd = ('svn commit --username ' + username +
                    ' --password ' + password + ' ' + filename)
-        logger.debug('Running command : %s' % svn_cmd)
+        logger.info('Running command : %s' % svn_cmd)
         try:
             result = subprocess.call(svn_cmd, shell=True)
         except OSError as e:
@@ -385,7 +402,7 @@ class ConfigurePrompt(CommandPrompt):
             for node in nodes:
                 if node != hostname:
                     args = 'ssh ' + node + ' ' + svn_cmd
-                    logger.debug('Running command : %s' % (' '.join(args)))
+                    logger.info('Running command : %s' % (' '.join(args)))
                     try:
                         subprocess.call(args, shell=True)
                     except OSError as e:
@@ -461,7 +478,7 @@ class ConfigurePrompt(CommandPrompt):
 
                 while True:
                     args = "vi " + temp.name
-                    logger.debug('Running command : %s' % args)
+                    logger.info('Running command : %s' % args)
                     result = subprocess.call(args, shell=True)
                     if result != 0:
                         logger.error("Something happened during the edit of %s" % self.config[key])
@@ -501,7 +518,7 @@ class ConfigurePrompt(CommandPrompt):
     def do_sync(self, line):
         """Sync all configuration files across the cluster."""
         if line:
-            print "syntax: sync"
+            print "*** Syntax: sync"
         elif self.config['version_control'] == 'svn':
             # ask for username and passwd so user isn't bugged on each server
             username = raw_input("Enter SVN username: ")
@@ -540,7 +557,7 @@ class VirtualPrompt(CommandPrompt):
         """
         \rDisplay status of all virtual servers
         """
-        syntax = "\nstatus\n"
+        syntax = "*** Syntax: status"
         numeric = self.settings['numeric']
         color = self.settings['color']
 
@@ -556,9 +573,9 @@ class VirtualPrompt(CommandPrompt):
     def do_show(self, line):
         """
         \rShow status of a virtual server
-        \rsyntax: show tcp|udp|fwm <vip> <port>
+        \rSyntax: show tcp|udp|fwm <vip> <port>
         """
-        syntax = "\nsyntax: show tcp|udp|fwm <vip> <port>\n"
+        syntax = "*** Syntax: show tcp|udp|fwm <vip> <port>"
         commands = line.split()
         numeric = self.settings['numeric']
         color = self.settings['color']
@@ -582,7 +599,7 @@ class VirtualPrompt(CommandPrompt):
         \rsyntax: disable <rip> <port>
         """
 
-        syntax = "syntax: disable <rip> <port>"
+        syntax = "*** Syntax: disable <rip> <port>"
 
         commands = line.split()
         if len(commands) > 2 or len(commands) == 0:
@@ -598,7 +615,7 @@ class VirtualPrompt(CommandPrompt):
                 return
             # ask for an optional reason for disabling
             reason = raw_input("Reason for disabling [default = None]: ")
-            if not self.director.disable(host, port, reason):
+            if not self.director.disable(host, port, reason=reason):
                 logger.error("Could not disable %s" % host)
         else:
             print syntax
@@ -609,7 +626,7 @@ class VirtualPrompt(CommandPrompt):
         \rsyntax: enable <rip> <port>
         """
 
-        syntax = "syntax: enable <rip> <port>"
+        syntax = "*** Syntax: enable <rip> <port>"
 
         commands = line.split()
         if len(commands) > 2 or len(commands) == 0:
@@ -809,15 +826,18 @@ class FirewallPrompt(CommandPrompt):
 
     def do_show(self, line):
         """
-        \rShow the NAT table or the packet filter table
-        \rsyntax: show nat|filters
+        \rShow the 
+        \rSyntax: show <table>
+        \r<table> can be one of the following
+        nat                    the NAT table.
+        filters                the input filters table.
         """
         if line == "nat":
             output = self.firewall.show_nat(self.settings['numeric'])
         elif line == "filters":
             output = self.firewall.show(self.settings['numeric'], self.settings['color'])
         else:
-            print "\nsyntax: show nat|filters"
+            print "*** Syntax: show nat|filters"
             return
         utils.pager(self.config['pager'], output + [''])
 
