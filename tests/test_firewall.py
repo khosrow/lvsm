@@ -53,7 +53,10 @@ ACCEPT     tcp  --  anywhere\
     def test_shownat(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = """Chain PREROUTING (policy ACCEPT)
+        expected_result = """
+NAT rules
+=========
+Chain PREROUTING (policy ACCEPT)
 target     prot opt source               destination
 
 Chain INPUT (policy ACCEPT)

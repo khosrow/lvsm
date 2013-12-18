@@ -25,7 +25,7 @@ class Configure(unittest.TestCase):
     def test_showdirector(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = "# director config\n\n"
+        expected_result = "# director config\nmaintenancedir = tests/maintenance\n"
         self.shell.onecmd(' show director')
         result = output.getvalue()
         self.assertEqual(result, expected_result)
@@ -33,7 +33,7 @@ class Configure(unittest.TestCase):
     def test_showfirewall(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = "# iptables\n\n"
+        expected_result = "# iptables\n"
         self.shell.onecmd(' show firewall')
         result = output.getvalue()
         self.assertEqual(result, expected_result)
@@ -67,18 +67,19 @@ class Virtual(unittest.TestCase):
         self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = """IP Virtual Server version 1.2.1 (size=4096)
-Prot LocalAddress:Port Scheduler Flags
-  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  dinsdale.python.org:http     rr
-  -> slashdot.org:http            Masq    1      0          0
-UDP  dinsdale.python.org:domain   rr
-  -> resolver1.opendns.com:domain Masq    1      0          0
-  -> resolver2.opendns.com:domain Masq    1      0          0
+        expected_result = """
+Layer 4 Load balancing
+======================
+TCP  dinsdale.python.org:http                 rr     
+  -> slashdot.org:http                        Masq    1      0          0         
+
+UDP  dinsdale.python.org:domain               rr     
+  -> resolver1.opendns.com:domain             Masq    1      0          0         
+  -> resolver2.opendns.com:domain             Masq    1      0          0         
 
 
-Disabled servers:
------------------
+Disabled real servers:
+----------------------
 lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
         self.shell.onecmd(' status')
         result = output.getvalue()
@@ -104,12 +105,15 @@ lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
         self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = """IP Virtual Server version 1.2.1 (size=4096)
-Prot LocalAddress:Port Scheduler Flags
-  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  dinsdale.python.org:http     rr
-  -> slashdot.org:http            Masq    1      0          0
+        expected_result = """
+Layer 4 Load balancing
+======================
+TCP  dinsdale.python.org:http                 rr     
+  -> slashdot.org:http                        Masq    1      0          0         
 
+
+IP Packet filter rules
+======================
 ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http"""
         self.shell.onecmd(' show tcp dinsdale.python.org http')
         result = output.getvalue()
@@ -119,12 +123,12 @@ ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http"""
         self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = """IP Virtual Server version 1.2.1 (size=4096)
-Prot LocalAddress:Port Scheduler Flags
-  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-UDP  dinsdale.python.org:domain   rr
-  -> resolver1.opendns.com:domain Masq    1      0          0
-  -> resolver2.opendns.com:domain Masq    1      0          0"""
+        expected_result = """
+Layer 4 Load balancing
+======================
+UDP  dinsdale.python.org:domain               rr     
+  -> resolver1.opendns.com:domain             Masq    1      0          0         
+  -> resolver2.opendns.com:domain             Masq    1      0          0"""
         self.shell.onecmd(' show udp dinsdale.python.org 53')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
