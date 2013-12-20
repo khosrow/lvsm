@@ -1,6 +1,6 @@
 """
 Dummy module that simulates snimpy functionality on Keepalived 
-for test systems
+for unit testing
 """
 
 class Manager(object):
@@ -18,11 +18,11 @@ class Manager(object):
                  privprotocol=None,
                  privpassword=None):
         """dummy init method"""
-        pass
-
-    def realServerAddress(self):
-        pass
+        self.virtualServerAddress = list()
+        self.virtualServerPort = list()
+        self.virtualServerRealServersTotal = list()
 
 
 def load(mibname):
-    print "loading %s" % mibname
+    """Dummy load method"""
+    pass
