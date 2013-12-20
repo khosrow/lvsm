@@ -49,7 +49,7 @@ class Ldirectord(genericdirector.GenericDirector):
             for filename in filenames:
                 f = self.convert_filename(filename)
                 if hostport == f or hostip == f:
-                    print "host is already disabled!"
+                    logger.warning("host is already disabled!")
                     return True
             try:
                 f = open(self.maintenance_dir + "/" + hostport, 'w')
@@ -68,11 +68,9 @@ class Ldirectord(genericdirector.GenericDirector):
                         try:
                             output = utils.check_output(args)
                         except OSError as e:
-                            # print error_msg + e.strerror
                             logger.error(error_msg)
                             logger.error(e)
                         except subprocess.CalledProcessError as e:
-                            # print error_msg + e.output
                             logger.error(error_msg)
                             logger.error(e)
             # now confirm that it's removed from ldirector
@@ -99,7 +97,6 @@ class Ldirectord(genericdirector.GenericDirector):
             # the file, so we should still return true
             return True
         else:
-            # print "[ERROR] maintenance_dir not defined in config."
             logger.error("maintenance_dir not defined in config.")
             return False
 
@@ -144,11 +141,9 @@ class Ldirectord(genericdirector.GenericDirector):
                                 try:
                                     output = utils.check_output(args)
                                 except OSError as e:
-                                    # print error_msg + e.strerror
                                     logger.error(error_msg)
                                     logger.error(e)
                                 except subprocess.CalledProcessError as e:
-                                    # print error_msg + e.output
                                     logger.error(error_msg)
                                     logger.error(e)
                     # Wait 4.5 seconds before checking output of ipvsadm.
@@ -177,7 +172,6 @@ class Ldirectord(genericdirector.GenericDirector):
             logger.error("Server not found in maintenance_dir!")
             return False
         else:
-            # print "[ERROR] maintenance_dir not defined!"
             logger.error("maintenance_dir not defined!")
             return False
 
@@ -226,7 +220,7 @@ class Ldirectord(genericdirector.GenericDirector):
                     try:
                         (ripname, al, ipl) = socket.gethostbyaddr(rip)
                     except socket.herror, e:
-                        print "[ERROR] " + str(e)
+                        logger.error(e)
                         return False
                     if len(filename.split(":")) == 2:
                         ripport = filename.split(":")[1]
@@ -245,7 +239,7 @@ class Ldirectord(genericdirector.GenericDirector):
         try:
             f = open(configfile)
         except IOError as e:
-            print "[ERROR] " + e.strerror
+            logger.error(e)
             return False
 
         conf = "".join(f.readlines())
