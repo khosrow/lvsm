@@ -3,6 +3,7 @@ import os
 import socket
 import sys
 from lvsm import genericdirector, utils
+from lvsm.modules import kaparser
 
 logger = logging.getLogger('lvsm')
 
@@ -233,3 +234,19 @@ class Keepalived(genericdirector.GenericDirector):
                         output.append("%s:%s" % (host, portname))
 
         return output
+
+    def parse_config(self, configfile):
+        """Read the config file and validate configuration syntax"""
+        try:
+            f = open(configfile)
+        except IOError as e:
+            logger.error(e)
+            return False
+
+        conf = "".join(f.readlines())
+        tokens = kaparser.tokenize_config(conf)
+
+        if tokens:
+            return True
+        else:
+            return False
