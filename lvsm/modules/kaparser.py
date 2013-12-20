@@ -287,9 +287,8 @@ def tokenize_config(configfile):
 
     comment = oneOf("# !") + restOfLine
 
-    allconfig = (global_defs &
-                OneOrMore(vrrp_instance) &
-                ZeroOrMore(static_ipaddress | static_routes |
+    allconfig = (global_defs &                
+                ZeroOrMore(static_ipaddress | static_routes | vrrp_instance |                  
                            vrrp_script | vrrp_sync_group |
                            virtual_server_group | virtual_server) 
                 )
