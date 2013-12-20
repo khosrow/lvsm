@@ -16,11 +16,12 @@ class Server():
 
 
 class Virtual(Server):
-    def __init__(self, proto, ip, port, sched):
+    def __init__(self, proto, ip, port, sched, persistence=None):
         Server.__init__(self, ip, port)
         self.proto = proto
         self.realServers = list()
         self.sched = sched
+        self.persistence = persistence
 
     def __str__(self, numeric=True, color=False):
         """provide an easy way to print this object"""
@@ -39,7 +40,10 @@ class Virtual(Server):
 
         ipport = (host + ":" + service).ljust(40)
         sched = self.sched.ljust(7)
-        line = "%s %s %s" % (proto, ipport, sched)
+        if self.persistence:            
+            line = "%s %s %s persistence %s" % (proto, ipport, sched, self.persistence)
+        else:
+            line = "%s %s %s" % (proto, ipport, sched)
         if color:
             line = termcolor.colored(line, attrs=['bold'])
         output = [line]
@@ -147,10 +151,15 @@ class GenericDirector(object):
                 proto = tokens[0]
                 # second token will be ip:port
                 ip, sep, port = tokens[1].rpartition(':')
-                # last one is the scheduler
+                # 3rd is the scheduler
                 sched = tokens[2]
+                # [optional] 5th is the persistence timeout
+                if len(tokens) == 5:
+                    persistence = tokens[4]
+                else:
+                    persistence = None
 
-                v = Virtual(proto, ip, port, sched)
+                v = Virtual(proto, ip, port, sched, persistence)
                 self.virtuals.append(v)
             # If the line doesn't begin with the above values, it is realserver
             else:
