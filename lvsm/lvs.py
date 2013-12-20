@@ -14,6 +14,12 @@ class Director(object):
                  'keepalived': Keepalived}
 
     def __new__(self, name, ipvsadm, configfile='', restart_cmd='', nodes=''):
-        if name != 'ldirectord' and name != 'keepalived':
-            name = 'generic'
-        return Director.directors[name](ipvsadm, configfile, restart_cmd, nodes)
+        if name == 'keepalived':
+            from modules.keepalived import Keepalived
+            return Keepalived(ipvsadm, configfile, restart_cmd, nodes)
+        elif name == 'ldirectord':
+            from modules.ldirectord import Ldirectord
+            return Ldirectord(ipvsadm, configfile, restart_cmd, nodes)
+        else:
+            from genericdirector import GenericDirector
+            return GenericDirector(ipvsadm, configfile, restart_cmd, nodes)
