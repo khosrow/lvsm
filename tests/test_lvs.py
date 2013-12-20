@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../l
 
 
 from lvsm import lvs
-from lvsm.modules import ldirectord
 
 
 class GenericDirector(unittest.TestCase):
@@ -39,86 +38,6 @@ class GenericDirector(unittest.TestCase):
         result = self.director.show(False, False)
         self.assertEqual(result, expected_result)
         
-
-class Ldirectord(unittest.TestCase):
-    def setUp(self):
-        # for now only testing ldirectord
-        self.director = ldirectord.Ldirectord(path + '/scripts/ipvsadm',
-                                              path + '/etc/ldirectord.conf')
-
-    def test_disablehost(self):
-        output = StringIO.StringIO()
-        sys.stdout = output
-        filepath = self.director.maintenance_dir + '/208.67.222.222'
-        self.assertTrue(self.director.disable('resolver1.opendns.com'))
-        # now clean up the file
-        try:
-            os.unlink(filepath)
-        except OSError as e:
-            pass
-
-    def test_disablehostport(self):
-        output = StringIO.StringIO()
-        sys.stdout = output
-        filepath = self.director.maintenance_dir + '/208.67.222.222:53'
-        self.assertTrue(self.director.disable('resolver1.opendns.com', 'domain'))
-        # now clean up the file
-        try:
-            os.unlink(filepath)
-        except OSError as e:
-            pass
-
-    def test_enablehost(self):
-        output = StringIO.StringIO()
-        sys.stdout = output
-        filepath = self.director.maintenance_dir + '/208.67.222.222'
-        try:
-            # create the file before we continue
-            f = open(filepath, 'w')
-            f.close()
-            self.assertTrue(self.director.enable('resolver1.opendns.com'))
-        except IOError as e:
-            pass
-
-    def test_enablehostport(self):
-        output = StringIO.StringIO()
-        sys.stdout = output
-        filepath = self.director.maintenance_dir + '/208.67.222.222:53'
-        try:
-            # create the file before we continue
-            f = open(filepath, 'w')
-            f.close()
-            self.assertTrue(self.director.enable('resolver1.opendns.com', 'domain'))
-        except IOError as e:
-            pass
-
-    def test_enablehostname(self):
-        output = StringIO.StringIO()
-        sys.stdout = output
-        filepath = self.director.maintenance_dir + '/slashdot.org'
-        try:
-            # create the file before we continue
-            f = open(filepath, 'w')
-            f.close()
-            self.assertTrue(self.director.enable('slashdot.org', ''))
-        except IOError as e:
-            pass
-
-    def test_parseconfig(self):
-        configfile = path + '/etc/ldirectord.conf-1'
-        self.assertTrue(self.director.parse_config(configfile))
-
-
-class Keepalived(unittest.TestCase):
-    def setUp(self):
-        self.director = lvs.Director('keepalived',
-                                     path + '/maintenance',
-                                     path + '/scripts/ipvsadm',
-                                     path + '/etc/keepalived.conf')
-
-    def test_parseconfig(self):
-        configfile = path + '/etc/keepalived.conf'
-        self.assertTrue(self.director.parse_config(configfile))
 
 if __name__ == "__main__":
     unittest.main()
