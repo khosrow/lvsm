@@ -22,7 +22,7 @@ class Configure(unittest.TestCase):
               }
     shell = shell.ConfigurePrompt(config)
 
-    def test_showdirector(self):
+    def test_showdirector1(self):
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = "# director config\nmaintenancedir = tests/maintenance\n"
@@ -30,7 +30,11 @@ class Configure(unittest.TestCase):
         result = output.getvalue()
         self.assertEqual(result, expected_result)
 
-    def test_showfirewall(self):
+    def test_showdirector2(self):
+        # verify error checking
+        self.assertTrue(True)
+
+    def test_showfirewall1(self):
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = "# iptables\n"
@@ -38,13 +42,8 @@ class Configure(unittest.TestCase):
         result = output.getvalue()
         self.assertEqual(result, expected_result)
 
-
-class ConfigureErrors(unittest.TestCase):
-    """Verify error checking in configure"""
-    def test_showdirector(self):
-        self.assertTrue(True)
-
-    def test_showfirewall(self):
+    def test_showfirewall2(self):
+        # verify error checking
         self.assertTrue(True)
 
 
@@ -63,7 +62,7 @@ class Virtual(unittest.TestCase):
     shell = shell.VirtualPrompt(config)
     shell.settings['color'] = False
 
-    def test_status(self):
+    def test_status1(self):
         self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
@@ -85,23 +84,11 @@ lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
-#     def test_showfirewall(self):
-#         output = StringIO.StringIO()
-#         sys.stdout = output
-#         expected_result = """Chain INPUT (policy ACCEPT)
-# target     prot opt source               destination
-# ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
+    def test_status2(self):
+        # Veirfy error checking
+        self.assertTrue(True)
 
-# Chain FORWARD (policy ACCEPT)
-# target     prot opt source               destination
-
-# Chain OUTPUT (policy ACCEPT)
-# target     prot opt source               destination"""
-#         self.shell.onecmd(' show firewall')
-#         result = output.getvalue()
-#         self.assertEqual(result.rstrip(), expected_result.rstrip())
-
-    def test_showvirtualtcp(self):
+    def test_showvirtualtcp1(self):
         self.shell.settings['numeric'] = False
         output = StringIO.StringIO()
         sys.stdout = output
@@ -118,6 +105,10 @@ ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http"""
         self.shell.onecmd(' show tcp dinsdale.python.org http')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
+
+    def test_showvirtualtcp2(self):
+        # Verify error checking
+        self.assertTrue(True)
 
     def test_showvirtualudp(self):
         self.shell.settings['numeric'] = False
@@ -179,11 +170,3 @@ UDP  dinsdale.python.org:domain               rr
             self.assertTrue(not os.path.exists(filepath))
         except IOError as e:
             pass
-
-
-class VirtualErrors(unittest.TestCase):
-    def test_status(self):
-        self.assertTrue(True)
-
-    def test_showvirtualtcp(self):
-        self.assertTrue(True)
