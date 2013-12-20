@@ -192,10 +192,10 @@ class GenericDirector(object):
         # Show a list of disabled real servers.
         disabled = self.show_real_disabled('', '', numeric)
         if disabled:
-            header = ["", "Disabled servers:", "-----------------"]
+            header = ["", "Disabled real servers:", "----------------------"]
             disabled = header + disabled
 
-        return result + disabled
+        return result + disabled + ['']
 
     def show_running(self, numeric, color):
         """
