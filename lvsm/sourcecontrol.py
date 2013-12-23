@@ -28,7 +28,7 @@ class Subversion(object):
 
         # call the svn command
         try:
-            logger.debug("Running command: %s" % " ".join(cmd))
+            logger.info("Running command: %s" % " ".join(cmd))
             ret = subprocess.call(cmd)
             if ret:
                 logger.error("svn returned an error!")
@@ -42,7 +42,7 @@ class Subversion(object):
 
         # call the svn command
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
+            logger.info("Running the command: %s" % " ".join(cmd))
             ret = utils.check_output(cmd)
             if ret and ret.startswith('M'):
                 return True
@@ -61,7 +61,7 @@ class Subversion(object):
 
         # call the svn command
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
+            logger.info("Running the command: %s" % " ".join(cmd))
             ret = subprocess.call(cmd)
             if ret:
                 logger.error("svn return an error!")
@@ -80,7 +80,7 @@ class Git(object):
     def commit(self, filename):
         cmd = ['git', 'commit', filename]
         try:
-            logger.debug("Running command: %s" % " ".join(cmd))
+            logger.info("Running command: %s" % " ".join(cmd))
             ret = subprocess.call(cmd)
             if ret:
                 logger.error("git returned an error!")
@@ -88,12 +88,13 @@ class Git(object):
             logger.error(e)
 
     def status(self, filename):
+        """Verifies that a file was modified. Returns True if it was"""
         # prepare the command
         cmd = ['git', 'status', '-s', filename]
 
         # call the command
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
+            logger.info("Running the command: %s" % " ".join(cmd))
             ret = utils.check_output(cmd)
             if ret and ret.startswith('M'):
                 return True
@@ -116,10 +117,10 @@ class Git(object):
 
         # call the command
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
+            logger.info("Running the command: %s" % " ".join(cmd))
             ret = subprocess.call(cmd)
             if ret:
-                logger.error("svn return an error!")
+                logger.error("git returned an error!")
         except IOError as e:
             logger.error(e)
 

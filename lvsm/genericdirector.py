@@ -218,7 +218,7 @@ class GenericDirector(object):
 
         return result
 
-    def show_virtual(self, host, port, prot, numeric, color):
+    def show_virtual(self, host, port, proto, numeric, color):
         """Show status of virtual server.
         """
         # make sure we have a valid host
@@ -236,7 +236,7 @@ class GenericDirector(object):
         result = ["", "Layer 4 Load balancing"]
         result += ["======================"]
         for v in self.virtuals:
-            if v.proto == prot.upper() and v.ip == hostip and v.port == str(portnum):
+            if v.proto == proto.upper() and v.ip == hostip and v.port == str(portnum):
                 result += v.__str__(numeric, color).split('\n')
 
         return result
