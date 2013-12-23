@@ -1,7 +1,7 @@
 import logging
 import os
 import socket
-import sys
+import subprocess
 from lvsm import genericdirector, utils
 from lvsm.modules import kaparser
 
@@ -58,8 +58,18 @@ class Keepalived(genericdirector.GenericDirector):
                 logger.error('Virtual port %s is not valid!' % vport)
                 return False
         
+        # manager.load(self.confg['keepalived-mib'])
         manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
+        # if self.config['snmp_user'] and self.config['snmp_password']:
+        #     m = manager.Manager(self.confg['snmp_host'],  
+        #                         self.config['snmp_community'],
+        #                         self.config['snmp_user'],
+        #                         self.config['snmp_password'])
+        # else:
+        #     m = manager.Manager(self.confg['snmp_host'],
+        #                           self.config['snmp_community'])
         m = manager.Manager('localhost', 'private')
+        
         # iterate through the virtual servers
         # and disable the matching real server
         for i in m.virtualServerAddress:
@@ -104,6 +114,11 @@ class Keepalived(genericdirector.GenericDirector):
                                         logger.error(e)
                                         logger.error('Please make sure /var/cache/lvsm is writable before proceeding!')
                                         return False 
+
+                                    # Copy the file to the other nodes
+                                    # In case of a switch lvsm will have 
+                                    # the weight info on all nodes
+                                    self.filesync_nodes('copy', fullpath)
                         
                                     # set the weight to zero
                                     community = "private"
@@ -149,7 +164,17 @@ class Keepalived(genericdirector.GenericDirector):
                 return False
         
         manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
+        # manager.load(self.config['keepalived-mib'])
         m = manager.Manager('localhost', 'private')
+        # if self.config['snmp_user'] and self.config['snmp_password']:
+        #     m = manager.Manager(self.config['snmp_host'],
+        #                         self.config['snmp_community'],
+        #                         self.config['snmp_user'],
+        #                         self.config['snmp_password'])
+        # else:
+        #     m = manager.Manager(self.config['snmp_host'],
+        #                         self.config['snmp_community'])
+
         # iterate through the virtual servers
         # and enable the matching real server
         # if the weight is zero.
@@ -205,13 +230,18 @@ class Keepalived(genericdirector.GenericDirector):
                                     m.realServerWeight[i,idx] = orig_weight
                                     print "Enabled %s:%s on VIP %s:%s. Weight set to %s." % (rip, rp, vip, vp, orig_weight)
 
-                                    # Now remove the place holder file
+                                    # Now remove the placeholder file locally
                                     try:
                                         os.unlink(fullpath)
                                     except OSError as e:
                                         logger.error(e)
                                         logger.error('Please make sure /var/cache/lvsm is writable!')
                                         logger.error('%s needs to be manually deleted to avoid future problems.' % fullpath)
+
+                                    # remove the placeholder file in other nodes
+                                    self.filesync_nodes('remove', fullpath)
+
+
                         idx += 1
 
         return True

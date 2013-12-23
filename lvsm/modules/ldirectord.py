@@ -58,22 +58,11 @@ class Ldirectord(genericdirector.GenericDirector):
                 logger.error(e)
                 return False
 
-            if self.nodes is not None:
-                filename = self.maintenance_dir + "/" + hostport
-                for node in self.nodes:
-                    if node != self.hostname:
-                        remote = node + ":" + self.maintenance_dir
-                        args = ['scp', filename, remote]
-                        logger.debug('Running command : %s' % (' '.join(args)))
-                        try:
-                            output = utils.check_output(args)
-                        except OSError as e:
-                            logger.error(error_msg)
-                            logger.error(e)
-                        except subprocess.CalledProcessError as e:
-                            logger.error(error_msg)
-                            logger.error(e)
-            # now confirm that it's removed from ldirector
+            # Copy the state file to other nodes
+            fullpath = self.maintenance_dir + "/" + hostport
+            self.filesync_nodes('copy', fullpath)
+
+            # Confirm that it's removed from ldirector
             i = 0
             print "Disabling server ",
             while i < 10:
@@ -131,25 +120,14 @@ class Ldirectord(genericdirector.GenericDirector):
                     except OSError as e:
                         logger.error(e)
                         return False
+
                     # Remove the same file from other nodes in the cluster.
-                    if self.nodes is not None:
-                        for node in self.nodes:
-                            if node != self.hostname:
-                                cmd = "rm " + self.maintenance_dir + "/" + filename
-                                args = ['ssh', node, cmd]
-                                logger.debug('Running command : %s' % (' '.join(args)))
-                                try:
-                                    output = utils.check_output(args)
-                                except OSError as e:
-                                    logger.error(error_msg)
-                                    logger.error(e)
-                                except subprocess.CalledProcessError as e:
-                                    logger.error(error_msg)
-                                    logger.error(e)
+                    fullpath = self.maintenance_dir + "/" + filename
+                    self.filesync_nodes('remove', fullpath)
+
                     # Wait 4.5 seconds before checking output of ipvsadm.
                     # This is an arbitrary number and could possibly be changed
                     i = 0
-                    found = False
                     print "Enabling server ",
                     while i < 10:
                         sys.stdout.write(".")
@@ -186,7 +164,7 @@ class Ldirectord(genericdirector.GenericDirector):
             if portnum == -1:
                 return
             hostport = hostip + ":" + str(portnum)
-        # output = ["", "Disabled servers:", "-----------------"]
+
         output = list()
 
         if not self.maintenance_dir:
@@ -205,13 +183,14 @@ class Ldirectord(genericdirector.GenericDirector):
             try:
                 f = open(self.maintenance_dir + "/" + filename)
                 reason = 'Reason: ' + f.readline()
+                f.close()
             except IOError as e:
                 reason = ''
                 logger.error(e)
             if ((not host and not port) or
                 self.convert_filename(filename) == hostip or
-                self.convert_filename(filename) == hostip + ":" +
-                str(portnum)):
+                self.convert_filename(filename) == hostip + ":" + str(portnum)):
+            
                 # decide if we have to convert to hostname or not
                 if numeric:
                     output.append(filename + "\t\t" + reason)

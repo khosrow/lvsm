@@ -388,3 +388,38 @@ class GenericDirector(object):
         """return a list of all real servers.
         Used for autocomplete mode in the shell."""
         return list()
+
+    def filesync_nodes(self, op, filename):
+        """
+        Sync a file between nodes in the cluste. 
+        op has to be one of 'remove' or 'copy'.
+        filename is the name of the file to be copied/removed
+        The method return True/False
+        """
+        if self.nodes is not None:
+            for node in self.nodes:
+                if node != self.hostname:
+
+                    # Assumption is we only need to remotely remove a file
+                    # Or copy a file to a remote location
+                    if op == 'remove':
+                        args = ['ssh', node, 'rm', filename]
+                    elif op == 'copy':
+                        remote = node + ":" + filename
+                        args = ['scp', filename, remote]
+                    else:
+                        logger.error('Unknown operation \'%s\' in filesync method!' % op)
+                        return False
+
+                    logger.debug('Running command : %s' % (' '.join(args)))
+                    try:
+                        utils.check_output(args)
+                    except OSError as e:
+                        logger.error("Unable to sync state file to %s" % node)
+                        logger.error(e)
+                        return False
+                    except subprocess.CalledProcessError as e:
+                        logger.error("Unable to sync state file to %s" % node)
+                        logger.error(e)
+                        return False
+        return True
