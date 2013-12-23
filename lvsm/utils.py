@@ -21,7 +21,12 @@ def parse_config(filename):
                     'director_bin': '',
                     'firewall_cmd': '',
                     'nodes': '',
-                    'version_control': ''
+                    'version_control': '',
+                    'keepalived-mib': 'KEEPALIVED-MIB',
+                    'snmp_community': '',
+                    'snmp_host': '',
+                    'snmp_user': '',
+                    'snmp_password': ''
                     }
     linenum = 0
     for line in lines:
