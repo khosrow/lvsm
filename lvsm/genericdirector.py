@@ -225,10 +225,12 @@ class GenericDirector(object):
         hostip = utils.gethostname(host)
         if not hostip:
             return list()
+
         # make sure the port is valid
-        portnum = utils.getportnum(port)
-        if portnum == -1:
-            return list()
+        if port:
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return list()
 
         # Update the ipvs table
         self.build_ipvs()
@@ -236,8 +238,9 @@ class GenericDirector(object):
         result = ["", "Layer 4 Load balancing"]
         result += ["======================"]
         for v in self.virtuals:
-            if v.proto == proto.upper() and v.ip == hostip and v.port == str(portnum):
-                result += v.__str__(numeric, color).split('\n')
+            if v.proto == proto.upper() and v.ip == hostip:
+                if not port or v.port == str(portnum):
+                    result += v.__str__(numeric, color).split('\n')
 
         return result
 
