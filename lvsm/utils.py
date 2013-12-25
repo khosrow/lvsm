@@ -1,6 +1,5 @@
 """Common utility functions used by lvsm"""
 import socket
-import struct
 import subprocess
 import sys
 import logging
@@ -68,9 +67,10 @@ def print_file(filename):
 
 
 def getportnum(port):
-    """accepts a port name or number and returns the port number as an int.
-except
-    returns -1 in case of invalid port name"""
+    """
+    Accepts a port name or number and returns the port number as an int.
+    Returns -1 in case of invalid port name.
+    """
     try:
         portnum = int(port)
         if portnum < 0 or portnum > 65535:
@@ -97,12 +97,6 @@ def gethostname(host):
         return hostip
 
 
-def hextoip(hexip):
-    """Convert a packed hex format IPv4 to a dotted notation"""
-    ip = int(hexip, 16)
-    return socket.inet_ntoa(struct.pack("!L",ip))
-
-
 def pager(pager,lines):
     """print lines to screen and mimic behaviour of MORE command"""
     text = "\n".join(lines)
@@ -118,14 +112,14 @@ def pager(pager,lines):
             stdout, stderr = p.communicate(input=text)
 
 
-def check_output(args):
+def check_output(args, cwd=None, silent=False):
     """Wrapper for subprocess.check_output"""
-    #logger.debug("Running: %s " % " ".join(args))
-    logger.info("Running: %s " % " ".join(args))
+    if not silent:
+        logger.info("Running command: %s " % " ".join(args))
     try:
-        output = subprocess.check_output(args)
+        output = subprocess.check_output(args, cwd=cwd)
         return output
     # python 2.6 compatibility code
     except AttributeError:
-        output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
+        output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=cwd).communicate()
         return output
