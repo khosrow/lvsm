@@ -375,7 +375,7 @@ class GenericDirector(object):
         args = [self.ipvsadm, '-L']
         result = list()
         try:
-            output = utils.check_output(args)
+            output = utils.check_output(args, silent=True)
         except OSError as e:
             logger.error(" %s" % e.strerror)
             return result
