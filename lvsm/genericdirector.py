@@ -23,7 +23,7 @@ class Virtual(Server):
         self.sched = sched
         self.persistence = persistence
 
-    def __str__(self, numeric=True, color=False):
+    def __str__(self, numeric=True, color=False, real=None, port=None):
         """provide an easy way to print this object"""
         proto = self.proto.upper().ljust(4)
         host = self.ip
@@ -48,7 +48,20 @@ class Virtual(Server):
             line = termcolor.colored(line, attrs=['bold'])
         output = [line]
         for r in self.realServers:
-            output.append(r.__str__(numeric, color))
+            if real:
+                # empty out the output if we are showing the real server only
+                output = list()
+                if r.ip == real:                    
+                    if port:
+                        if r.port == port:
+                            output = [line]
+                            output.append(r.__str__(numeric,color))
+                    else:
+                        output = [line]
+                        output.append(r.__str__(numeric,color))
+
+            else:
+                output.append(r.__str__(numeric, color))
         output.append('')
         return '\n'.join(output)
 
@@ -261,68 +274,26 @@ class GenericDirector(object):
     def show_real_active(self, host, port, numeric, color):
         """Show status of an active real server across multiple VIPs.
         """
+        # make sure we have a valid host
         hostip = utils.gethostname(host)
         if not hostip:
             return list()
-        portnum = utils.getportnum(port)
-        if portnum == -1:
-            return list()
-        hostport = hostip + ":" + str(portnum)
-        args = [self.ipvsadm, '-L', '-n']
-        try:
-            lines = utils.check_output(args)
-        except OSError as e:
-            print "[ERROR] " + e.strerror
-            return list()
-        except subprocess.CalledProcessError as e:
-            print "[ERROR] problem with ipvsadm - " + e.output
-            return list()
 
-        virtual = ""
-        real = ""
-        output = list()
-        # find the output line that contains the rip
-        for line in lines.split('\n'):
-            if (line.startswith("TCP") or
-                line.startswith("UDP") or
-                line.startswith("FWM")):
-                virtual = line
+        # If port is defined verify that it's a valid number
+        if port:
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return list()
 
-            if hostport in line:
-                if numeric:
-                    v = '  '.join(virtual.split()[:2])
-                    r = '  ' + ' '.join(line.split()[:2])
-                else:
-                    # convert host IP and port num to names before displaying
-                    vip = virtual.split()[1].split(":")[0]
-                    (vipname, aliaslist, iplist) = socket.gethostbyaddr(vip)
-                    vipport = virtual.split()[1].split(":")[1]
-                    try: 
-                        vipportname = socket.getservbyport(int(vipport))
-                    except socket.error as e:
-                        vipportname = vipport
-                    v = virtual.split()[0] + ' ' + vipname + ':' + vipportname
+        # Update the ipvs table
+        self.build_ipvs()
 
-                    rip = line.split()[1].split(":")[0]
-                    (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
-                    ripport = line.split()[1].split(":")[1]
-                    try:
-                        ripportname = socket.getservbyport(int(ripport))
-                    except socket.error as e:
-                        ripportname = ripportname
+        result = list()
 
-                    r = '  -> ' + ripname + ':' + ripportname
-
-                # colorize output
-                if color:
-                    a = ['bold']
-                else:
-                    a = None
-
-                output.append(termcolor.colored(v, attrs=a))
-                output.append(r)
-
-        return output
+        for v in self.virtuals:
+            result += v.__str__(numeric, color, hostip, port).split('\n')
+        
+        return result
 
     def show_real_disabled(self, host, port, numeric):
         """Show status of disabled real server across multiple VIPs.
