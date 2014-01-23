@@ -9,16 +9,22 @@ from lvsm import shell
 
 class Configure(unittest.TestCase):
     """Verify correct functionality in configure"""
-    config = {'director_config': path + '/etc/ldirectord.conf',
-              'firewall_config': path + '/etc/iptables.rules',
+    config = {'ipvsadm': path + '/scripts/ipvsadm',
+              'iptables': path + '/scripts/iptables',
               'pager': 'none',
-              'dsh_group': '',
+              'director_config': path + '/etc/ldirectord.conf',
+              'firewall_config': path + '/etc/iptables.rules',
               'director': 'ldirectord',
-              'maintenance_dir': '',
               'director_cmd': '',
+              'director_bin': '',
+              'firewall_cmd': '',
               'nodes':'',
-              'ipvsadm': path + '/scripts/ipvsadm',
-              'iptables': path + '/scripts/iptables'
+              'version_control': '',
+              'keepalived-mib': 'KEEPALIVED-MIB',
+              'snmp_community': '',
+              'snmp_host': '',
+              'snmp_user': '',
+              'snmp_password': ''            
               }
     shell = shell.ConfigurePrompt(config)
 
@@ -53,14 +59,21 @@ class Virtual(unittest.TestCase):
               'pager': 'none',
               'director_config': path + '/etc/ldirectord.conf',
               'firewall_config': path + '/etc/iptables.rules',
-              'dsh_group': '',
               'director': 'ldirectord',
-              'maintenance_dir': path + '/maintenance',
               'director_cmd': '',
-              'nodes':''
+              'director_bin': '',
+              'firewall_cmd': '',
+              'nodes':'',
+              'version_control': '',
+              'keepalived-mib': 'KEEPALIVED-MIB',
+              'snmp_community': '',
+              'snmp_host': '',
+              'snmp_user': '',
+              'snmp_password': ''            
               }
     shell = shell.VirtualPrompt(config)
     shell.settings['color'] = False
+    maintenance_dir = path + '/maintenance'
 
     def test_status1(self):
         self.shell.settings['numeric'] = False
@@ -149,7 +162,7 @@ UDP  dinsdale.python.org:domain               rr
 #         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_disablereal(self):
-        filepath = self.config['maintenance_dir'] + '/208.67.222.222'
+        filepath = self.maintenance_dir + '/208.67.222.222'
         # this is the disabling message we'll store in the file
         sys.stdin = StringIO.StringIO('disabled by test case')
         self.shell.onecmd('disable 208.67.222.222')
@@ -161,7 +174,7 @@ UDP  dinsdale.python.org:domain               rr
             pass
 
     def test_enablereal(self):
-        filepath = self.config['maintenance_dir'] + '/208.67.222.222:53'
+        filepath = self.maintenance_dir + '/208.67.222.222:53'
         try:
             # create the file before we continue
             f = open(filepath, 'w')
