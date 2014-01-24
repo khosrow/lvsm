@@ -31,11 +31,21 @@ class CommandPrompt(cmd.Cmd):
         # super(CommandPrompt, self).__init__()
         cmd.Cmd.__init__(self)
         self.config = config
+
+        # Build args dict to pass to director object
+        args = {'keepalived-mib': self.config['keepalived-mib'],
+                'snmp_community': self.config['snmp_community'],
+                'snmp_host': self.config['snmp_host'],
+                'snmp_user': self.config['snmp_user'],
+                'snmp_password': self.config['snmp_password']
+                }
+
         self.director = lvs.Director(self.config['director'],
                                     self.config['ipvsadm'],
                                     self.config['director_config'],
                                     self.config['director_cmd'],
-                                    self.config['nodes'])
+                                    self.config['nodes'],
+                                    args)
          
         self.rawprompt = rawprompt
         # disable color if the terminal doesn't support it
