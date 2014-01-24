@@ -15,8 +15,8 @@ logger = logging.getLogger('lvsm')
 class Ldirectord(genericdirector.GenericDirector):
     """Handles ldirector-specific functionality like enable/disable actions.
     """
-    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes=''):
-        super(Ldirectord, self).__init__(ipvsadm, configfile, restart_cmd, nodes)
+    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes='', args=dict()):
+        super(Ldirectord, self).__init__(ipvsadm, configfile, restart_cmd, nodes, args)
         try:
             f = open(self.configfile)
         except OSError as e:
