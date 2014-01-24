@@ -123,7 +123,7 @@ class GenericDirector(object):
     is the fallback. Should be inherited by classes implementing specific
     director funcationality.
     """
-    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes=''):
+    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes='', args=dict()):
         self.ipvsadm = ipvsadm
         self.configfile = configfile
         self.restart_cmd = restart_cmd
