@@ -1,7 +1,6 @@
 import logging
 import os
 import socket
-import subprocess
 from lvsm import genericdirector, utils
 from lvsm.modules import kaparser
 
@@ -13,8 +12,8 @@ try:
     from snimpy import mib
     from snimpy import snmp
 except ImportError:
-    logger.error("Python module 'snimpy' not found,loading a dummy module.")
-    logger.error("'enable' and 'disable' commands will not be availble.""")
+    logger.warn("Python module 'snimpy' not found, loading a dummy module.")
+    logger.warn("'enable' and 'disable' commands will not be availble.""")
     from lvsm.snimpy_dummy import manager
     from lvsm.snimpy_dummy import mib
     from lvsm.snimpy_dummy import snmp
@@ -23,10 +22,18 @@ class Keepalived(genericdirector.GenericDirector):
     """
     Implements Keepalived specific functions. Stub for now.
     """
-    def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd='', nodes=''):
-        super(Keepalived, self).__init__(maintenance_dir, ipvsadm,
-                                         configfile, restart_cmd)
+    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes='', args=dict()):
+        super(Keepalived, self).__init__(ipvsadm,
+                                         configfile,
+                                         restart_cmd,
+                                         nodes,
+                                         args)
+        # Now handle args
+        self.mib = args['keepalived-mib']
+        self.snmp_community = args['snmp_community']
+        self.snmp_host = args['snmp_host']
+        self.snmp_user = args['snmp_user']
+        self.snmp_password = args['snmp_password']
 
     def disable(self, host, port='', vhost='', vport='', reason=''):
         """
@@ -58,17 +65,16 @@ class Keepalived(genericdirector.GenericDirector):
                 logger.error('Virtual port %s is not valid!' % vport)
                 return False
         
-        # manager.load(self.confg['keepalived-mib'])
-        manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
-        # if self.config['snmp_user'] and self.config['snmp_password']:
-        #     m = manager.Manager(self.confg['snmp_host'],  
-        #                         self.config['snmp_community'],
-        #                         self.config['snmp_user'],
-        #                         self.config['snmp_password'])
-        # else:
-        #     m = manager.Manager(self.confg['snmp_host'],
-        #                           self.config['snmp_community'])
-        m = manager.Manager('localhost', 'private')
+        manager.load(self.mib)
+        # manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
+        if self.snmp_user and self.snmp_password:
+            m = manager.Manager(self.snmp_host,  
+                                self.snmp_community,
+                                self.snmp_user,
+                                self.snmp_password)
+        else:
+            m = manager.Manager(self.snmp_host, self.snmp_community)
+        # m = manager.Manager('localhost', 'private')
         
         # iterate through the virtual servers
         # and disable the matching real server
@@ -163,17 +169,17 @@ class Keepalived(genericdirector.GenericDirector):
                 logger.error('Virtual port %s is not valid!' % vport)
                 return False
         
-        manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
-        # manager.load(self.config['keepalived-mib'])
-        m = manager.Manager('localhost', 'private')
-        # if self.config['snmp_user'] and self.config['snmp_password']:
-        #     m = manager.Manager(self.config['snmp_host'],
-        #                         self.config['snmp_community'],
-        #                         self.config['snmp_user'],
-        #                         self.config['snmp_password'])
-        # else:
-        #     m = manager.Manager(self.config['snmp_host'],
-        #                         self.config['snmp_community'])
+        # manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
+        manager.load(self.mib)
+        # m = manager.Manager('localhost', 'private')
+        if self.snmp_user and self.snmp_password:
+            m = manager.Manager(self.snmp_host,
+                                self.snmp_community,
+                                self.snmp_user,
+                                self.snmp_password)
+        else:
+            m = manager.Manager(self.snmp_host,
+                                self.snmp_community)
 
         # iterate through the virtual servers
         # and enable the matching real server
