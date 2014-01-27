@@ -13,8 +13,17 @@ from lvsm.modules import keepalived
 class Keepalived(unittest.TestCase):
     """Tests for the functionality of the keepalived module"""
     def setUp(self):
+        args = {'keepalived-mib': 'KEEPALIVED-MIB',
+                'snmp_community': 'private',
+                'snmp_host': 'localhost',
+                'snmp_user': '',
+                'snmp_password': ''
+                }
         self.director = keepalived.Keepalived(path + '/scripts/ipvsadm',
-                                              path + '/etc/keepalived.conf')
+                                              path + '/etc/keepalived.conf',
+                                              restart_cmd='',
+                                              nodes='',
+                                              args=args)
 
     def test_disablehost(self):
         self.assertTrue(True) 
