@@ -19,13 +19,6 @@ Options:
   -m, --monochrome      Disable color display
   -n, --numeric         Enable numeric host names, and avoid using DNS
   -v, --version         Display lvsm version
-
-Commands:
-  configure
-  status
-  help
-
-Use 'lvsm help <command>' for information on a specific command.
 """
 
 import getopt
@@ -37,12 +30,21 @@ import os
 from lvsm import utils
 from lvsm import shell
 
+logging.basicConfig(format='[%(levelname)s]: %(message)s')
+logger = logging.getLogger('lvsm')  
+
 def usage(code, msg=''):
     if code:
         fd = sys.stderr
     else:
         fd = sys.stdout
     print >> fd, __doc__
+
+    config = utils.parse_config(None)
+    lvsshell = shell.LivePrompt(config)
+    lvsshell.onecmd(' '.join(["help"]))
+    print >> fd, "Use 'lvsm help <command>' for information on a specific command."
+
     if msg:
         print >> fd, msg
     sys.exit(code)
@@ -50,8 +52,6 @@ def usage(code, msg=''):
 
 def main():
     CONFFILE = "/etc/lvsm.conf"
-    logging.basicConfig(format='[%(levelname)s]: %(message)s')
-    logger = logging.getLogger('lvsm')  
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hvc:dmn",
