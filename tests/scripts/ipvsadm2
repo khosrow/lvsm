@@ -60,9 +60,19 @@ def main():
 
   for index, item in enumerate(numeric_tcp):
     for filename in filenames:
-      if filename in item:
-        del numeric_tcp[index]
-        del alpha_tcp[index]
+      parts = filename.split('.')
+      if parts[0] == "realServerWeight":
+        i = int(parts[1])
+        j = int(parts[2])
+        num = i + j
+
+        old = numeric_tcp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        numeric_tcp[num] = new
+
+        old = alpha_tcp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        alpha_tcp[num] = new
 
   for index, item in enumerate(numeric_udp):
     for filename in filenames:
