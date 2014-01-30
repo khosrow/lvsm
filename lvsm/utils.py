@@ -8,7 +8,10 @@ logger = logging.getLogger('lvsm')
 
 def parse_config(filename):
     #open config file and read it
-    lines = print_file(filename)
+    if filename:
+        lines = print_file(filename)
+    else:
+        lines = list()
     # list of valid config keys and their default values
     config_items = {'ipvsadm': 'ipvsadm',
                     'iptables': 'iptables',
