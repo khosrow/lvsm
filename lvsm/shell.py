@@ -26,6 +26,7 @@ class CommandPrompt(cmd.Cmd):
                 'color': True,
                 'commands': False}
     variables = ['numeric', 'color', 'commands']
+    doc_header = "Commands (type help <topic>):"
 
     def __init__(self, config, rawprompt='', stdin=sys.stdin, stdout=sys.stdout):
         # super(CommandPrompt, self).__init__()
@@ -77,6 +78,15 @@ class CommandPrompt(cmd.Cmd):
         else:
             self.prompt = self.rawprompt
         return stop
+
+    def print_topics(self, header, cmds, cmdlen, maxcol):
+        if cmds:
+            self.stdout.write("%s\n"%str(header))
+            if self.ruler:
+                self.stdout.write("%s\n"%str(self.ruler * len(header)))
+            for cmd in cmds:
+                self.stdout.write("  %s\n" % cmd)
+            self.stdout.write("\n")
 
     def do_exit(self, line):
         """Exit from lvsm shell."""
