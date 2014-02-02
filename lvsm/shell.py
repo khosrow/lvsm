@@ -38,7 +38,8 @@ class CommandPrompt(cmd.Cmd):
                 'snmp_community': self.config['snmp_community'],
                 'snmp_host': self.config['snmp_host'],
                 'snmp_user': self.config['snmp_user'],
-                'snmp_password': self.config['snmp_password']
+                'snmp_password': self.config['snmp_password'],
+                'cache_dir': self.config['cache_dir']
                 }
 
         self.director = lvs.Director(self.config['director'],

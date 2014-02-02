@@ -34,6 +34,7 @@ class Keepalived(genericdirector.GenericDirector):
         self.snmp_host = args['snmp_host']
         self.snmp_user = args['snmp_user']
         self.snmp_password = args['snmp_password']
+        self.cache_dir = args['cache_dir']
 
     def disable(self, host, port='', vhost='', vport='', reason=''):
         """
@@ -88,12 +89,12 @@ class Keepalived(genericdirector.GenericDirector):
                     # iterate over the realservers in 
                     # the specific virtual
                     j = m.virtualServerRealServersTotal[i]
-                    idx = 1
+                    idx = 1                    
                     while idx <= j:
                         hexip = m.realServerAddress[i,idx]
                         rip = socket.inet_ntoa(hexip)
                         rp = m.realServerPort[i,idx]
-                        if hostip == rip:
+                        if hostip == rip:                                                        
                             if not port or (port and portnum == rp):
                                     logger.debug('Disabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
                                     # 'found' is used to keep track if we find a matching real to disable
@@ -110,7 +111,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         continue
 
                                     filename = "realServerWeight.%s.%s" % (i, idx)
-                                    fullpath = '/var/cache/lvsm/%s' % filename
+                                    fullpath = '%s/%s' % (self.cache_dir, filename)
                                     try:
                                         logger.info('Creating file: %s' % fullpath)
                                         f = open(fullpath, 'w')
@@ -118,7 +119,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         f.close()
                                     except IOError as e:
                                         logger.error(e)
-                                        logger.error('Please make sure /var/cache/lvsm is writable before proceeding!')
+                                        logger.error('Please make sure %s is writable before proceeding!' % self.cache_dir)
                                         return False 
 
                                     # Copy the file to the other nodes
@@ -144,7 +145,7 @@ class Keepalived(genericdirector.GenericDirector):
         """
         Enable a real server in keepalived. This command rellies on snimpy
         and will set the weight of the real server back to its original weight. 
-        Assumption: original weight is stored in /var/cache/lvsm/realServerWeight.x.y
+        Assumption: original weight is stored in self.cache_dir/realServerWeight.x.y
         The reason is not used in this case.
         """
         hostip = utils.gethostname(rhost)
@@ -184,7 +185,7 @@ class Keepalived(genericdirector.GenericDirector):
         # iterate through the virtual servers
         # and enable the matching real server
         # if the weight is zero.
-        # Note: if file is not found in /var/cache/lvsm
+        # Note: if file is not found in the cache_dir (i.e. /var/cache/lvsm)
         # we set the weight 1 (keepalived default)
         for i in m.virtualServerAddress:
             hexip = m.virtualServerAddress[i]
@@ -211,10 +212,10 @@ class Keepalived(genericdirector.GenericDirector):
                                         msg = "Real server %s:%s on VIP %s:%s is already enabled with a weight of %s" % (rip, rp, vip, vp, weight)
                                         logger.warning(msg)
                                         idx += 1 
-                                        next
+                                        continue
 
                                     filename = "realServerWeight.%s.%s" % (i, idx)
-                                    fullpath = '/var/cache/lvsm/%s' % filename
+                                    fullpath = '%s/%s' % (self.cache_dir, filename)
 
                                     logger.debug('Enabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
                                     try:
@@ -241,7 +242,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         os.unlink(fullpath)
                                     except OSError as e:
                                         logger.error(e)
-                                        logger.error('Please make sure /var/cache/lvsm is writable!')
+                                        logger.error('Please make sure %s is writable!' % self.cache_dir)
                                         logger.error('%s needs to be manually deleted to avoid future problems.' % fullpath)
 
                                     # remove the placeholder file in other nodes
