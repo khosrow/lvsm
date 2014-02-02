@@ -55,7 +55,7 @@ def main():
       numeric = True
 
   path = os.path.abspath(os.path.dirname(__file__))
-  maintenance = path + "/../maintenance"
+  maintenance = path + "/../cache"
   filenames = os.listdir(maintenance)
 
   for index, item in enumerate(numeric_tcp):
@@ -64,7 +64,7 @@ def main():
       if parts[0] == "realServerWeight":
         i = int(parts[1])
         j = int(parts[2])
-        num = i + j
+        num = i + j - 1
 
         old = numeric_tcp[num]
         new = old.replace("Masq    1", "Masq    0")
