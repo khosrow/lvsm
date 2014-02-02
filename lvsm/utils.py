@@ -16,6 +16,7 @@ def parse_config(filename):
     config_items = {'ipvsadm': 'ipvsadm',
                     'iptables': 'iptables',
                     'pager': '/bin/more',
+                    'cache_dir': '/var/cache/lvsm',
                     'director_config': '',
                     'firewall_config': '',
                     'director': 'generic',
