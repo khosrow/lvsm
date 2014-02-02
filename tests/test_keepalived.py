@@ -17,19 +17,66 @@ class Keepalived(unittest.TestCase):
                 'snmp_community': 'private',
                 'snmp_host': 'localhost',
                 'snmp_user': '',
-                'snmp_password': ''
+                'snmp_password': '',
+                'cache_dir': path + '/cache'
                 }
-        self.director = keepalived.Keepalived(path + '/scripts/ipvsadm',
+        self.director = keepalived.Keepalived(path + '/scripts/ipvsadm2',
                                               path + '/etc/keepalived.conf',
                                               restart_cmd='',
                                               nodes='',
                                               args=args)
 
     def test_disablehost(self):
-        self.assertTrue(True) 
+        output = StringIO.StringIO()
+        sys.stdout = output
+        filepath = self.director.cache_dir + '/realServerWeight.2.1'
+        self.assertTrue(self.director.disable('resolver1.opendns.com'))
+        
+        # now clean up the file
+        try:
+            os.unlink(filepath)
+        except OSError:
+            pass
     
     def test_disablehostport(self):
-        self.assertTrue(True)
+        output = StringIO.StringIO()
+        sys.stdout = output
+        filepath = self.director.cache_dir + '/realServerWeight.2.1'
+        self.assertTrue(self.director.disable('resolver1.opendns.com', 'domain'))
+        
+        # now clean up the file
+        try:
+            os.unlink(filepath)
+        except OSError:
+            pass
+
+    def test_enablehost(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
+
+        filepath = self.director.cache_dir + '/realServerWeight.2.2'
+        try:
+            # create the file before we continue
+            f = open(filepath, 'w')
+            f.write('1')
+            f.close()
+            self.assertTrue(self.director.enable('resolver2.opendns.com'))
+        except IOError:
+            pass
+
+    def test_enablehostport(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
+
+        filepath = self.director.cache_dir + '/realServerWeight.2.2'
+        try:
+            # create the file before we continue
+            f = open(filepath, 'w')
+            f.write('1')
+            f.close()
+            self.assertTrue(self.director.enable('resolver2.opendns.com', 'domain'))
+        except IOError:
+            pass
 
     def test_parseconfig1(self):
         # Testing parser on a valid config file
