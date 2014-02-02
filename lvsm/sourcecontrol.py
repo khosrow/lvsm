@@ -5,13 +5,14 @@ import subprocess
 import logging
 import getpass
 import utils
+import sh
 
 logger = logging.getLogger('lvsm')
 
 
 class Subversion(object):
     def __init__(self):
-        super(SourceControl, self).__init()
+        super(Subversion, self).__init__()
 
     def commit(self, filename):
         # ask for username and passwd so user isn't bugged on each server
@@ -28,21 +29,21 @@ class Subversion(object):
 
         # call the svn command
         try:
-            logger.debug("Running command: %s" % " ".join(cmd))
+            logger.info("Running command: %s" % " ".join(cmd))
             ret = subprocess.call(cmd)
             if ret:
                 logger.error("svn returned an error!")
         except IOError as e:
             logger.error(e)
 
-    def status(self, filename):
+    def modified(self, filename):
         """Check the status of the file and if modified return True"""
         # prepare the svn command
         cmd = ['svn', 'status', filename]
 
         # call the svn command
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
+            logger.info("Running the command: %s" % " ".join(cmd))
             ret = utils.check_output(cmd)
             if ret and ret.startswith('M'):
                 return True
@@ -52,16 +53,16 @@ class Subversion(object):
             logger.error(e.output)
         return False
 
-    def update(self, filename):
+    def update(self, filename, node):
         # prepare the svn command
         cmd = ['svn', 'update',
                '--username', self.username,
                '--password', self.password,
                filename]
 
-        # call the svn command
+        # call the svn command        
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
+            logger.info("Running the command: %s" % " ".join(cmd))
             ret = subprocess.call(cmd)
             if ret:
                 logger.error("svn return an error!")
@@ -75,54 +76,77 @@ class Git(object):
     The assumption is that the repositories are already setup.
     """
     def __init__(self):
-        super(SourceControl, self).__init()
+        super(Git, self).__init__()
 
     def commit(self, filename):
-        cmd = ['git', 'commit', filename]
-        try:
-            logger.debug("Running command: %s" % " ".join(cmd))
-            ret = subprocess.call(cmd)
-            if ret:
-                logger.error("git returned an error!")
-        except IOError as e:
+        try:    
+            cmd = ['dirname', filename]
+            wd = utils.check_output(cmd, silent=True).rstrip('\n')
+
+            cmd = ['basename', filename]
+            name = utils.check_output(cmd, silent=True).rstrip('\n')
+
+            args = ['git', 'commit', name]
+            logger.info("Running command: %s" % " ".join(args))            
+            subprocess.call(args, cwd=wd)
+
+        except (OSError, subprocess.CalledProcessError) as e:
+            logger.error(e)  
+
+    def modified(self, filename):
+        """Verifies that a file was modified. Returns True if it was"""
+        try:    
+            cmd = ['dirname', filename]
+            wd = utils.check_output(cmd, silent=True).rstrip('\n')
+
+            cmd = ['basename', filename]
+            name = utils.check_output(cmd, silent=True).rstrip('\n')
+
+            args = ['git', 'status', '-s', name]
+            stdout = utils.check_output(args, cwd=wd)
+            
+        except (OSError, subprocess.CalledProcessError) as e:
             logger.error(e)
+            return False
 
-    def status(self, filename):
-        # prepare the command
-        cmd = ['git', 'status', '-s', filename]
-
-        # call the command
-        try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
-            ret = utils.check_output(cmd)
-            if ret and ret.startswith('M'):
-                return True
-        except IOError as e:
-            logger.error(e)
-        except subprocess.CalledProcessError as e:
-            logger.error(e.output)
-        return False
-
-    def update(self, filename):
+        output = stdout.strip(' \n')
+        if output and output.startswith('M'):
+            logger.debug('%s was modified' % filename)
+            return True
+        else:
+            return False
+        
+    def update(self, filename, node):
         """
         Check the status of the file and if modified return True.
-        Assumption is that a 'remote' named 'cluster' is created and
+        Assumption is that a 'remote' named 'lvsm' is created and
         points to the matching git repo on each opposite node.
         ex.
         remote.lvsm.url=user@node1:/etc/lvsm/
         """
         # prepare the git command
-        cmd = ['git', 'pull', 'lvsm']
-
+        #cmd = ['git', 'pull', 'lvsm'] 
         # call the command
+        #try:
+        #    logger.info("Running the command: %s" % " ".join(cmd))
+        #    ret = subprocess.call(cmd)
+        #    if ret:
+        #        logger.error("git returned an error!")
+        #except IOError as e:
+        #    logger.error(e)
+        
         try:
-            logger.debug("Running the command: %s" % " ".join(cmd))
-            ret = subprocess.call(cmd)
-            if ret:
-                logger.error("svn return an error!")
-        except IOError as e:
-            logger.error(e)
+            cmd = ['dirname', filename]
+            wd = utils.check_output(cmd, silent=True).rstrip('\n')
 
+            remote = 'lvsm'
+            args = ['ssh', node, 'git', 'pull', remote]
+            logger.info('Running command: %s' % " ".join(args))
+            subprocess.call(args, cwd=wd)
+
+        except (OSError, subprocess.CalledProcessError) as e:
+            logger.error(e)
+            return False
 
 class SourceControl(object):
     """
@@ -131,4 +155,4 @@ class SourceControl(object):
     scm = {'subversion': Subversion, 'git': Git}
 
     def __new__(self, name):
-        return SourceControl.scm[name]
+        return SourceControl.scm[name]()

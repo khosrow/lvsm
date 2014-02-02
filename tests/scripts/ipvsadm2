@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+
+import sys
+import getopt
+import os
+
+header=['IP Virtual Server version 1.2.1 (size=4096)',
+        'Prot LocalAddress:Port Scheduler Flags', 
+        '  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn']
+
+alpha_tcp=['TCP  dinsdale.python.org:http     rr',
+           '  -> google.com:http              Masq    1      0          0',
+           '  -> slashdot.org:http            Masq    1      0          0']
+
+alpha_udp=['UDP  dinsdale.python.org:domain   rr',
+           '  -> resolver1.opendns.com:domain Masq    1      0          0',
+           '  -> resolver2.opendns.com:domain Masq    1      0          0']
+
+numeric_tcp=['TCP  82.94.164.162:80             rr',
+             '  -> 173.194.43.3:80              Masq    1      0          0',
+             '  -> 216.34.181.45:80             Masq    1      0          0']
+
+numeric_udp=['UDP  82.94.164.162:53             rr',
+             '  -> 208.67.222.222:53            Masq    1      0          0',
+             '  -> 208.67.220.220:53            Masq    1      0          0']
+
+def main():
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "Lnt:u:f:",
+                               ["list"])
+  except getopt.error, msg:
+    print msg
+    sys.exit(1)
+  
+  listing = True
+  tcp = False
+  udp = False
+  fwm = False
+  numeric = False
+
+  for opt, arg in opts:
+    if opt in ("-L", "--list"):
+      listing = True
+    elif opt == "-t":
+      if (arg == "dinsdale.python.org:80" or arg == "82.94.164.162:80"
+          or arg == "dinsdale.python.org:http"):
+        tcp = True
+    elif opt == "-u":
+      if (arg == "dinsdale.python.org:53" or arg == "82.94.164.162:53"
+          or arg == "dinsdale.python.org:domain"):
+        udp = True
+    elif opt == "-f":
+      fwm = True
+    elif opt == "-n":
+      numeric = True
+
+  path = os.path.abspath(os.path.dirname(__file__))
+  maintenance = path + "/../cache"
+  filenames = os.listdir(maintenance)
+
+  for index, item in enumerate(numeric_tcp):
+    for filename in filenames:
+      parts = filename.split('.')
+      if parts[0] == "realServerWeight":
+        i = int(parts[1])
+        j = int(parts[2])
+        num = i + j - 1
+
+        old = numeric_tcp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        numeric_tcp[num] = new
+
+        old = alpha_tcp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        alpha_tcp[num] = new
+
+  for index, item in enumerate(numeric_udp):
+    for filename in filenames:
+      if filename in item:
+        del numeric_udp[index]
+        del alpha_udp[index]
+
+  if tcp:
+    if numeric:
+      full_list = numeric_tcp
+    else:
+      full_list = alpha_tcp
+  elif udp:
+    if numeric:
+      full_list = numeric_udp
+    else:
+      full_list = alpha_udp
+  else:
+    if numeric:
+      full_list = numeric_tcp + numeric_udp
+    else:
+      full_list = alpha_tcp + alpha_udp
+
+  for item in header:
+    print item
+  for item in full_list:
+    print item
+
+if __name__ == '__main__':
+  main()

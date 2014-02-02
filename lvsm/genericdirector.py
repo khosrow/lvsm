@@ -16,9 +16,105 @@ class Server():
 
 
 class Virtual(Server):
-    def __init__(self, ip, port):
-        Server.__init__(ip, port)
+    def __init__(self, proto, ip, port, sched, persistence=None):
+        Server.__init__(self, ip, port)
+        self.proto = proto
         self.realServers = list()
+        self.sched = sched
+        self.persistence = persistence
+
+    def __str__(self, numeric=True, color=False, real=None, port=None):
+        """provide an easy way to print this object"""
+        proto = self.proto.upper().ljust(4)
+        host = self.ip
+        service = self.port
+        if not numeric:
+            try:
+                host, aliaslist, addrlist = socket.gethostbyaddr(self.ip)
+            except socket.herror:
+                pass
+            try:
+                service = socket.getservbyport(int(self.port))
+            except socket.error:
+                pass
+
+        ipport = (host + ":" + service).ljust(40)
+        sched = self.sched.ljust(7)
+        if self.persistence:            
+            line = "%s %s %s persistence %s" % (proto, ipport, sched, self.persistence)
+        else:
+            line = "%s %s %s" % (proto, ipport, sched)
+        if color:
+            line = termcolor.colored(line, attrs=['bold'])
+        output = [line]
+        for r in self.realServers:
+            if real:
+                # empty out the output if we are showing the real server only
+                output = list()
+                if r.ip == real:                    
+                    if port:
+                        if r.port == port:
+                            output = [line]
+                            output.append(r.__str__(numeric,color))
+                    else:
+                        output = [line]
+                        output.append(r.__str__(numeric,color))
+
+            else:
+                output.append(r.__str__(numeric, color))
+        output.append('')
+        return '\n'.join(output)
+
+        # # line = "IP: %s  Port: %s  Protocol: %s  Scheduler: %s" % (host, service, self.proto, self.sched)
+        # header = "Protocol  IP:port                                  Scheduler  Flags"
+        # hr = "--------  ---------------------------------------  ---------  --------"
+        # proto = self.proto.upper().ljust(8)
+        # ipport = (host + ":" + service).ljust(39)
+        # line = "%s  %s  %s" % (proto, ipport, self.sched)
+        # if color:
+        #     line = termcolor.colored(line, attrs=['bold'])
+
+        # output = [header, hr, line]
+        # header = "Label     IP:port                                  Method   Weight  ActiveConn  InactiveConn"
+        # hr = "--------  ---------------------------------------  -------  ------  ----------  ------------"
+        # output.append('')
+        # output.append(header)
+        # output.append(hr)
+        # for r in self.realServers:
+        #     output.append(r.__str__(numeric,color))
+        # output.append('')
+        # output.append('')
+        # return '\n'.join(output)
+
+        
+class Real(Server):
+    def __init__(self, ip, port, weight, method, active, inactive):
+        Server.__init__(self, ip,port)
+        self.weight = weight
+        self.method = method
+        self.active = active
+        self.inactive = inactive
+
+    def __str__(self, numeric=False, color=False):
+        host = self.ip
+        service = self.port
+        if not numeric:
+            try:
+                host, aliaslist, addrlist = socket.gethostbyaddr(self.ip)
+            except socket.herror:
+                pass
+            try:
+                service = socket.getservbyport(int(self.port))
+            except socket.error:
+                pass
+        ipport = (host + ":" + service).ljust(40)
+        method = self.method.ljust(7)
+        weight = self.weight.ljust(6)
+        active = self.active.ljust(10)
+        inactive = self.inactive.ljust(10)
+        line = "  -> %s %s %s %s %s" % (ipport, method, weight, active, inactive)
+        # line = "          %s %s  %s  %s  %s" % (ipport, method, weight, active, inactive)
+        return line
 
 
 class GenericDirector(object):
@@ -27,9 +123,7 @@ class GenericDirector(object):
     is the fallback. Should be inherited by classes implementing specific
     director funcationality.
     """
-    def __init__(self, maintenance_dir, ipvsadm,
-                 configfile='', restart_cmd='', nodes=''):
-        self.maintenance_dir = maintenance_dir
+    def __init__(self, ipvsadm, configfile='', restart_cmd='', nodes='', args=dict()):
         self.ipvsadm = ipvsadm
         self.configfile = configfile
         self.restart_cmd = restart_cmd
@@ -38,12 +132,69 @@ class GenericDirector(object):
         else:
             self.nodes = None
         self.hostname = socket.gethostname()
+        # this variable will hold the full IPVS table
+        self.virtuals = list()
+
+    def build_ipvs(self):
+        """Build a model fo the running ipvsadm table internally"""
+        args = [self.ipvsadm, '-L', '-n']
+
+        try:
+            output = utils.check_output(args)
+        except OSError as e:
+            logger.error("Problem with ipvsadm - %s" % e.strerror)
+            return False
+        except subprocess.CalledProcessErrror as e:
+            logger.error("Problem with ipvsadm - %s" % e.output)
+            return False
+
+        # Clear out the old virtual table
+        self.virtuals = list()
+        # Break up the output and generate VIP and RIPs from it
+        # Assumption is that the first 3 lines of the ipvsadm output
+        # are just informational so we skip them
+        for line in output.split('\n')[3:]:
+            if (line.startswith('TCP') or
+                line.startswith('UDP') or
+                line.startswith('FWM')):
+
+                # break the virtual line into tokens. There should only be 3
+                tokens = line.split()
+                # first one is the protocol
+                proto = tokens[0]
+                # second token will be ip:port
+                ip, sep, port = tokens[1].rpartition(':')
+                # 3rd is the scheduler
+                sched = tokens[2]
+                # [optional] 5th is the persistence timeout
+                if len(tokens) == 5:
+                    persistence = tokens[4]
+                else:
+                    persistence = None
+
+                v = Virtual(proto, ip, port, sched, persistence)
+                self.virtuals.append(v)
+            # If the line doesn't begin with the above values, it is realserver
+            else:
+                # The reals are always added to the last vip
+                if len(self.virtuals) > 0:
+                    tokens = line.split()
+                    if len(tokens) == 6:
+                        ip, sep, port = tokens[1].rpartition(':')
+                        method = tokens[2]
+                        weight = tokens[3]
+                        active = tokens[4]
+                        inactive = tokens[5]
+                        v = self.virtuals[-1]
+                        r = Real(ip, port, weight, method, active, inactive)
+                        v.realServers.append(r)
 
     def disable(self, host, port='', reason=''):
         """
         Disable a previously Enabled server.
         To be implemented by inheriting classes
         """
+        logger.error("Disable not implemented for 'generic' director")
         return False
 
     def enable(self, host, port=''):
@@ -51,89 +202,58 @@ class GenericDirector(object):
         Enable a previously disabled server.
         To be implemented by inheriting classes
         """
+        logger.error("enable not implemented for 'generic' director")
         return False
 
     def show(self, numeric, color):
         # Call ipvsadm and do the color highlighting.
-        result = self.show_running(numeric, color)
+        result = ["", "Layer 4 Load balancing"]
+        result += ["======================"]
+        result += self.show_running(numeric, color)
 
         # Show a list of disabled real servers.
         disabled = self.show_real_disabled('', '', numeric)
         if disabled:
-            header = ["", "Disabled servers:", "-----------------"]
+            header = ["", "Disabled real servers:", "----------------------"]
             disabled = header + disabled
 
-        return result + disabled
+        return result + disabled + ['']
 
     def show_running(self, numeric, color):
         """
         Show the running status of IPVS. Basically runs "ipvsadm".
         """
-        args = [self.ipvsadm, '-L']
-        if numeric:
-            args.append('-n')
+        # Create the IPVS table in memory
+        self.build_ipvs()
+        result = list()
+        for v in self.virtuals:
+            result += v.__str__(numeric, color).split('\n')
 
-        try:
-            output = utils.check_output(args)
-        except OSError as e:
-            print "[ERROR] problem with ipvsadm - " + e.strerror
-            return list()
-        except subprocess.CalledProcessError as e:
-            print "[ERROR] problem with ipvsadm - " + e.output
-            return list()
-
-        if color:
-            result = list()
-            for line in output.split('\n'):
-                if (line.startswith('TCP') or
-                    line.startswith('UDP') or
-                    line.startswith('FWM')):
-                    result.append(termcolor.colored(line, attrs=['bold']))
-                else:
-                    result.append(line)
-        else:
-            result = output.split('\n')
         return result
 
-    def show_virtual(self, host, port, prot, numeric, color):
+    def show_virtual(self, host, port, proto, numeric, color):
         """Show status of virtual server.
         """
-        protocols = {'tcp': '-t', 'udp': '-u', 'fwm': '-f'}
-        protocol = protocols[prot]
         # make sure we have a valid host
         hostip = utils.gethostname(host)
         if not hostip:
             return list()
+
         # make sure the port is valid
-        portnum = utils.getportnum(port)
-        if portnum == -1:
-            return list()
-        args = [self.ipvsadm, '-L']
-        if numeric:
-            args.append('-n')
+        if port:
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return list()
 
-        args.append(protocol)
-        args.append(hostip + ':' + str(portnum))
-        try:
-            output = utils.check_output(args)
-        except OSError as e:
-            print "[ERROR] problem with ipvsadm - " + e.strerror
-            return list()
-        except subprocess.CalledProcessError as e:
-            print "[ERROR] problem with ipvsadm - " + e.output
-            return list()
+        # Update the ipvs table
+        self.build_ipvs()
 
-        if color:
-            result = list()
-            for line in output.split('\n'):
-                if (line.startswith('TCP') or
-                    line.startswith('UDP') or
-                    line.startswith('FWM')):
-                    result.append(termcolor.colored(line, attrs=['bold']))
-                else:
-                    result.append(line)
-        else:
-            result = output.split('\n')
+        result = ["", "Layer 4 Load balancing"]
+        result += ["======================"]
+        for v in self.virtuals:
+            if v.proto == proto.upper() and v.ip == hostip:
+                if not port or v.port == str(portnum):
+                    result += v.__str__(numeric, color).split('\n')
 
         return result
 
@@ -146,76 +266,34 @@ class GenericDirector(object):
             active = ["", "Active servers:", "---------------"] + active
         disabled = self.show_real_disabled(host, port, numeric)
         if disabled:
-            header = ["", "Disabled servers:", "-----------------"]
-            disabled = header + disabled
-        return active + disabled
+            disabled = ["", "Disabled servers:", "-----------------"] + disabled
+            # disabled = header + disabled
+        header = ["", "Layer 4 Load balancing" , "======================"]
+        return header + active + disabled + ["\n"]
 
     def show_real_active(self, host, port, numeric, color):
         """Show status of an active real server across multiple VIPs.
         """
+        # make sure we have a valid host
         hostip = utils.gethostname(host)
         if not hostip:
             return list()
-        portnum = utils.getportnum(port)
-        if portnum == -1:
-            return list()
-        hostport = hostip + ":" + str(portnum)
-        args = [self.ipvsadm, '-L', '-n']
-        try:
-            lines = utils.check_output(args)
-        except OSError as e:
-            print "[ERROR] " + e.strerror
-            return list()
-        except subprocess.CalledProcessError as e:
-            print "[ERROR] problem with ipvsadm - " + e.output
-            return list()
 
-        virtual = ""
-        real = ""
-        # output = ["", "Active servers:", "---------------"]
-        output = list()
-        # find the output line that contains the rip
-        for line in lines.split('\n'):
-            if (line.startswith("TCP") or
-                line.startswith("UDP") or
-                line.startswith("FWM")):
-                virtual = line
+        # If port is defined verify that it's a valid number
+        if port:
+            portnum = utils.getportnum(port)
+            if portnum == -1:
+                return list()
 
-            if hostport in line:
-                if numeric:
-                    v = '  '.join(virtual.split()[:2])
-                    r = '  ' + ' '.join(line.split()[:2])
-                else:
-                    # convert host IP and port num to names before displaying
-                    vip = virtual.split()[1].split(":")[0]
-                    (vipname, aliaslist, iplist) = socket.gethostbyaddr(vip)
-                    vipport = virtual.split()[1].split(":")[1]
-                    try: 
-                        vipportname = socket.getservbyport(int(vipport))
-                    except socket.error as e:
-                        vipportname = vipport
-                    v = virtual.split()[0] + ' ' + vipname + ':' + vipportname
+        # Update the ipvs table
+        self.build_ipvs()
 
-                    rip = line.split()[1].split(":")[0]
-                    (ripname, aliaslist, iplist) = socket.gethostbyaddr(rip)
-                    ripport = line.split()[1].split(":")[1]
-                    try:
-                        ripportname = socket.getservbyport(int(ripport))
-                    except socket.error as e:
-                        ripportname = ripportname
+        result = list()
 
-                    r = '  -> ' + ripname + ':' + ripportname
-
-                # colorize output
-                if color:
-                    a = ['bold']
-                else:
-                    a = None
-
-                output.append(termcolor.colored(v, attrs=a))
-                output.append(r)
-
-        return output
+        for v in self.virtuals:
+            result += v.__str__(numeric, color, hostip, port).split('\n')
+        
+        return result
 
     def show_real_disabled(self, host, port, numeric):
         """Show status of disabled real server across multiple VIPs.
@@ -268,7 +346,7 @@ class GenericDirector(object):
         args = [self.ipvsadm, '-L']
         result = list()
         try:
-            output = utils.check_output(args)
+            output = utils.check_output(args, silent=True)
         except OSError as e:
             logger.error(" %s" % e.strerror)
             return result
@@ -284,3 +362,38 @@ class GenericDirector(object):
         """return a list of all real servers.
         Used for autocomplete mode in the shell."""
         return list()
+
+    def filesync_nodes(self, op, filename):
+        """
+        Sync a file between nodes in the cluste. 
+        op has to be one of 'remove' or 'copy'.
+        filename is the name of the file to be copied/removed
+        The method return True/False
+        """
+        if self.nodes is not None:
+            for node in self.nodes:
+                if node != self.hostname:
+
+                    # Assumption is we only need to remotely remove a file
+                    # Or copy a file to a remote location
+                    if op == 'remove':
+                        args = ['ssh', node, 'rm', filename]
+                    elif op == 'copy':
+                        remote = node + ":" + filename
+                        args = ['scp', filename, remote]
+                    else:
+                        logger.error('Unknown operation \'%s\' in filesync method!' % op)
+                        return False
+
+                    logger.debug('Running command : %s' % (' '.join(args)))
+                    try:
+                        utils.check_output(args)
+                    except OSError as e:
+                        logger.error("Unable to sync state file to %s" % node)
+                        logger.error(e)
+                        return False
+                    except subprocess.CalledProcessError as e:
+                        logger.error("Unable to sync state file to %s" % node)
+                        logger.error(e)
+                        return False
+        return True

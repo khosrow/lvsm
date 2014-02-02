@@ -1,5 +1,5 @@
 # from distutils.core import setup
-from setuptools import setup
+from setuptools import setup, find_packages
 import lvsm
 
 setup(
@@ -7,7 +7,7 @@ setup(
     version=lvsm.__version__,
     author=lvsm.__author__,
     author_email='khosrow@khosrow.ca',
-    packages=['lvsm'],
+    packages=find_packages(exclude='tests'),
     url='https://github.com/khosrow/lvsm',
     license='LICENSE.rst',
     description=lvsm.__doc__.strip(),

@@ -3,6 +3,9 @@ import subprocess
 import socket
 import utils
 import termcolor
+import logging
+
+logger = logging.getLogger('lvsm')
 
 
 class Firewall():
@@ -15,16 +18,18 @@ class Firewall():
             args.append("-n")
         try:
             try:
+                logger.info("Running: %s" % " ".join(args))
                 output = subprocess.check_output(args)
             # python 2.6 compatibility code
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
-            print "[ERROR] problem with iptables - " + e.strerror + ": " + args[0]
+            logger.error("problem with iptables - %s : %s" % (e.strerror , args[0]))
             return list()
 
+        result = ['', 'IP Packet filter rules']
+        result += ['======================']
         if color:
-            result = list()
             for line in output.split('\n'):
                 if 'Chain' not in line and 'ACCEPT' in line:
                     result.append(termcolor.colored(line, 'green'))
@@ -33,24 +38,27 @@ class Firewall():
                 else:
                     result.append(line)
         else:
-            result = output.split('\n')
+            result += output.split('\n')
 
         return result
 
     def show_nat(self, numeric):
-        args = [self.iptables, "-t", "nat", "-L"]
+        args = [self.iptables, "-t", "nat", "-L", "-v"]
         if numeric:
             args.append("-n")
         try:
             try:
+                logger.info("Running: %s" % " ".join(args))
                 output = subprocess.check_output(args)
             # python 2.6 compatibility code
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
-            print "[ERROR] problem with iptables - " + e.strerror + ": " + args[0] 
+            logger.error("Problem with iptables - %s : %s " % (e.strerror, args[0]))
             return list()
-        return output.split("\n")
+        result = ['', 'NAT rules', '=========']
+        result += output.split('\n')
+        return result
 
     def show_virtual(self, host, port, protocol, numeric, color):
         result = list()
@@ -64,12 +72,13 @@ class Firewall():
             portname = port
         try:
             try:
+                logger.info("Running: %s" % " ".join(args))
                 output = subprocess.check_output(args)
             # python 2.6 compatibility code
             except AttributeError as e:
                 output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
         except OSError as e:
-            print "[ERROR] problem with iptables - " + e.strerror + ": " + args[0]
+            logger.error("Problem with iptables - %s : %s" % (e.strerror, args[0]))
             return list()
         if output:
             lines = output.split('\n')
@@ -94,4 +103,10 @@ class Firewall():
                                 result.append(line)
                         else:
                             result.append(line)
+            # If we have any output, let's also display some headers
+            if result:
+                result.insert(0, '')
+                result.insert(1, 'IP Packet filter rules')
+                result.insert(2, '======================')
+                
         return result

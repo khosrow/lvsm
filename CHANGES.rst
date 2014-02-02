@@ -1,6 +1,13 @@
 Changes
 ========
 
+0.5.0 (2014-01-29)
+------------------
+
+* Complete redo of the syntax 
+* Added support for keepalived
+* Added support for git (limited)
+
 0.4.1 (2013-06-21)
 ------------------
 

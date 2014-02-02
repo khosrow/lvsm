@@ -2,9 +2,11 @@ import unittest
 import os
 import sys
 import StringIO
-from lvsm import firewall
 
 path = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lvsm')))
+
+from lvsm import firewall
 
 
 class FirewallTestCase(unittest.TestCase):
@@ -15,7 +17,10 @@ class FirewallTestCase(unittest.TestCase):
     def test_show(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = """Chain INPUT (policy ACCEPT)
+        expected_result = """
+IP Packet filter rules
+======================
+Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
 ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
 
@@ -33,8 +38,11 @@ target     prot opt source               destination"""
     def test_showvirtual(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = "ACCEPT     tcp  --  anywhere\
-             dinsdale.python.org tcp dpt:http"
+        expected_result = """
+IP Packet filter rules
+======================
+ACCEPT     tcp  --  anywhere\
+             dinsdale.python.org tcp dpt:http"""
         lines = self.firewall.show_virtual('dinsdale.python.org', 'http', 'tcp',
                                            numeric=False, color=False)
         result = ''
@@ -45,7 +53,10 @@ target     prot opt source               destination"""
     def test_shownat(self):
         output = StringIO.StringIO()
         sys.stdout = output
-        expected_result = """Chain PREROUTING (policy ACCEPT)
+        expected_result = """
+NAT rules
+=========
+Chain PREROUTING (policy ACCEPT)
 target     prot opt source               destination
 
 Chain INPUT (policy ACCEPT)
@@ -64,3 +75,7 @@ target     prot opt source               destination"""
             result = result + line + '\n'
 
         self.assertEqual(result.rstrip(), expected_result.rstrip())
+
+
+if __name__ == "__main__":
+    unittest.main()
