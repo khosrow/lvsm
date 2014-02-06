@@ -856,7 +856,7 @@ class FirewallPrompt(CommandPrompt):
 
     def do_show(self, line):
         """
-        \rShow the 
+        \rShow the running status specific packet filter tables.
         \rSyntax: show <table>
         \r<table> can be one of the following
         nat                    the NAT table.
