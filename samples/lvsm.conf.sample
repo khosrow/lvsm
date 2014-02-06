@@ -1,0 +1,76 @@
+# Configuration for lvsm shell
+#
+# Default values are listed below. All other configuration items are optional.
+
+### General Section ###
+#
+# Path to ipvsadm binary
+#ipvsadm = ipvsadm
+
+# Path to iptables binary
+#iptables = iptables
+
+# Terminal paging program to use
+#pager = /bin/more
+
+# Cache directory used by lvsm 
+#cache_dir = /var/cache/lvsm
+
+### Clustering Section ###
+#
+# List nodes in the cluster, comma separated
+#nodes = 
+
+### Director Section ###
+#
+# Type of director to use. 
+# Values are 'ldirectord', 'keepalived' or it can be omitted.
+#director = 
+
+# Path to the binary of the director program. 
+#director_bin = 
+
+# Path the configuration file for the director
+#director_config = 
+
+# Command used to reload director configuration
+#director_cmd = 
+
+### Firewall (iptables) Section ###
+#
+# Path to firewall configuration
+#firewall_config = 
+
+# Command to reload firewall configuration
+#firewall_cmd = 
+
+### Version Control Section ###
+#
+# SCM used to manage the configuration files.
+# Values are 'svn', 'git' or it can be omitted.
+#version_control = 
+
+# Remote used to perform the git pull operation
+#git_remote = 
+
+# Local location where the git repository is 
+#git_repo = 
+
+### SNMP Section ###
+# SNMP is used with keepalived to disable/enable servers
+#
+# Path to the KEEPALIVED-MIB file
+#keepalived-mib = KEEPALIVED-MIB
+#keepalived-mib =
+
+# Community name with r/w permissions
+#snmp_community =
+
+# Host name with r/w permissions
+#snmp_host =
+
+# Username if auth is required
+#snmp_user =
+
+# Passowrd if auth is required
+#snmp_password =
