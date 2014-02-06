@@ -19,4 +19,5 @@ setup(
         ],
     },
     test_suite="tests",
+    data_files=[('share/doc/lvsm/samples', ['samples/lvsm.conf.sample'])] 
 )
