@@ -14,21 +14,6 @@ in the command line like ``lvsm configure show director``
 
 
 =====================
-Software Requirements
-=====================
-
-One or more of the following software is required for correct functionality of *lvsm*:
-
-* `iptables`_
-* `ipvsadm`_
-* `svn`_
-* `git`_
-* `dsh`_
-* `vi`_
-* `pyparsing`_
-* `snimpy`_
-
-=====================
 Further Documentation
 =====================
 
@@ -42,15 +27,5 @@ This software is released under the `MIT license`_.
 
 .. _Linux Virtual Server: http://www.linuxvirtualserver.org/
 .. _iptables: http://www.netfilter.org/projects/iptables
-.. _crmsh: http://savannah.nongnu.org/projects/crmsh/
-.. _revision control system: http://en.wikipedia.org/wiki/Revision_control
-.. _subversion: http://subversion.tigris.org
 .. _MIT license: https://github.com/khosrow/lvsm/blob/master/LICENSE.rst
-.. _ipvsadm: http://www.linuxvirtualserver.org/software/ipvs.html
-.. _svn: http://subversion.tigris.org/
-.. _dsh: http://www.netfort.gr.jp/~dancer/software/dsh.html.en
-.. _vi: http://en.wikipedia.org/wiki/Vi
-.. _git: http://git-scm.com
-.. _pyparsing: http://pyparsing.wikispaces.com/
-.. _snimpy: https://pypi.python.org/pypi/snimpy/
 .. _wiki: https://github.com/khosrow/lvsm/wiki
