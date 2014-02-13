@@ -5,13 +5,12 @@ import subprocess
 import logging
 import getpass
 import utils
-import sh
 
 logger = logging.getLogger('lvsm')
 
 
 class Subversion(object):
-    def __init__(self):
+    def __init__(self, args):
         super(Subversion, self).__init__()
 
     def commit(self, filename):
@@ -75,8 +74,17 @@ class Git(object):
     Git class handles storing the configuration in a git repository
     The assumption is that the repositories are already setup.
     """
-    def __init__(self):
+    def __init__(self, args):
         super(Git, self).__init__()
+
+        try:
+            self.remote = args['git_remote']
+        except KeyError:
+            logger.error("git remote not defined!")
+            import sys
+            sys.exit(1)
+
+        self.branch = args['git_branch']
 
     def commit(self, filename):
         try:    
@@ -124,23 +132,13 @@ class Git(object):
         ex.
         remote.lvsm.url=user@node1:/etc/lvsm/
         """
-        # prepare the git command
-        #cmd = ['git', 'pull', 'lvsm'] 
-        # call the command
-        #try:
-        #    logger.info("Running the command: %s" % " ".join(cmd))
-        #    ret = subprocess.call(cmd)
-        #    if ret:
-        #        logger.error("git returned an error!")
-        #except IOError as e:
-        #    logger.error(e)
         
         try:
             cmd = ['dirname', filename]
             wd = utils.check_output(cmd, silent=True).rstrip('\n')
 
-            remote = 'lvsm'
-            args = ['ssh', node, 'git', 'pull', remote]
+            # remote = 'lvsm'
+            args = ['ssh', node, 'git', 'pull', self.remote, self.branch]
             logger.info('Running command: %s' % " ".join(args))
             subprocess.call(args, cwd=wd)
 
@@ -154,5 +152,5 @@ class SourceControl(object):
     """
     scm = {'subversion': Subversion, 'git': Git}
 
-    def __new__(self, name):
-        return SourceControl.scm[name]()
+    def __new__(self, name, args=dict()):
+        return SourceControl.scm[name](args)
