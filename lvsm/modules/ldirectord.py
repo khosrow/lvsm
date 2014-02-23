@@ -33,9 +33,13 @@ class Ldirectord(genericdirector.GenericDirector):
         # Prepare a canned error message
         error_msg = "Problem disabling on remote node"
         if self.maintenance_dir:
-            hostip = utils.gethostname(host)
-            if not hostip:
+            hostips = utils.gethostbyname_ex(host)
+            if not hostips:
                 return False
+
+            # In disable cmd, we ignore if the host has more than one IP
+            hostip = hostips[0]
+
             if port:
                 # check that it's a valid port
                 portnum = utils.getportnum(port)
@@ -93,9 +97,14 @@ class Ldirectord(genericdirector.GenericDirector):
         """enable a previously disabled server"""
         # Prepare a canned error message.
         error_msg = "Problem enabling on remote node"
-        hostip = utils.gethostname(host)
-        if not hostip:
+        
+        hostips = utils.gethostbyname_ex(host)
+        if not hostips:
             return False
+
+        # In enable cmd, we ignore if the host has more than one IP
+        hostip = hostips[0]
+
         # If port was provided the file will be of form xx.xx.xx.xx:nn
         if port:
             # Check that the port is valid.
@@ -157,9 +166,13 @@ class Ldirectord(genericdirector.GenericDirector):
         """show status of disabled real server across multiple VIPs"""
         # note that host='' and port='' returns all disabled server
         if host and port:
-            hostip = utils.gethostname(host)
-            if not hostip:
+            hostips = utils.gethostbyname_ex(host)
+            if not hostips:
                 return
+
+            # Here we only use the first IP if a host has more than one
+            hostip = hostips[0]
+            
             portnum = utils.getportnum(port)
             if portnum == -1:
                 return

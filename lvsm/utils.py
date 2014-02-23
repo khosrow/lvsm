@@ -93,15 +93,15 @@ def getportnum(port):
     return portnum
 
 
-def gethostname(host):
-    """Accepts a hostname and return it's IPv4 address"""
+def gethostbyname_ex(host):
+    """Accepts a hostname and return it's IPv4 address(es) as a list"""
     try:
-        hostip = socket.gethostbyname(host)
+        (hostname, aliaslist, ipaddrlist) = socket.gethostbyname_ex(host)
     except socket.gaierror as e:
         logger.error("%s: %s" % (e.strerror, host))
-        return ''
+        return list()
     else:
-        return hostip
+        return ipaddrlist
 
 
 def pager(pager,lines):

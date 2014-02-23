@@ -235,8 +235,8 @@ class GenericDirector(object):
         """Show status of virtual server.
         """
         # make sure we have a valid host
-        hostip = utils.gethostname(host)
-        if not hostip:
+        hostips = utils.gethostbyname_ex(host)
+        if not hostips:
             return list()
 
         # make sure the port is valid
@@ -251,7 +251,7 @@ class GenericDirector(object):
         result = ["", "Layer 4 Load balancing"]
         result += ["======================"]
         for v in self.virtuals:
-            if v.proto == proto.upper() and v.ip == hostip:
+            if v.proto == proto.upper() and v.ip in hostips:
                 if not port or v.port == str(portnum):
                     result += v.__str__(numeric, color).split('\n')
 
@@ -275,7 +275,7 @@ class GenericDirector(object):
         """Show status of an active real server across multiple VIPs.
         """
         # make sure we have a valid host
-        hostip = utils.gethostname(host)
+        hostip = utils.gethostbyname_ex(host)
         if not hostip:
             return list()
 
@@ -291,30 +291,37 @@ class GenericDirector(object):
         result = list()
 
         for v in self.virtuals:
-            result += v.__str__(numeric, color, hostip, port).split('\n')
+            for ip in hostip:
+                result += v.__str__(numeric, color, ip, port).split('\n')
+
         
         return result
 
     def show_real_disabled(self, host, port, numeric):
-        """Show status of disabled real server across multiple VIPs.
+        """
+        Show status of disabled real server across multiple VIPs.
         To be implemented by inheriting classes. 
         Return value must be a list
         """
         return list()
 
     def convert_filename(self, filename):
-        """Convert a filename of format host[:port] to IP[:port]"""
+        """
+        Convert a filename of format host[:port] to IP[:port]
+        Assumption is that for hosts with more than one IP,
+        the first IP in the list is used.
+        """
         values = filename.split(':')
         portnum = -1
         if not values:
             return ''
-        hostip = utils.gethostname(values[0])
+        hostips = utils.gethostbyname_ex(values[0])
         if len(values) == 2:
             portnum = utils.getportnum(values[1])
         if portnum > -1:
-            return hostip + ':' + str(portnum)
+            return hostips[0] + ':' + str(portnum)
         else:
-            return hostip
+            return hostips[0]
 
     def check_real(self, host, port):
         """Check a host/port to see if it's in the realserver list."""

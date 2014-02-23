@@ -65,10 +65,12 @@ class Firewall():
         args = [self.iptables, '-L', 'INPUT']
         if numeric:
             args.append('-n')
-            hostname = utils.gethostname(host)
+            hostnames = utils.gethostbyname_ex(host)
             portname = utils.getportnum(port)
         else:
-            hostname = socket.getfqdn(host)
+            # Turn this into a list so it behaves like the above case
+            # And we only perform a list membership check
+            hostnames = [socket.getfqdn(host)]
             portname = port
         try:
             try:
@@ -91,7 +93,7 @@ class Firewall():
                 tokens = line.split()
                 if len(tokens) >= 7:
                     if ((tokens[1] == protocol or tokens[2] == "all") and
-                        tokens[4] == hostname and
+                        tokens[4] in hostnames and
                         tokens[6] == "dpt:" + str(portname)):
                         if color:
                             if line.startswith('ACCEPT'):

@@ -52,10 +52,13 @@ class Keepalived(genericdirector.GenericDirector):
         """
         found = False
 
-        hostip = utils.gethostname(host)
-        if not hostip:
+        hostips = utils.gethostbyname_ex(host)
+        if not hostips:
             logger.error('Real server %s is not valid!' % host)
             return False
+
+        # Here we only use the first IP if the host has more than one
+        hostip = hostips[0]
         if port:
             # check that it's a valid port
             portnum = utils.getportnum(port)
@@ -64,10 +67,14 @@ class Keepalived(genericdirector.GenericDirector):
                 return False
         
         if vhost:
-            vipnum = utils.gethostname(vhost)
-            if not vipnum:
+            vipnums = utils.gethostbyname_ex(vhost)
+            if not vipnums:
                 logger.error('Virtual host %s not valid!' % vhost)
                 return False
+
+            # only take the first ip address if host has more than one
+            vipnum = vipnums[0]
+
         if vport:
             vportnum = utils.getportnum(vport)
             if vportnum == -1:
@@ -161,10 +168,15 @@ class Keepalived(genericdirector.GenericDirector):
         Assumption: original weight is stored in self.cache_dir/realServerWeight.x.y
         The reason is not used in this case.
         """
-        hostip = utils.gethostname(rhost)
-        if not hostip:
+
+        hostips = utils.gethostbyname_ex(rhost)
+        if not hostips:
             logger.error('Real server %s is not valid!' % rhost)
             return False
+        # Here we only use the first IP if the host has more than one
+        else:
+            hostip = hostips[0]
+
         if rport:
             # check that it's a valid port
             portnum = utils.getportnum(rport)
