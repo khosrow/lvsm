@@ -32,8 +32,16 @@ class Keepalived(genericdirector.GenericDirector):
         self.mib = args['keepalived-mib']
         self.snmp_community = args['snmp_community']
         self.snmp_host = args['snmp_host']
-        self.snmp_user = args['snmp_user']
-        self.snmp_password = args['snmp_password']
+        if args['snmp_user']:
+            self.snmp_user = args['snmp_user']
+        else:
+            self.snmp_user = None
+
+        if args['snmp_password']:
+            self.snmp_password = args['snmp_password']
+        else:
+            self.snmp_password = None
+ 
         self.cache_dir = args['cache_dir']
 
     def disable(self, host, port='', vhost='', vport='', reason=''):
@@ -66,74 +74,79 @@ class Keepalived(genericdirector.GenericDirector):
                 logger.error('Virtual port %s is not valid!' % vport)
                 return False
         
-        manager.load(self.mib)
-        # manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
-        if self.snmp_user and self.snmp_password:
+        try:
+            manager.load(self.mib)
             m = manager.Manager(self.snmp_host,  
                                 self.snmp_community,
-                                self.snmp_user,
-                                self.snmp_password)
-        else:
-            m = manager.Manager(self.snmp_host, self.snmp_community)
-        # m = manager.Manager('localhost', 'private')
-        
+                                secname=self.snmp_user,
+                                authpassword=self.snmp_password)
+        except (snmp.SNMPException, mib.SMIException) as e:
+            logger.error(e)
+            logger.error("Unable to perfrom action!")
+            return False
+
         # iterate through the virtual servers
         # and disable the matching real server
-        for i in m.virtualServerAddress:
-            hexip = m.virtualServerAddress[i]
-            vip = socket.inet_ntoa(hexip)
-            logger.debug("Checking VIP: %s" % vip)
-            if not vhost or vipnum == vip:
-                vp = m.virtualServerPort[i]
-                if not vport or vportnum == vp:
-                    # iterate over the realservers in 
-                    # the specific virtual
-                    j = m.virtualServerRealServersTotal[i]
-                    idx = 1                    
-                    while idx <= j:
-                        hexip = m.realServerAddress[i,idx]
-                        rip = socket.inet_ntoa(hexip)
-                        rp = m.realServerPort[i,idx]
-                        if hostip == rip:                                                        
-                            if not port or (port and portnum == rp):
-                                    logger.debug('Disabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
-                                    # 'found' is used to keep track if we find a matching real to disable
-                                    found = True
+        try:
+            for i in m.virtualServerAddress:
+                hexip = m.virtualServerAddress[i]
+                vip = socket.inet_ntoa(hexip)
+                logger.debug("Checking VIP: %s" % vip)
+                if not vhost or vipnum == vip:
+                    vp = m.virtualServerPort[i]
+                    if not vport or vportnum == vp:
+                        # iterate over the realservers in 
+                        # the specific virtual
+                        j = m.virtualServerRealServersTotal[i]
+                        idx = 1                    
+                        while idx <= j:
+                            hexip = m.realServerAddress[i,idx]
+                            rip = socket.inet_ntoa(hexip)
+                            rp = m.realServerPort[i,idx]
+                            if hostip == rip:                                                        
+                                if not port or (port and portnum == rp):
+                                        logger.debug('Disabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
+                                        # 'found' is used to keep track if we find a matching real to disable
+                                        found = True
 
-                                    # Record the original weight somewhere before disabling it
-                                    # Will be used when enabling the server
-                                    weight = m.realServerWeight[i,idx]
-                                    logger.debug('Current weight: %s' % weight)
+                                        # Record the original weight somewhere before disabling it
+                                        # Will be used when enabling the server
+                                        weight = m.realServerWeight[i,idx]
+                                        logger.debug('Current weight: %s' % weight)
 
-                                    if weight == 0:
-                                        logger.warning("Real server %s:%s is already disabled on VIP %s:%s" % (rip, rp, vip, vp))
-                                        idx += 1
-                                        continue
+                                        if weight == 0:
+                                            logger.warning("Real server %s:%s is already disabled on VIP %s:%s" % (rip, rp, vip, vp))
+                                            idx += 1
+                                            continue
 
-                                    filename = "realServerWeight.%s.%s" % (i, idx)
-                                    fullpath = '%s/%s' % (self.cache_dir, filename)
-                                    try:
-                                        logger.info('Creating file: %s' % fullpath)
-                                        f = open(fullpath, 'w')
-                                        f.write(str(weight))
-                                        f.close()
-                                    except IOError as e:
-                                        logger.error(e)
-                                        logger.error('Please make sure %s is writable before proceeding!' % self.cache_dir)
-                                        return False 
+                                        filename = "realServerWeight.%s.%s" % (i, idx)
+                                        fullpath = '%s/%s' % (self.cache_dir, filename)
+                                        try:
+                                            logger.info('Creating file: %s' % fullpath)
+                                            f = open(fullpath, 'w')
+                                            f.write(str(weight))
+                                            f.close()
+                                        except IOError as e:
+                                            logger.error(e)
+                                            logger.error('Please make sure %s is writable before proceeding!' % self.cache_dir)
+                                            return False 
 
-                                    # Copy the file to the other nodes
-                                    # In case of a switch lvsm will have 
-                                    # the weight info on all nodes
-                                    self.filesync_nodes('copy', fullpath)
-                        
-                                    # set the weight to zero
-                                    community = "private"
-                                    cmd_example = "snmpset -v2c -c %s localhost KEEPALIVED-MIB::%s = 0" % (community, filename)
-                                    logger.info("Running equivalent command to: %s" % cmd_example)
-                                    m.realServerWeight[i,idx] = 0
-                                    print "Disabled %s:%s on VIP %s:%s. Weight set to 0." % (rip, rp, vip, vp)
-                        idx += 1
+                                        # Copy the file to the other nodes
+                                        # In case of a switch lvsm will have 
+                                        # the weight info on all nodes
+                                        self.filesync_nodes('copy', fullpath)
+                            
+                                        # set the weight to zero
+                                        community = "private"
+                                        cmd_example = "snmpset -v2c -c %s localhost KEEPALIVED-MIB::%s = 0" % (community, filename)
+                                        logger.info("Running equivalent command to: %s" % cmd_example)
+                                        m.realServerWeight[i,idx] = 0
+                                        print "Disabled %s:%s on VIP %s:%s. Weight set to 0." % (rip, rp, vip, vp)
+                            idx += 1
+        except snmp.SNMPException as e:
+            logger.error(e)
+            logger.error("Unable to complete the command successfully! Please verify manually.")
+            return False 
 
         if not found:
             logger.error('No matching real servers were found!')
@@ -170,86 +183,90 @@ class Keepalived(genericdirector.GenericDirector):
                 logger.error('Virtual port %s is not valid!' % vport)
                 return False
         
-        # manager.load('/root/.snmp/mibs/KEEPALIVED-MIB')
-        manager.load(self.mib)
-        # m = manager.Manager('localhost', 'private')
-        if self.snmp_user and self.snmp_password:
+        try:
+            manager.load(self.mib)
             m = manager.Manager(self.snmp_host,
                                 self.snmp_community,
-                                self.snmp_user,
-                                self.snmp_password)
-        else:
-            m = manager.Manager(self.snmp_host,
-                                self.snmp_community)
+                                secname=self.snmp_user,
+                                authpassword=self.snmp_password)
+        except (snmp.SNMPException, mib.SMIException) as e:
+            logger.error(e)
+            logger.error("Unable to perfrom action!")
+            return False
 
         # iterate through the virtual servers
         # and enable the matching real server
         # if the weight is zero.
         # Note: if file is not found in the cache_dir (i.e. /var/cache/lvsm)
         # we set the weight 1 (keepalived default)
-        for i in m.virtualServerAddress:
-            hexip = m.virtualServerAddress[i]
-            vip = socket.inet_ntoa(hexip)
-            logger.debug("Checking VIP: %s" % vip)
-            if not vhost or vipnum == vip:
-                vp = m.virtualServerPort[i]
-                if not vport or vportnum == vp:
-                    # iterate over the realservers in 
-                    # the specific virtual host
-                    j = m.virtualServerRealServersTotal[i]
-                    idx = 1
-                    while idx <= j:
-                        hexip = m.realServerAddress[i,idx]
-                        rip = socket.inet_ntoa(hexip)
-                        rp = m.realServerPort[i,idx]
-                        if hostip == rip:
-                            if not rport or (rport and portnum == rp):
-                                    # Record the original weight somewhere before disabling it
-                                    # Will be used when enabling the server
-                                    weight = m.realServerWeight[i,idx]
-                                    logger.debug('Current weight: %s' % weight)
-                                    if weight > 0:
-                                        msg = "Real server %s:%s on VIP %s:%s is already enabled with a weight of %s" % (rip, rp, vip, vp, weight)
-                                        logger.warning(msg)
-                                        idx += 1 
-                                        continue
+        try:
+            for i in m.virtualServerAddress:
+                hexip = m.virtualServerAddress[i]
+                vip = socket.inet_ntoa(hexip)
+                logger.debug("Checking VIP: %s" % vip)
+                if not vhost or vipnum == vip:
+                    vp = m.virtualServerPort[i]
+                    if not vport or vportnum == vp:
+                        # iterate over the realservers in 
+                        # the specific virtual host
+                        j = m.virtualServerRealServersTotal[i]
+                        idx = 1
+                        while idx <= j:
+                            hexip = m.realServerAddress[i,idx]
+                            rip = socket.inet_ntoa(hexip)
+                            rp = m.realServerPort[i,idx]
+                            if hostip == rip:
+                                if not rport or (rport and portnum == rp):
+                                        # Record the original weight somewhere before disabling it
+                                        # Will be used when enabling the server
+                                        weight = m.realServerWeight[i,idx]
+                                        logger.debug('Current weight: %s' % weight)
+                                        if weight > 0:
+                                            msg = "Real server %s:%s on VIP %s:%s is already enabled with a weight of %s" % (rip, rp, vip, vp, weight)
+                                            logger.warning(msg)
+                                            idx += 1 
+                                            continue
 
-                                    filename = "realServerWeight.%s.%s" % (i, idx)
-                                    fullpath = '%s/%s' % (self.cache_dir, filename)
+                                        filename = "realServerWeight.%s.%s" % (i, idx)
+                                        fullpath = '%s/%s' % (self.cache_dir, filename)
 
-                                    logger.debug('Enabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
-                                    try:
-                                        logger.debug('Reading server weight from file: %s' % fullpath)
-                                        f = open(fullpath, 'r')
-                                        str_weight = f.readline().rstrip()
-                                        f.close()
-                                        # make sure the weight is a valid int 
-                                        orig_weight = int(str_weight) 
-                                    except IOError as e:
-                                        logger.warning("%s. Using 1 as default weight!" % e)
-                                        logger.warning("To ensure the correct wieght is set, please restart Keepalived.")
-                                        orig_weight = 1
-                                   
-                                    # set the weight to zero
-                                    community = "private"
-                                    cmd_example = "snmpset -v2c -c %s localhost KEEPALIVED-MIB::%s = %s" % (community, filename, orig_weight)
-                                    logger.info("Running equivalent command to: %s" % cmd_example)
-                                    m.realServerWeight[i,idx] = orig_weight
-                                    print "Enabled %s:%s on VIP %s:%s. Weight set to %s." % (rip, rp, vip, vp, orig_weight)
+                                        logger.debug('Enabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
+                                        try:
+                                            logger.debug('Reading server weight from file: %s' % fullpath)
+                                            f = open(fullpath, 'r')
+                                            str_weight = f.readline().rstrip()
+                                            f.close()
+                                            # make sure the weight is a valid int 
+                                            orig_weight = int(str_weight) 
+                                        except IOError as e:
+                                            logger.warning("%s. Using 1 as default weight!" % e)
+                                            logger.warning("To ensure the correct wieght is set, please restart Keepalived.")
+                                            orig_weight = 1
+                                       
+                                        # set the weight to zero
+                                        community = "private"
+                                        cmd_example = "snmpset -v2c -c %s localhost KEEPALIVED-MIB::%s = %s" % (community, filename, orig_weight)
+                                        logger.info("Running equivalent command to: %s" % cmd_example)
+                                        m.realServerWeight[i,idx] = orig_weight
+                                        print "Enabled %s:%s on VIP %s:%s. Weight set to %s." % (rip, rp, vip, vp, orig_weight)
 
-                                    # Now remove the placeholder file locally
-                                    try:
-                                        os.unlink(fullpath)
-                                    except OSError as e:
-                                        logger.error(e)
-                                        logger.error('Please make sure %s is writable!' % self.cache_dir)
-                                        logger.error('%s needs to be manually deleted to avoid future problems.' % fullpath)
+                                        # Now remove the placeholder file locally
+                                        try:
+                                            os.unlink(fullpath)
+                                        except OSError as e:
+                                            logger.error(e)
+                                            logger.error('Please make sure %s is writable!' % self.cache_dir)
+                                            logger.error('%s needs to be manually deleted to avoid future problems.' % fullpath)
 
-                                    # remove the placeholder file in other nodes
-                                    self.filesync_nodes('remove', fullpath)
+                                        # remove the placeholder file in other nodes
+                                        self.filesync_nodes('remove', fullpath)
 
 
-                        idx += 1
+                            idx += 1
+        except snmp.SNMPException as e:
+            logger.error(e)
+            logger.error("Unable to complete the command successfully! Please verify manually.")
+            return False 
 
         return True
 
