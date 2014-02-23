@@ -1,7 +1,6 @@
 """Generic lvsm CommandPrompt"""
 
 import cmd
-import getpass
 import logging
 import shutil
 import socket
@@ -494,6 +493,7 @@ class ConfigurePrompt(CommandPrompt):
                     shutil.copyfile(filename, temp.name)
                 except IOError as e:
                     logger.error(e.strerror)
+                    return
 
                 while True:
                     args = "vi " + temp.name
@@ -501,9 +501,49 @@ class ConfigurePrompt(CommandPrompt):
                     result = subprocess.call(args, shell=True)
                     if result != 0:
                         logger.error("Something happened during the edit of %s" % self.config[key])
+
+                    try:
+                        template = self.config['template_lang'] 
+                    except KeyError:
+                        template = None
+
                     # Parse the config file and verify the changes
                     # If successful, copy changes back to original file
-                    if self.director.parse_config(temp.name):
+
+                    # If a template language is defined, run it against the config
+                    # before parsing the configuration. 
+                    if template:
+                        try:
+                            output = tempfile.NamedTemporaryFile()
+                            logger.info('Running command: %s ' % ' '.join(args))
+                            args = [template, temp.name]
+                            p = subprocess.Popen(args, stdout=output, stderr=subprocess.PIPE)
+                            out, err = p.communicate()
+                            ret = p.wait()
+                        except OSError as e:
+                            logger.error(e)
+                            logger.error("Please fix the above error before editting the config file.")
+                            break
+                        except IOError as e:
+                            logger.error(e)
+                            break
+
+                        if ret:
+                            logger.error(err)
+                            break
+                        elif self.director.parse_config(output.name):
+                            shutil.copyfile(temp.name, filename)
+                            temp.close()
+                            break
+                        else:
+                            answer = raw_input("You had a syntax error in your config file, edit again? (y/n) ")
+                            if answer.lower() == 'y':
+                                pass
+                            elif answer.lower() == 'n':
+                                logger.warn("Changes were not saved due to syntax errors.")
+                                break
+
+                    elif self.director.parse_config(temp.name):
                         shutil.copyfile(temp.name, filename)
                         temp.close()
                         break
@@ -542,7 +582,10 @@ class ConfigurePrompt(CommandPrompt):
             if self.config['version_control'] in ['git', 'svn']:
 
                 import sourcecontrol
-                scm = sourcecontrol.SourceControl(self.config['version_control'])
+                args = { 'git_remote': self.config['git_remote'],
+                         'git_branch': self.config['git_branch'] }
+
+                scm = sourcecontrol.SourceControl(self.config['version_control'], args)
 
                 # Create a list of nodes to run the update command on
                 if self.config['nodes'] != '':
@@ -595,8 +638,6 @@ class VirtualPrompt(CommandPrompt):
         if not line:
             d = self.director.show(numeric, color)
             d.append('')
-            # f = self.firewall.show(numeric, color)
-            # utils.pager(self.config['pager'], d + f)
             utils.pager(self.config['pager'], d)
         else:
             print syntax            
