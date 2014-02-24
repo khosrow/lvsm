@@ -63,15 +63,22 @@ class Firewall():
     def show_virtual(self, host, port, protocol, numeric, color):
         result = list()
         args = [self.iptables, '-L', 'INPUT']
+        portnum = utils.getportnum(port)
+        
+        try:
+            portname = socket.getservbyport(int(portnum))
+        except socket.error:
+            portname = portnum
+
         if numeric:
             args.append('-n')
             hostnames = utils.gethostbyname_ex(host)
-            portname = utils.getportnum(port)
         else:
             # Turn this into a list so it behaves like the above case
             # And we only perform a list membership check
             hostnames = [socket.getfqdn(host)]
-            portname = port
+
+        # Nested try/except needed to catch exceptions in the "Except"    
         try:
             try:
                 logger.info("Running: %s" % " ".join(args))
@@ -87,14 +94,18 @@ class Firewall():
             for line in lines:
                 # break the iptables output into tokens
                 # assumptions:
-                # 2nd item is the protocol
-                # 5th item is the hostname
-                # 8th item is the portname
+                # 2nd item is the protocol - tokens[1]
+                # 5th item is the hostname - tokens[4]
+                # 7th item is the portname - tokens[6]
                 tokens = line.split()
+
                 if len(tokens) >= 7:
+                    logger.debug("dpt:%s" % portname)
+                    logger.debug("dpt:%s" % str(portnum))
                     if ((tokens[1] == protocol or tokens[2] == "all") and
                         tokens[4] in hostnames and
-                        tokens[6] == "dpt:" + str(portname)):
+                        (tokens[6] == "dpt:" + str(portname) or tokens[6] == "dpt:" + str(portnum))
+                        ):
                         if color:
                             if line.startswith('ACCEPT'):
                                 result.append(termcolor.colored(line, 'green'))
