@@ -1,6 +1,12 @@
 Changes
 ========
 
+0.5.1 (2014-02-23)
+------------------
+
+* Lots of bug fixes
+* Added ability to handle templating of configs
+
 0.5.0 (2014-01-29)
 ------------------
 
