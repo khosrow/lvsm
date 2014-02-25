@@ -135,12 +135,14 @@ class Git(object):
         
         try:
             cmd = ['dirname', filename]
+            logger.debug('Updating %s' % filename)
             wd = utils.check_output(cmd, silent=True).rstrip('\n')
+            logger.debug('working directory used by git: %s' % wd)
 
             # remote = 'lvsm'
-            args = ['ssh', node, 'git', 'pull', self.remote, self.branch]
+            args = ['ssh', node, 'cd', wd, ';', 'git', 'pull', self.remote, self.branch]
             logger.info('Running command: %s' % " ".join(args))
-            subprocess.call(args, cwd=wd)
+            subprocess.call(args)
 
         except (OSError, subprocess.CalledProcessError) as e:
             logger.error(e)
