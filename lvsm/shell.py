@@ -91,35 +91,25 @@ class CommandPrompt(cmd.Cmd):
     def do_exit(self, line):
         """Exit from lvsm shell."""
         modified = list()
-        if self.config['version_control'] == 'svn':
-            # check to see if any config files are modified using "svn status"
-            # the command will return 'M  filename' if a file is modified
-            args = ["svn", "status"]
 
-            if self.config['director_config']:
-                args.append(self.config['director_config'])
-                logger.info('Running command : %s' % (' '.join(args)))
-                try:
-                    result = utils.check_output(args)
-                except OSError as e:
-                    print"[ERROR]: " + e.strerror
-                except subprocess.CalledProcessError as e:
-                    print"[ERROR]: " + e.output
-                if result and result[0] == "M":
-                    modified.append(self.config['director_config'])
+        if self.config['version_control'] in ['git', 'svn']:
 
-            if self.config['firewall_config']:
-                args.append(self.config['firewall_config'])
-                try:
-                    try:
-                        result = subprocess.check_output(args)
-                    except AttributeError as e:
-                        result, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
-                except OSError as e:
-                    print("[ERROR]: " + e.strerror)
-                if result and result[0] == "M":
-                    modified.append(self.config['firewall_config'])
+            import sourcecontrol
+            args = { 'git_remote': self.config['git_remote'],
+                     'git_branch': self.config['git_branch'] }
 
+            scm = sourcecontrol.SourceControl(self.config['version_control'], args)
+
+            # check to see if the files have changed
+            if (self.config['director_config'] and
+                scm.modified(self.config['director_config'])):
+                modified.append(self.conig['director_config'])
+
+            if (self.config['firewall_config'] and
+                scm.modified(self.config['firewall_config'])):                
+                modified.append(self.config['firewall_config'])
+
+            # If any files are modified ask user if they want to quit
             if modified:
                 print "The following config file(s) were not comitted to svn:"
                 for filename in modified:
@@ -336,7 +326,7 @@ class LivePrompt(CommandPrompt):
             director =  'director binary not defined. Unable to get version!'
         else:
             args = [self.config['director_bin'], '--version']
-            director = utils.check_output(args).split('\n')[0]
+            director = utils.check_output(args)
 
         print director
         print 
