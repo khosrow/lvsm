@@ -124,9 +124,12 @@ def check_output(args, cwd=None, silent=False):
     if not silent:
         logger.info("Running command: %s " % " ".join(args))
     try:
-        output = subprocess.check_output(args, cwd=cwd)
-        return output
-    # python 2.6 compatibility code
-    except AttributeError:
-        output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=cwd).communicate()
-        return output
+        try:
+            output = subprocess.check_output(args, cwd=cwd)
+            return output
+        # python 2.6 compatibility code
+        except AttributeError:
+            output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=cwd).communicate()
+            return output
+    except OSError as e:
+        logger.error(e)
