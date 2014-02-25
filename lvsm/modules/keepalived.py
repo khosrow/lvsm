@@ -83,10 +83,11 @@ class Keepalived(genericdirector.GenericDirector):
         
         try:
             manager.load(self.mib)
-            m = manager.Manager(self.snmp_host,  
-                                self.snmp_community,
-                                secname=self.snmp_user,
-                                authpassword=self.snmp_password)
+            m = manager.Manager(self.snmp_host, self.snmp_community)
+                                # Not compatible with earlier 
+                                # versions of snimpy
+                                #secname=self.snmp_user,
+                                #authpassword=self.snmp_password)
         except (snmp.SNMPException, mib.SMIException) as e:
             logger.error(e)
             logger.error("Unable to perfrom action!")
@@ -197,10 +198,11 @@ class Keepalived(genericdirector.GenericDirector):
         
         try:
             manager.load(self.mib)
-            m = manager.Manager(self.snmp_host,
-                                self.snmp_community,
-                                secname=self.snmp_user,
-                                authpassword=self.snmp_password)
+            m = manager.Manager(self.snmp_host, self.snmp_community)
+                                # Not compatible with earlier 
+                                # versions of snimpy
+                                # secname=self.snmp_user,
+                                # authpassword=self.snmp_password)
         except (snmp.SNMPException, mib.SMIException) as e:
             logger.error(e)
             logger.error("Unable to perfrom action!")
