@@ -661,26 +661,40 @@ class VirtualPrompt(CommandPrompt):
     def do_disable(self, line):
         """
         \rDisable real server across VIPs.
-        \rsyntax: disable <rip> <port>
+        \rsyntax: disable tcp|udp|fwm <rip> [<port>] [<vip> <port>]
         """
 
-        syntax = "*** Syntax: disable <rip> <port>"
+        syntax = "*** Syntax: disable tcp|udp|fwm <rip> [<port>] [<vip> <port>]"
 
+        # Some default values to be used
+        port = ''
+        vip = ''
+        vport = ''
         commands = line.split()
-        if len(commands) > 2 or len(commands) == 0:
+        if len(commands) < 2 or len(commands) > 5:
             print syntax
-        elif len(commands) <= 2:
-            host = commands[0]
-            if len(commands) == 1:
-                port = ''
-            elif len(commands) == 2:
-                port = commands[1]
-            else:
-                print syntax
-                return
+        elif len(commands) >= 2:
+            protocol = commands[0]
+            # Verify protocol is valid
+            if protocol not in self.protocols:
+                print syntax 
+                return 
+
+            host = commands[1]
+            if len(commands) == 3:
+                port = commands[2]
+                if len(commands) == 4:
+                    vip = commands[3]
+                    if len(commands) == 5:
+                        vport = commands[4]
+
             # ask for an optional reason for disabling
             reason = raw_input("Reason for disabling [default = None]: ")
-            if not self.director.disable(host, port, reason=reason):
+            # if not self.director.disable(host, port, reason=reason):
+            if not self.director.disable(protocol,
+                                         host, port,
+                                         vip, vport,
+                                         reason=reason):
                 logger.error("Could not disable %s" % host)
         else:
             print syntax
@@ -723,6 +737,15 @@ class VirtualPrompt(CommandPrompt):
             prot = line.split()[1]
             virtuals = self.director.get_virtual(prot)
             completions = [p for p in virtuals if p.startswith(text)]
+
+        return completions
+
+    def complete_disable(self, text, line, begidx, endidx):
+        """Tab completion for the disable command"""
+        if len(line) < 8:
+            completions = [p for p in self.protocols if p.startswith(text)]
+        else:
+            completions = list()
 
         return completions
 

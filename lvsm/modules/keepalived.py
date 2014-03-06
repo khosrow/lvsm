@@ -44,7 +44,7 @@ class Keepalived(genericdirector.GenericDirector):
  
         self.cache_dir = args['cache_dir']
 
-    def disable(self, host, port='', vhost='', vport='', reason=''):
+    def disable(self, protocol, host, port='', vhost='', vport='', reason=''):
         """
         Disable a real server in keepalived. This command rellies on snimpy
         and will set the weight of the real server to 0.
@@ -100,25 +100,29 @@ class Keepalived(genericdirector.GenericDirector):
                 hexip = m.virtualServerAddress[i]
                 vip = socket.inet_ntoa(hexip)
                 logger.debug("Checking VIP: %s" % vip)
-                if not vhost or vipnum == vip:
-                    vp = m.virtualServerPort[i]
-                    if not vport or vportnum == vp:
-                        # iterate over the realservers in 
-                        # the specific virtual
-                        j = m.virtualServerRealServersTotal[i]
-                        idx = 1                    
-                        while idx <= j:
-                            hexip = m.realServerAddress[i,idx]
-                            rip = socket.inet_ntoa(hexip)
-                            rp = m.realServerPort[i,idx]
-                            if hostip == rip:                                                        
-                                if not port or (port and portnum == rp):
+                logger.debug("Protocol: %s" % str(m.virtualServerProtocol[i]))
+                if m.virtualServerProtocol[i] == protocol:
+                    if not vhost or vipnum == vip:
+                        vp = m.virtualServerPort[i]
+                        if not vport or vportnum == vp:
+                            # iterate over the realservers in 
+                            # the specific virtual
+                            j = m.virtualServerRealServersTotal[i]
+                            idx = 1                    
+                            while idx <= j:
+                                hexip = m.realServerAddress[i,idx]
+                                rip = socket.inet_ntoa(hexip)
+                                rp = m.realServerPort[i,idx]
+                                if hostip == rip:                                                        
+                                    if not port or (port and portnum == rp):
                                         logger.debug('Disabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
-                                        # 'found' is used to keep track if we find a matching real to disable
+                                        # 'found' is used to keep track of
+                                        # matching real servers to disable
                                         found = True
 
-                                        # Record the original weight somewhere before disabling it
-                                        # Will be used when enabling the server
+                                        # Record the original weight
+                                        # before disabling it
+                                        # It'll be used when enabling 
                                         weight = m.realServerWeight[i,idx]
                                         logger.debug('Current weight: %s' % weight)
 
@@ -150,7 +154,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         logger.info("Running equivalent command to: %s" % cmd_example)
                                         m.realServerWeight[i,idx] = 0
                                         print "Disabled %s:%s on VIP %s:%s. Weight set to 0." % (rip, rp, vip, vp)
-                            idx += 1
+                                idx += 1
         except snmp.SNMPException as e:
             logger.error(e)
             logger.error("Unable to complete the command successfully! Please verify manually.")
@@ -162,7 +166,7 @@ class Keepalived(genericdirector.GenericDirector):
         else:
             return True
 
-    def enable(self, rhost, rport='',vhost='', vport=''):
+    def enable(self, protocol, rhost, rport='',vhost='', vport=''):
         """
         Enable a real server in keepalived. This command rellies on snimpy
         and will set the weight of the real server back to its original weight. 
@@ -218,19 +222,21 @@ class Keepalived(genericdirector.GenericDirector):
                 hexip = m.virtualServerAddress[i]
                 vip = socket.inet_ntoa(hexip)
                 logger.debug("Checking VIP: %s" % vip)
-                if not vhost or vipnum == vip:
-                    vp = m.virtualServerPort[i]
-                    if not vport or vportnum == vp:
-                        # iterate over the realservers in 
-                        # the specific virtual host
-                        j = m.virtualServerRealServersTotal[i]
-                        idx = 1
-                        while idx <= j:
-                            hexip = m.realServerAddress[i,idx]
-                            rip = socket.inet_ntoa(hexip)
-                            rp = m.realServerPort[i,idx]
-                            if hostip == rip:
-                                if not rport or (rport and portnum == rp):
+                logger.debug("Protocol: %s" % str(m.virtualServerProtocol))
+                if m.virtualServerProtocol == protocol:
+                    if not vhost or vipnum == vip:
+                        vp = m.virtualServerPort[i]
+                        if not vport or vportnum == vp:
+                            # iterate over the realservers in 
+                            # the specific virtual host
+                            j = m.virtualServerRealServersTotal[i]
+                            idx = 1
+                            while idx <= j:
+                                hexip = m.realServerAddress[i,idx]
+                                rip = socket.inet_ntoa(hexip)
+                                rp = m.realServerPort[i,idx]
+                                if hostip == rip:
+                                    if not rport or (rport and portnum == rp):
                                         # Record the original weight somewhere before disabling it
                                         # Will be used when enabling the server
                                         weight = m.realServerWeight[i,idx]
@@ -275,8 +281,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         # remove the placeholder file in other nodes
                                         self.filesync_nodes('remove', fullpath)
 
-
-                            idx += 1
+                                idx += 1
         except snmp.SNMPException as e:
             logger.error(e)
             logger.error("Unable to complete the command successfully! Please verify manually.")
