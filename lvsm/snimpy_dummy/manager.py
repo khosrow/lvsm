@@ -51,6 +51,8 @@ class Manager(object):
         self.virtualServerRealServersTotal = {'1': 2, '2': 2}
         self.virtualServerPort = {'1': 80, '2': 53}
 
+        self.virtualServerProtocol = {'1': 'tcp', '2': 'udp'}
+
         self.realServerAddress = TupleArray()
         self.realServerAddress[1,1] = socket.inet_aton('216.34.181.45')
         self.realServerAddress[1,2] = socket.inet_aton('173.194.43.3')
