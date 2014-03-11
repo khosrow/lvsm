@@ -50,8 +50,8 @@ class Virtual(Server):
         for r in self.realServers:
             if real:
                 # empty out the output if we are showing the real server only
-                output = list()
-                if r.ip == real:                    
+                # output = list()
+                if r.ip == real:
                     if port:
                         if r.port == port:
                             output = [line]
@@ -275,10 +275,13 @@ class GenericDirector(object):
         """Show status of an active real server across multiple VIPs.
         """
         # make sure we have a valid host
-        hostip = utils.gethostbyname_ex(host)
-        if not hostip:
+        hostips = utils.gethostbyname_ex(host)
+
+        if not hostips:
             return list()
 
+        # If more than one ip is returned for a host. Use the first one
+        hostip = hostips[0]
         # If port is defined verify that it's a valid number
         if port:
             portnum = utils.getportnum(port)
@@ -291,10 +294,10 @@ class GenericDirector(object):
         result = list()
 
         for v in self.virtuals:
-            for ip in hostip:
-                result += v.__str__(numeric, color, ip, port).split('\n')
-
-        
+            for real in v.realServers: 
+                if real.ip == hostip:
+                    if not port or real.port == portnum:
+                        result += v.__str__(numeric, color, real.ip, port).split('\n')
         return result
 
     def show_real_disabled(self, host, port, numeric):
@@ -365,10 +368,30 @@ class GenericDirector(object):
 
         return result
 
-    def get_real(self):
+    def get_real(self, protocol):
         """return a list of all real servers.
         Used for autocomplete mode in the shell."""
-        return list()
+
+        args = [self.ipvsadm, '-L']
+        result = list()
+        prot = ''
+        try:
+            output = utils.check_output(args, silent=True)
+        except OSError as e:
+            logger.error(" %s" % e.strerror)
+            return result
+
+        lines = output.splitlines()
+
+        for line in lines:
+            if line[0:3] in ['TCP', 'UDP', 'FWM']:
+                prot = line[0:3]
+            elif line.startswith("  ->") and protocol.upper() == prot:
+                r, sep , temp = line.partition(':')
+                real = r[5:]
+                if real not in result:
+                    result.append(real)
+        return result
 
     def filesync_nodes(self, op, filename):
         """
