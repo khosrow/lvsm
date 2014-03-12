@@ -30,7 +30,7 @@ class Keepalived(unittest.TestCase):
         output = StringIO.StringIO()
         sys.stdout = output
         filepath = self.director.cache_dir + '/realServerWeight.2.1'
-        self.assertTrue(self.director.disable('resolver1.opendns.com'))
+        self.assertTrue(self.director.disable('udp', 'resolver1.opendns.com'))
         
         # now clean up the file
         try:
@@ -42,7 +42,7 @@ class Keepalived(unittest.TestCase):
         output = StringIO.StringIO()
         sys.stdout = output
         filepath = self.director.cache_dir + '/realServerWeight.2.1'
-        self.assertTrue(self.director.disable('resolver1.opendns.com', 'domain'))
+        self.assertTrue(self.director.disable('udp', 'resolver1.opendns.com', 'domain'))
         
         # now clean up the file
         try:
@@ -60,7 +60,7 @@ class Keepalived(unittest.TestCase):
             f = open(filepath, 'w')
             f.write('1')
             f.close()
-            self.assertTrue(self.director.enable('resolver2.opendns.com'))
+            self.assertTrue(self.director.enable('udp', 'resolver2.opendns.com'))
         except IOError:
             pass
 
@@ -74,7 +74,7 @@ class Keepalived(unittest.TestCase):
             f = open(filepath, 'w')
             f.write('1')
             f.close()
-            self.assertTrue(self.director.enable('resolver2.opendns.com', 'domain'))
+            self.assertTrue(self.director.enable('udp', 'resolver2.opendns.com', 'domain'))
         except IOError:
             pass
 
