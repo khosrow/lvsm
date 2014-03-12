@@ -58,14 +58,14 @@ def main():
   maintenance = path + "/../cache"
   filenames = os.listdir(maintenance)
 
-  for index, item in enumerate(numeric_tcp):
-    for filename in filenames:
-      parts = filename.split('.')
-      if parts[0] == "realServerWeight":
-        i = int(parts[1])
-        j = int(parts[2])
-        num = i + j - 1
+  for filename in filenames:
+    parts = filename.split('.')
+    if parts[0] == "realServerWeight":
+      i = int(parts[1])
+      j = int(parts[2])
+      num = j
 
+      if i == 1:
         old = numeric_tcp[num]
         new = old.replace("Masq    1", "Masq    0")
         numeric_tcp[num] = new
@@ -73,12 +73,15 @@ def main():
         old = alpha_tcp[num]
         new = old.replace("Masq    1", "Masq    0")
         alpha_tcp[num] = new
+        
+      elif i == 2:
+        old = numeric_udp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        numeric_udp[num] = new
 
-  for index, item in enumerate(numeric_udp):
-    for filename in filenames:
-      if filename in item:
-        del numeric_udp[index]
-        del alpha_udp[index]
+        old = alpha_udp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        alpha_udp[num] = new
 
   if tcp:
     if numeric:
