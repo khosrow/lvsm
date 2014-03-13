@@ -165,7 +165,9 @@ class Ldirectord(genericdirector.GenericDirector):
     def show_real_disabled(self, host, port, numeric):
         """show status of disabled real server across multiple VIPs"""
         # note that host='' and port='' returns all disabled server
-        if host and port:
+        hostip = ''
+        hostport = ''
+        if host:
             hostips = utils.gethostbyname_ex(host)
             if not hostips:
                 return
@@ -173,10 +175,11 @@ class Ldirectord(genericdirector.GenericDirector):
             # Here we only use the first IP if a host has more than one
             hostip = hostips[0]
             
-            portnum = utils.getportnum(port)
-            if portnum == -1:
-                return
-            hostport = hostip + ":" + str(portnum)
+            if port:
+                portnum = utils.getportnum(port)
+                if portnum == -1:
+                    return
+                hostport = hostip + ":" + str(portnum)
 
         output = list()
 
@@ -200,9 +203,9 @@ class Ldirectord(genericdirector.GenericDirector):
             except IOError as e:
                 reason = ''
                 logger.error(e)
-            if ((not host and not port) or
+            if (not host or
                 self.convert_filename(filename) == hostip or
-                self.convert_filename(filename) == hostip + ":" + str(portnum)):
+                self.convert_filename(filename) == hostport):
             
                 # decide if we have to convert to hostname or not
                 if numeric:
