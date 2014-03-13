@@ -28,6 +28,7 @@ class Virtual(Server):
         proto = self.proto.upper().ljust(4)
         host = self.ip
         service = self.port
+
         if not numeric:
             try:
                 host, aliaslist, addrlist = socket.gethostbyaddr(self.ip)
@@ -40,20 +41,21 @@ class Virtual(Server):
 
         ipport = (host + ":" + service).ljust(40)
         sched = self.sched.ljust(7)
+
         if self.persistence:            
             line = "%s %s %s persistence %s" % (proto, ipport, sched, self.persistence)
         else:
             line = "%s %s %s" % (proto, ipport, sched)
+
         if color:
             line = termcolor.colored(line, attrs=['bold'])
+
         output = [line]
         for r in self.realServers:
             if real:
-                # empty out the output if we are showing the real server only
-                # output = list()
                 if r.ip == real:
                     if port:
-                        if r.port == port:
+                        if int(r.port) == port:
                             output = [line]
                             output.append(r.__str__(numeric,color))
                     else:
@@ -62,7 +64,16 @@ class Virtual(Server):
 
             else:
                 output.append(r.__str__(numeric, color))
-        output.append('')
+
+        # If a real server is provided, don't return empty VIPs
+        if real:
+            if len(output) == 1:
+                return ''
+
+        # Add space between each VIP in the final output
+        if output:
+            output.append('')
+
         return '\n'.join(output)
 
         # # line = "IP: %s  Port: %s  Protocol: %s  Scheduler: %s" % (host, service, self.proto, self.sched)
@@ -261,15 +272,21 @@ class GenericDirector(object):
         """Show status of a real server across multiple VIPs.
         Will consider both active and disabled servers.
         """
+        header = ["", "Layer 4 Load balancing" , "======================"]
+        output = header
+
         active = self.show_real_active(host, port, numeric, color)
         if active:
             active = ["", "Active servers:", "---------------"] + active
+            output = output + active
+
         disabled = self.show_real_disabled(host, port, numeric)
         if disabled:
             disabled = ["", "Disabled servers:", "-----------------"] + disabled
-            # disabled = header + disabled
-        header = ["", "Layer 4 Load balancing" , "======================"]
-        return header + active + disabled + ["\n"]
+            output = output + disabled
+
+        # return header + active + disabled + ["\n"]
+        return output
 
     def show_real_active(self, host, port, numeric, color):
         """Show status of an active real server across multiple VIPs.
@@ -287,6 +304,8 @@ class GenericDirector(object):
             portnum = utils.getportnum(port)
             if portnum == -1:
                 return list()
+        else:
+            portnum = None
 
         # Update the ipvs table
         self.build_ipvs()
@@ -294,10 +313,16 @@ class GenericDirector(object):
         result = list()
 
         for v in self.virtuals:
-            for real in v.realServers: 
-                if real.ip == hostip:
-                    if not port or real.port == portnum:
-                        result += v.__str__(numeric, color, real.ip, port).split('\n')
+            # for real in v.realServers: 
+                # if real.ip == hostip:
+                #     logger.debug("real port type: %s" % type(real.port))
+                #     logger.debug("port num type: %s" % type(portnum))
+                #     if not port or real.port == portnum:
+                #         result += v.__str__(numeric, color, real.ip, port).split('\n')
+            # result += v.__str__(numeric, color, hostip, portnum).split('\n')
+            r = v.__str__(numeric, color, hostip, portnum)
+            if r:
+                result += r.split('\n')
         return result
 
     def show_real_disabled(self, host, port, numeric):
@@ -383,10 +408,11 @@ class GenericDirector(object):
 
         lines = output.splitlines()
 
-        for line in lines:
+        for line in lines[3:]:
             if line[0:3] in ['TCP', 'UDP', 'FWM']:
                 prot = line[0:3]
-            elif line.startswith("  ->") and protocol.upper() == prot:
+            elif (line.startswith("  ->") 
+                  and (not protocol or protocol.upper() == prot)):
                 r, sep , temp = line.partition(':')
                 real = r[5:]
                 if real not in result:
