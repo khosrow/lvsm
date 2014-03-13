@@ -242,14 +242,16 @@ class LivePrompt(CommandPrompt):
         """
         commands = line.split()
 
-        from lvsm.modules import ldirectordprompts
-        from lvsm.modules import keepalivedprompts
-        prompts = {'generic': VirtualPrompt,
-                   'ldirectord': ldirectordprompts.VirtualPrompt,
-                   'keepalived': keepalivedprompts.VirtualPrompt}
-
-        virtualshell = prompts[self.config['director']](self.config)
-
+        # Check for the director before instantiating the right class
+        if self.config['director'] == 'ldirectord':
+            from lvsm.modules import ldirectordprompts
+            virtualshell = ldirectordprompts.VirtualPrompt(self.config)
+        elif self.config['director'] == 'keepalived':
+            from lvsm.modules import keepalivedprompts
+            virtualshell = keepalivedprompts.VirtualPrompt(self.config)
+        else:
+            virtualshell = VirtualPrompt(self.config)
+        
         if not line:
             virtualshell.cmdloop()
         else:
@@ -262,7 +264,15 @@ class LivePrompt(CommandPrompt):
         """
         commands = line.split()
 
-        realshell = RealPrompt(self.config)
+        # Check for the director before instantiating the right class
+        if self.config['director'] == 'ldirectord':
+            from lvsm.modules import ldirectordprompts
+            realshell = ldirectordprompts.RealPrompt(self.config)
+        elif self.config['director'] == 'keepalived':
+            from lvsm.modules import keepalivedprompts
+            realshell = keepalivedprompts.RealPrompt(self.config)
+        else:
+            realshell = RealPrompt(self.config)
 
         if not line:
             realshell.cmdloop()
@@ -283,7 +293,7 @@ class LivePrompt(CommandPrompt):
             fwshell.onecmd(' '.join(commands[0:]))
 
     def do_restart(self, line):
-        """Restart the direcotr or firewall module."""
+        """Restart the director or firewall module."""
         if line == "director":
             if self.config['director_cmd']:
                 print "restaring director"
@@ -658,72 +668,6 @@ class VirtualPrompt(CommandPrompt):
         else:
             print syntax
 
-    def do_disable(self, line):
-        """
-        \rDisable real server across VIPs.
-        \rsyntax: disable tcp|udp|fwm <rip> [<port>] [<vip> <port>]
-        """
-
-        syntax = "*** Syntax: disable tcp|udp|fwm <rip> [<port>] [<vip> <port>]"
-
-        # Some default values to be used
-        port = ''
-        vip = ''
-        vport = ''
-        commands = line.split()
-        if len(commands) < 2 or len(commands) > 5:
-            print syntax
-        elif len(commands) >= 2:
-            protocol = commands[0]
-            # Verify protocol is valid
-            if protocol not in self.protocols:
-                print syntax 
-                return 
-
-            host = commands[1]
-            if len(commands) == 3:
-                port = commands[2]
-                if len(commands) == 4:
-                    vip = commands[3]
-                    if len(commands) == 5:
-                        vport = commands[4]
-
-            # ask for an optional reason for disabling
-            reason = raw_input("Reason for disabling [default = None]: ")
-            # if not self.director.disable(host, port, reason=reason):
-            if not self.director.disable(protocol,
-                                         host, port,
-                                         vip, vport,
-                                         reason=reason):
-                logger.error("Could not disable %s" % host)
-        else:
-            print syntax
-
-    def do_enable(self, line):
-        """
-        \rEnable real server across VIPs.
-        \rsyntax: enable <rip> <port>
-        """
-
-        syntax = "*** Syntax: enable <rip> <port>"
-
-        commands = line.split()
-        if len(commands) > 2 or len(commands) == 0:
-            print syntax
-        elif len(commands) <= 2:
-            host = commands[0]
-            if len(commands) == 1:
-                port = ''
-            elif len(commands) == 2:
-                port = commands[1]
-            else:
-                print syntax
-                return
-            if not self.director.enable(host, port):
-                logger.error("Could not enable %s" % host)
-        else:
-            print syntax
-
     def complete_show(self, text, line, begidx, endidx):
         """Tab completion for the show command"""
         if len(line) < 8:
@@ -737,15 +681,6 @@ class VirtualPrompt(CommandPrompt):
             prot = line.split()[1]
             virtuals = self.director.get_virtual(prot)
             completions = [p for p in virtuals if p.startswith(text)]
-
-        return completions
-
-    def complete_disable(self, text, line, begidx, endidx):
-        """Tab completion for the disable command"""
-        if len(line) < 8:
-            completions = [p for p in self.protocols if p.startswith(text)]
-        else:
-            completions = list()
 
         return completions
 
@@ -784,90 +719,71 @@ class RealPrompt(CommandPrompt):
         else:
             print syntax
 
-    def do_disable(self, line):
-        """
-        \rDisable real server across VIPs.
-        \rsyntax: disable <rip> <port>
-        """
+    def complete_show(self, text, line, begidx, endidx):
+        """Tab completion for show command"""
+        tokens = line.split()
+        reals = self.director.get_real(protocol='')
 
-        syntax = "*** Syntax: disable <rip> <port>"
-
-        commands = line.split()
-        if len(commands) > 2 or len(commands) == 0:
-            print syntax
-        elif len(commands) <= 2:
-            host = commands[0]
-            if len(commands) == 1:
-                port = ''
-            elif len(commands) == 2:
-                port = commands[1]
-            else:
-                print syntax
-                return
-            # ask for an optional reason for disabling
-            reason = raw_input("Reason for disabling [default = None]: ")
-            if not self.director.disable(host, port, reason=reason):
-                logger.error("Could not disable %s" % host)
+        if len(tokens) == 1 and not text:
+            completions = reals[:]
+        elif len(tokens) == 2 and text:
+            completions = [r for r in reals if r.startswith(text)]
         else:
-            print syntax
+            completions = list()
 
-    def do_enable(self, line):
-        """
-        \rEnable real server across VIPs.
-        \rsyntax: enable <rip> <port>
-        """
+        return completions
 
-        syntax = "*** Syntax: enable <rip> <port>"
+    # def do_disable(self, line):
+    #     """
+    #     \rDisable real server across VIPs.
+    #     \rsyntax: disable <rip> <port>
+    #     """
 
-        commands = line.split()
-        if len(commands) > 2 or len(commands) == 0:
-            print syntax
-        elif len(commands) <= 2:
-            host = commands[0]
-            if len(commands) == 1:
-                port = ''
-            elif len(commands) == 2:
-                port = commands[1]
-            else:
-                print syntax
-                return
-            if not self.director.enable(host, port):
-                logger.error("Could not enable %s" % host)
-        else:
-            print syntax
+    #     syntax = "*** Syntax: disable <rip> <port>"
 
-
-    # def complete_show(self, text, line, begidx, endidx):
-    #     """Tab completion for the show command"""
-    #     if line.startswith("show virtual "):
-    #         if line == "show virtual ":
-    #             completions = self.protocols[:]
-    #         elif len(line) < 16:
-    #             completions = [p for p in self.protocols if p.startswith(text)]
-    #         # elif line.startswith("show virtual ") and len(line) > 16:
-    #             # completions = [p for p in self.director.get_virutal('tcp') if p.startswith(text)]
-    #         # elif line == "show virtual tcp ":
-    #         #     virtuals = self.director.get_virtual('tcp')
-    #         #     completions = [p for p in virtuals if p.startswith(text)]
-    #         # elif line == "show virtual tcp ":
-    #         elif line.startswith("show virtual tcp "):
-    #             virtuals = self.director.get_virtual('tcp')
-    #             completions = [p for p in virtuals if p.startswith(text)]
-    #         elif line == "show virtual udp ":
-    #             virtuals = self.director.get_virtual('udp')
-    #             completions = [p for p in virtuals if p.startswith(text)]
+    #     commands = line.split()
+    #     if len(commands) > 2 or len(commands) == 0:
+    #         print syntax
+    #     elif len(commands) <= 2:
+    #         host = commands[0]
+    #         if len(commands) == 1:
+    #             port = ''
+    #         elif len(commands) == 2:
+    #             port = commands[1]
     #         else:
-    #             completions = []
-    #     elif (line.startswith("show director") or
-    #           line.startswith("show firewall") or
-    #           line.startswith("show nat") or
-    #           line.startswith("show real")):
-    #         completions = []
-    #     elif not text:
-    #         completions = self.modules[:]
+    #             print syntax
+    #             return
+    #         # ask for an optional reason for disabling
+    #         reason = raw_input("Reason for disabling [default = None]: ")
+    #         if not self.director.disable(host, port, reason=reason):
+    #             logger.error("Could not disable %s" % host)
     #     else:
-    #         completions = [m for m in self.modules if m.startswith(text)]
-    #     return completions
+    #         print syntax
+
+    # def do_enable(self, line):
+    #     """
+    #     \rEnable real server across VIPs.
+    #     \rsyntax: enable <rip> <port>
+    #     """
+
+    #     syntax = "*** Syntax: enable <rip> <port>"
+
+    #     commands = line.split()
+    #     if len(commands) > 2 or len(commands) == 0:
+    #         print syntax
+    #     elif len(commands) <= 2:
+    #         host = commands[0]
+    #         if len(commands) == 1:
+    #             port = ''
+    #         elif len(commands) == 2:
+    #             port = commands[1]
+    #         else:
+    #             print syntax
+    #             return
+    #         if not self.director.enable(host, port):
+    #             logger.error("Could not enable %s" % host)
+    #     else:
+    #         print syntax
 
     # def complete_disable(self, text, line, begidx, endidx):
     #     """Tab completion for disable command."""
