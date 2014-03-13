@@ -153,7 +153,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         cmd_example = "snmpset -v2c -c %s localhost KEEPALIVED-MIB::%s = 0" % (community, filename)
                                         logger.info("Running equivalent command to: %s" % cmd_example)
                                         m.realServerWeight[i,idx] = 0
-                                        print "Disabled %s:%s on VIP %s:%s. Weight set to 0." % (rip, rp, vip, vp)
+                                        print "Disabled %s:%s on VIP %s:%s (%s). Weight set to 0." % (rip, rp, vip, vp, protocol)
                                 idx += 1
         except snmp.SNMPException as e:
             logger.error(e)
@@ -178,9 +178,9 @@ class Keepalived(genericdirector.GenericDirector):
         if not hostips:
             logger.error('Real server %s is not valid!' % rhost)
             return False
+
         # Here we only use the first IP if the host has more than one
-        else:
-            hostip = hostips[0]
+        hostip = hostips[0]
 
         if rport:
             # check that it's a valid port
@@ -194,6 +194,7 @@ class Keepalived(genericdirector.GenericDirector):
             if not vipnum:
                 logger.error('Virtual host %s not valid!' % vhost)
                 return False
+
         if vport:
             vportnum = utils.getportnum(vport)
             if vportnum == -1:
@@ -222,8 +223,8 @@ class Keepalived(genericdirector.GenericDirector):
                 hexip = m.virtualServerAddress[i]
                 vip = socket.inet_ntoa(hexip)
                 logger.debug("Checking VIP: %s" % vip)
-                logger.debug("Protocol: %s" % str(m.virtualServerProtocol))
-                if m.virtualServerProtocol == protocol:
+                logger.debug("Protocol: %s" % str(m.virtualServerProtocol[i]))
+                if m.virtualServerProtocol[i] == protocol:
                     if not vhost or vipnum == vip:
                         vp = m.virtualServerPort[i]
                         if not vport or vportnum == vp:
@@ -234,6 +235,7 @@ class Keepalived(genericdirector.GenericDirector):
                             while idx <= j:
                                 hexip = m.realServerAddress[i,idx]
                                 rip = socket.inet_ntoa(hexip)
+                                logger.debug("RIP: %s" % rip)
                                 rp = m.realServerPort[i,idx]
                                 if hostip == rip:
                                     if not rport or (rport and portnum == rp):
@@ -268,7 +270,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         cmd_example = "snmpset -v2c -c %s localhost KEEPALIVED-MIB::%s = %s" % (community, filename, orig_weight)
                                         logger.info("Running equivalent command to: %s" % cmd_example)
                                         m.realServerWeight[i,idx] = orig_weight
-                                        print "Enabled %s:%s on VIP %s:%s. Weight set to %s." % (rip, rp, vip, vp, orig_weight)
+                                        print "Enabled %s:%s on VIP %s:%s (%s). Weight set to %s." % (rip, rp, vip, vp, protocol, orig_weight)
 
                                         # Now remove the placeholder file locally
                                         try:
