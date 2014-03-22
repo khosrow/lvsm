@@ -63,12 +63,12 @@ class Firewall():
     def show_virtual(self, host, port, protocol, numeric, color):
         result = list()
         args = [self.iptables, '-L', 'INPUT']
-        portnum = utils.getportnum(port)
-        
-        try:
-            portname = socket.getservbyport(int(portnum))
-        except socket.error:
-            portname = portnum
+        if port:
+            portnum = utils.getportnum(port)
+            try:
+                portname = socket.getservbyport(int(portnum))
+            except socket.error:
+                portname = portnum
 
         if numeric:
             args.append('-n')
