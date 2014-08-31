@@ -109,6 +109,9 @@ class Firewall():
                 portname = socket.getservbyport(int(portnum))
             except socket.error:
                 portname = portnum
+            except OverflowError as e:
+                logger.error("%s" % e)
+                return list() 
 
         if numeric:
             args.append('-n')
