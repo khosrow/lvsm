@@ -29,17 +29,26 @@ class Virtual(Server):
         host = self.ip
         service = self.port
 
-        if not numeric:
+        logger.debug("proto: %s" % proto)
+        logger.debug("host: %s" % host)
+        logger.debug("service: %s" % service)
+
+        if self.proto.upper() == 'FWM':
+            pass
+        elif not numeric:
             try:
-                host, aliaslist, addrlist = socket.gethostbyaddr(self.ip)
-            except socket.herror:
-                pass
-            try:
+                try:
+                    host, aliaslist, addrlist = socket.gethostbyaddr(self.ip)
+                except socket.herror:
+                    pass
                 service = socket.getservbyport(int(self.port))
             except socket.error:
                 pass
+        if self.proto.upper() == 'FWM':
+            ipport = host.ljust(40)
+        else:
+            ipport = (host + ":" + service).ljust(40)
 
-        ipport = (host + ":" + service).ljust(40)
         sched = self.sched.ljust(7)
 
         if self.persistence:            
@@ -173,8 +182,13 @@ class GenericDirector(object):
                 tokens = line.split()
                 # first one is the protocol
                 proto = tokens[0]
-                # second token will be ip:port
-                ip, sep, port = tokens[1].rpartition(':')
+                if line.startswith('FWM'):
+                    # there's no port number in fwm mode
+                    ip = tokens[1]
+                    port = ''
+                else:    
+                    # second token will be ip:port
+                    ip, sep, port = tokens[1].rpartition(':')
                 # 3rd is the scheduler
                 sched = tokens[2]
                 # [optional] 5th is the persistence timeout
