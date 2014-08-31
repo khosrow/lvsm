@@ -60,6 +60,46 @@ class Firewall():
         result += output.split('\n')
         return result
 
+    def show_mangle(self, numeric, color, fwm=None):
+        """Show the iptables mangle table"""
+        args = [self.iptables, '-t', 'mangle', '-L', '-v']
+        if numeric:
+            args.append('-n')
+
+        try:
+            try:
+                logger.info("Running: %s" % " ".join(args))
+                output = subprocess.check_output(args)
+            # python 2.6 compat code
+            except AttributeError as e:
+                output, stderr = subprocess.Popen(args, stdout=subprocess.PIPE).communicate()
+        except OSError as e:
+            logger.error("Problem with iptables - %s : %s" % (e.strerror, args[0]))
+            return list()
+
+        result = list()
+        if output:
+            lines = output.split('\n')
+
+            # Find which column contains the destination 
+            #header = lines[1].split() 
+            #try:
+            #    index = header.index('destination')  
+            #except ValueError as e:
+            #    index = -1
+
+            for line in lines:
+                tokens = line.split() 
+                if fwm and hex(fwm) in tokens:
+                    result.append(line)
+                else:
+                    result.append(line)
+
+        result.insert(0, '')
+        result.insert(1, 'Mangle rules')
+        result.insert(2, '============')
+        return result 
+
     def show_virtual(self, host, port, protocol, numeric, color):
         result = list()
         args = [self.iptables, '-L', 'INPUT']
@@ -100,11 +140,9 @@ class Firewall():
                 tokens = line.split()
 
                 if len(tokens) >= 7:
-                    logger.debug("dpt:%s" % portname)
-                    logger.debug("dpt:%s" % str(portnum))
                     if ((tokens[1] == protocol or tokens[2] == "all") and
                         tokens[4] in hostnames and
-                        (tokens[6] == "dpt:" + str(portname) or tokens[6] == "dpt:" + str(portnum))
+                        ( not port or (tokens[6] == "dpt:" + str(portname) or tokens[6] == "dpt:" + str(portnum)))
                         ):
                         if color:
                             if line.startswith('ACCEPT'):
