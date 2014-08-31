@@ -819,10 +819,11 @@ class FirewallPrompt(CommandPrompt):
         """
         \rDisplay status of all packet filtering rules
         """
+        mangle = self.firewall.show_mangle(self.settings['numeric'], self.settings['color'])
         ports = self.firewall.show(self.settings['numeric'], self.settings['color'])
         nat = self.firewall.show_nat(self.settings['numeric'])
 
-        utils.pager(self.config['pager'], ports + nat + [''])
+        utils.pager(self.config['pager'], mangle + ports + nat + [''])
 
     def do_show(self, line):
         """
@@ -830,14 +831,17 @@ class FirewallPrompt(CommandPrompt):
         \rSyntax: show <table>
         \r<table> can be one of the following
         nat                    the NAT table.
+        fwm|mangle             the mangle table.
         filters                the input filters table.
         """
         if line == "nat":
             output = self.firewall.show_nat(self.settings['numeric'])
         elif line == "filters":
             output = self.firewall.show(self.settings['numeric'], self.settings['color'])
+        elif line == "mangle" or line == "fwm":
+            output = self.firewall.show_mangle(self.settings['numeric'], self.settings['color'])
         else:
-            print "*** Syntax: show nat|filters"
+            print "*** Syntax: show nat|fwm|mangle|filters"
             return
         utils.pager(self.config['pager'], output + [''])
 
