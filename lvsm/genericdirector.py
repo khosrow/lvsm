@@ -134,6 +134,9 @@ class Real(Server):
         inactive = self.inactive.ljust(10)
         line = "  -> %s %s %s %s %s" % (ipport, method, weight, active, inactive)
         # line = "          %s %s  %s  %s  %s" % (ipport, method, weight, active, inactive)
+        # if real server weight is zero, we highlight it as red
+        if color and self.weight == '0':
+            line = termcolor.colored(line, 'red')
         return line
 
 
