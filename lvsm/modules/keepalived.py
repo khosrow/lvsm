@@ -99,8 +99,8 @@ class Keepalived(genericdirector.GenericDirector):
             for i in m.virtualServerAddress:
                 hexip = m.virtualServerAddress[i]
                 vip = socket.inet_ntoa(hexip)
-                logger.debug("Checking VIP: %s" % vip)
-                logger.debug("Protocol: %s" % str(m.virtualServerProtocol[i]))
+                logger.debug("Keepalived.disable(): Checking VIP: %s" % vip)
+                logger.debug("Keepalived.disable(): Protocol: %s" % str(m.virtualServerProtocol[i]))
                 if m.virtualServerProtocol[i] == protocol:
                     if not vhost or vipnum == vip:
                         vp = m.virtualServerPort[i]
@@ -115,7 +115,7 @@ class Keepalived(genericdirector.GenericDirector):
                                 rp = m.realServerPort[i,idx]
                                 if hostip == rip:                                                        
                                     if not port or (port and portnum == rp):
-                                        logger.debug('Disabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
+                                        logger.debug('Keepalived.disable(): Disabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
                                         # 'found' is used to keep track of
                                         # matching real servers to disable
                                         found = True
@@ -124,7 +124,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         # before disabling it
                                         # It'll be used when enabling 
                                         weight = m.realServerWeight[i,idx]
-                                        logger.debug('Current weight: %s' % weight)
+                                        logger.debug('Keepalived.disable(): Current weight: %s' % weight)
 
                                         if weight == 0:
                                             logger.warning("Real server %s:%s is already disabled on VIP %s:%s" % (rip, rp, vip, vp))
@@ -133,10 +133,19 @@ class Keepalived(genericdirector.GenericDirector):
 
                                         filename = "realServerWeight.%s.%s" % (i, idx)
                                         fullpath = '%s/%s' % (self.cache_dir, filename)
+                                        rfilename = "realServerReason.%s.%s" % (i, idx)
+                                        rfullpath = '%s/%s' % (self.cache_dir, rfilename)
                                         try:
+                                            # Create a file with the original weight 
                                             logger.info('Creating file: %s' % fullpath)
                                             f = open(fullpath, 'w')
                                             f.write(str(weight))
+                                            f.close()
+
+                                            # Create a file with the disable reason
+                                            logger.info('Creating file: %s' % rfullpath)
+                                            f = open(rfullpath, 'w')
+                                            f.write(str(reason))
                                             f.close()
                                         except IOError as e:
                                             logger.error(e)
@@ -222,8 +231,8 @@ class Keepalived(genericdirector.GenericDirector):
             for i in m.virtualServerAddress:
                 hexip = m.virtualServerAddress[i]
                 vip = socket.inet_ntoa(hexip)
-                logger.debug("Checking VIP: %s" % vip)
-                logger.debug("Protocol: %s" % str(m.virtualServerProtocol[i]))
+                logger.debug("Keepalived.enable(): Checking VIP: %s" % vip)
+                logger.debug("Keepalived.enable(): Protocol: %s" % str(m.virtualServerProtocol[i]))
                 if m.virtualServerProtocol[i] == protocol:
                     if not vhost or vipnum == vip:
                         vp = m.virtualServerPort[i]
@@ -235,14 +244,14 @@ class Keepalived(genericdirector.GenericDirector):
                             while idx <= j:
                                 hexip = m.realServerAddress[i,idx]
                                 rip = socket.inet_ntoa(hexip)
-                                logger.debug("RIP: %s" % rip)
+                                logger.debug("Keepalived.enable(): RIP: %s" % rip)
                                 rp = m.realServerPort[i,idx]
                                 if hostip == rip:
                                     if not rport or (rport and portnum == rp):
                                         # Record the original weight somewhere before disabling it
                                         # Will be used when enabling the server
                                         weight = m.realServerWeight[i,idx]
-                                        logger.debug('Current weight: %s' % weight)
+                                        logger.debug('Keepalived.enable(): Current weight: %s' % weight)
                                         if weight > 0:
                                             msg = "Real server %s:%s on VIP %s:%s is already enabled with a weight of %s" % (rip, rp, vip, vp, weight)
                                             logger.warning(msg)
@@ -252,9 +261,9 @@ class Keepalived(genericdirector.GenericDirector):
                                         filename = "realServerWeight.%s.%s" % (i, idx)
                                         fullpath = '%s/%s' % (self.cache_dir, filename)
 
-                                        logger.debug('Enabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
+                                        logger.debug('Keepalived.enable(): Enabling %s:%s on VIP %s:%s' % (rip, rp, vip, vp))
                                         try:
-                                            logger.debug('Reading server weight from file: %s' % fullpath)
+                                            logger.debug('Keepalived.enable(): Reading server weight from file: %s' % fullpath)
                                             f = open(fullpath, 'r')
                                             str_weight = f.readline().rstrip()
                                             f.close()
@@ -280,6 +289,17 @@ class Keepalived(genericdirector.GenericDirector):
                                             logger.error('Please make sure %s is writable!' % self.cache_dir)
                                             logger.error('%s needs to be manually deleted to avoid future problems.' % fullpath)
 
+                                        # Try removing the reason file
+                                        rfilename = "realServerReason.%s.%s" % (i, idx)
+                                        rfullpath = '%s/%s' % (self.cache_dir, rfilename)
+                                        try:
+                                            os.unlink(rfullpath)
+                                        except OSError as e:
+                                            logger.error(e)
+                                            logger.error('Please make sure %s is writable!' % self.cache_dir)
+                                            logger.error('%s needs to be manually deleted to avoid future problems.' % rfullpath)
+
+
                                         # remove the placeholder file in other nodes
                                         self.filesync_nodes('remove', fullpath)
 
@@ -294,20 +314,34 @@ class Keepalived(genericdirector.GenericDirector):
     def show_real_disabled(self, host, port, numeric):
         """show status of disabled real server across multiple VIPs"""
 
+        logger.debug("Keepalived.show_real_disabled(): host:%s" % host)
+        logger.debug("Keepalived.show_real_disabled(): port:%s" % port)
         output = list()
 
         # update the ipvs table
         self.build_ipvs()
-        for v in self.virtuals:
-            for r in v.realServers:
+        for i, v in enumerate(self.virtuals):
+            for j, r in enumerate(v.realServers):
                 if r.weight == "0":
-                    if numeric:
-                        output.append("%s:%s" % (r.ip, r.port))
-                    else:
-                        host, aliaslist, ipaddrlist = socket.gethostbyaddr(r.ip)
-                        portname = socket.getservbyport(int(r.port))
-                        output.append("%s:%s" % (host, portname))
+                    if not host or utils.gethostbyname_ex(host)[0] == r.ip:
+                        if not port or utils.getportnum(port) == r.port:
+                            if numeric:
+                                output.append("%s:%s" % (r.ip, r.port))
+                            else:
+                                host, aliaslist, ipaddrlist = socket.gethostbyaddr(r.ip)
+                                portname = socket.getservbyport(int(r.port))
+                                output.append("%s:%s" % (host, portname))
+                            
+                            try:
+                                filename = "%s/realServerReason.%d.%d" % (self.cache_dir, i+1, j+1)
+                                f = open(filename)
+                                reason = 'Reason: ' + f.readline()
+                                f.close()
+                            except IOError as e:
+                                logger.error(e)
+                                reason = ''
 
+                            output[-1] = output[-1] + "\t\t" + reason
         return output
 
     def parse_config(self, configfile):
