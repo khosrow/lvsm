@@ -531,12 +531,12 @@ class ConfigurePrompt(CommandPrompt):
                         if ret:
                             logger.error(err)
                             break
-                        elif self.director.parse_config(output.name):
+                        elif self.config['parse_director_config'] == 'no' or self.director.parse_config(output.name):
                             shutil.copyfile(temp.name, filename)
                             temp.close()
                             break
                         else:
-                            answer = raw_input("You had a syntax error in your config file, edit again? (y/n) ")
+                            answer = raw_input("Found a syntax error in your config file, edit again? (y/n) ")
                             if answer.lower() == 'y':
                                 pass
                             elif answer.lower() == 'n':
@@ -548,7 +548,7 @@ class ConfigurePrompt(CommandPrompt):
                         temp.close()
                         break
                     else:
-                        answer = raw_input("You had a syntax error in your config file, edit again? (y/n) ")
+                        answer = raw_input("Found a syntax error in your config file, edit again? (y/n) ")
                         if answer.lower() == 'y':
                             pass
                         elif answer.lower() == 'n':
