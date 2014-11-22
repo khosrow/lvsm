@@ -49,7 +49,7 @@ def parse_config(filename):
             else:
                 config_items[key] = value
                 # if the item is a config file, verify that the file exists
-                if key.endswith('_config'):
+                if key in ['director_config', 'firewall_config']:
                     try:
                         file = open(value)
                         file.close()
