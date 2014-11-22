@@ -483,14 +483,14 @@ class ConfigurePrompt(CommandPrompt):
         """Edit the configuration of an item."""
         if line == "director":
             key = line + "_config"
-            filename = self.config[key]
-            if not filename:
+            configfile = self.config[key]
+            if not configfile:
                 logger.error("'%s' not defined in config file!" % key)
             else:
                 # make a temp copy of the config
                 try:
                     temp = tempfile.NamedTemporaryFile(prefix='keepalived.conf.')                    
-                    shutil.copyfile(filename, temp.name)
+                    shutil.copyfile(configfile, temp.name)
                 except IOError as e:
                     logger.error(e.strerror)
                     return
@@ -507,9 +507,17 @@ class ConfigurePrompt(CommandPrompt):
                     except KeyError:
                         template = None
 
+                    # If parsing is disabled, skip the large if/else block
+                    if self.config['parse_director_config'].lower() == 'no':
+                        logger.warn('Director parsing disabled.')
+                        logger.warn('To enable it, please activate the \'parse_director_config\' option in lvsm.conf')
+                        shutil.copy(temp.name, configfile)
+                        temp.close()
+                        break
+
                     # Parse the config file and verify the changes
                     # If successful, copy changes back to original file
-
+                    
                     # If a template language is defined, run it against the config
                     # before parsing the configuration. 
                     if template:
@@ -531,8 +539,8 @@ class ConfigurePrompt(CommandPrompt):
                         if ret:
                             logger.error(err)
                             break
-                        elif self.config['parse_director_config'] == 'no' or self.director.parse_config(output.name):
-                            shutil.copyfile(temp.name, filename)
+                        elif self.director.parse_config(output.name):
+                            shutil.copyfile(temp.name, configfile)
                             temp.close()
                             break
                         else:
@@ -544,7 +552,7 @@ class ConfigurePrompt(CommandPrompt):
                                 break
 
                     elif self.director.parse_config(temp.name):
-                        shutil.copyfile(temp.name, filename)
+                        shutil.copyfile(temp.name, configfile)
                         temp.close()
                         break
                     else:
@@ -557,11 +565,11 @@ class ConfigurePrompt(CommandPrompt):
 
         elif line == "firewall":
             key = line + "_config"
-            filename = self.config[key]
-            if not filename:
+            configfile = self.config[key]
+            if not configfile:
                 logger.error("'%s' not defined in config file!" % key)
             else:
-                args = "vi " + filename
+                args = "vi " + configfile
                 logger.info(str(args))
                 result = subprocess.call(args, shell=True)
                 if result != 0:
