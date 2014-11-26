@@ -16,6 +16,7 @@ setup(
     entry_points={
         'console_scripts': [
             'lvsm = lvsm.__main__:main',
+            'kaparser = lvsm.modules.kaparser:main',
         ],
     },
     test_suite="tests",
