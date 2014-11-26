@@ -304,3 +304,47 @@ def tokenize_config(configfile):
         logger.error(e)
     else:
         return tokens
+
+def main():
+    import sys
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__,
+                                      usage="%(prog)s [options] filename")
+
+    parser.add_argument("-q", "--quiet",
+                        help="Quiet mode. Return 0 on success, 1 on failure.",
+                        action="store_true")
+    parser.add_argument("-v", "--verbose",
+                        help="Verbose mode. Print all tokens on success.",
+                        action="store_true")
+    parser.add_argument("file", type=argparse.FileType('r'))
+
+    try:
+        args = parser.parse_args()
+    except IOError as e:
+        print e
+        sys.exit(2)
+
+    try:
+        conf = "".join(args.file.readlines())
+    except IOError as e:
+        print "%s" % e
+        sys.exit(1)
+
+    t = tokenize_config(conf)
+
+    if t:
+        if args.verbose:
+            print t.dump()
+            print "---------"
+        if not args.quiet:
+            print "%s parsed OK!" % args.file.name
+        sys.exit(0)        
+    else:
+        if not args.quiet:
+            print "%s didn't parse OK!" % args.file.name
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
