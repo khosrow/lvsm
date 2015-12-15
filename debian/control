@@ -1,0 +1,17 @@
+Source: lvsm
+Section: python
+Priority: extra
+Maintainer: Khosrow Ebrahimpour <khosrow.ebrahimpour@ssc-spc.gc.ca>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.6
+Homepage: https://github.com/khosrow/lvsm
+#Vcs-Git: git://git.debian.org/collab-maint/lvsm.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/lvsm.git;a=summary
+
+Package: python-lvsm
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-pkg-resources, iptables, ipvsadm, snimpy, python-pyparsing
+Suggests: keepalived | ldirectord
+Description: a shell to manage LVS and iptables config on a Linux server 
+ lvsm provides a command shell to manage a Linux Virtual Server (LVS) 
+ as a unified system and aims to simplify the management of such systems. 

@@ -1,0 +1,11 @@
+lvsm (0.5.0-1cmc-1) unstable; urgency=low
+
+  * Updated package to create /var/cache/lvsm
+
+ -- Khosrow Ebrahimpour <khosrow.ebrahimpour@ssc-spc.gc.ca>  Tue, 11 Feb 2014 15:08:58 +0000
+
+lvsm (0.5.0-cmc) unstable; urgency=low
+
+  * Initial release for use at CMC
+
+ -- Khosrow Ebrahimpour <khosrow.ebrahimpour@ssc-spc.gc.ca>  Wed, 29 Jan 2014 15:55:47 +0000
