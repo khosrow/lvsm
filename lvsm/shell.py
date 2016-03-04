@@ -103,7 +103,7 @@ class CommandPrompt(cmd.Cmd):
             # check to see if the files have changed
             if (self.config['director_config'] and
                 scm.modified(self.config['director_config'])):
-                modified.append(self.conig['director_config'])
+                modified.append(self.config['director_config'])
 
             if (self.config['firewall_config'] and
                 scm.modified(self.config['firewall_config'])):                
