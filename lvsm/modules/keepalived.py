@@ -323,7 +323,11 @@ class Keepalived(genericdirector.GenericDirector):
         for i, v in enumerate(self.virtuals):
             for j, r in enumerate(v.realServers):
                 if r.weight == "0":
-                    if not host or utils.gethostbyname_ex(host)[0] == r.ip:
+                    h = utils.gethostbyname_ex(host)
+                    # if user enters an invalid hostname, just return
+                    if not h:
+                        return ''
+                    if not host or h[0] == r.ip:
                         if not port or utils.getportnum(port) == r.port:
                             if numeric:
                                 output.append("%s:%s" % (r.ip, r.port))
@@ -336,6 +340,7 @@ class Keepalived(genericdirector.GenericDirector):
                                 filename = "%s/realServerReason.%d.%d" % (self.cache_dir, i+1, j+1)
                                 f = open(filename)
                                 reason = 'Reason: ' + f.readline()
+                                logger.debug("Keepalived.show_real_disabled(): %s" % reason)
                                 f.close()
                             except IOError as e:
                                 logger.error(e)
