@@ -1,3 +1,10 @@
+lvsm (0.5.2) unstable; urgency=low
+
+  * Builds successfully on LP.net
+  * Lots of minor bug fixes
+
+ -- Khosrow Ebrahimpour <khosrow@khosrow.ca> Thu, 10 Mar 2016 21:10:45 +0500
+
 lvsm (0.5.0-1cmc-1) unstable; urgency=low
 
   * Updated package to create /var/cache/lvsm
