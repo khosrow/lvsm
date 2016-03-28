@@ -855,7 +855,7 @@ class FirewallPrompt(CommandPrompt):
 
     def complete_show(self, text, line, begidx, endidx):
         """Command completion for the show command"""
-        args = ['nat', 'filters']
+        args = ['nat', 'mangle', 'fwm', 'filters']
         if not text:
             completions = args[:]
         else:
