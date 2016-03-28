@@ -1,13 +1,11 @@
 Source: lvsm
 Section: python
 Priority: extra
-Maintainer: Khosrow Ebrahimpour <khosrow.ebrahimpour@ssc-spc.gc.ca>
-Build-Depends: debhelper (>= 8.0.0), python, python-setuptools
+Maintainer: Khosrow Ebrahimpour <khosrow@khosrow.ca>
+Build-Depends: debhelper (>= 9.0.0), python, python-setuptools
 Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: https://github.com/khosrow/lvsm
-#Vcs-Git: git://git.debian.org/collab-maint/lvsm.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/lvsm.git;a=summary
 
 Package: python-lvsm
 Architecture: any
