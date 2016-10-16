@@ -12,9 +12,9 @@ Usage: lvsm [-h] [-c <conffile>][commands]
 
 Options:
   -h, --help            Show this help message and exit
-  -c <conffile>, -config=<connfile>         
+  -c <conffile>, -config=<connfile>
                         Specify which configuration file to use
-                        The default is /etc/lvsm.conf
+                        The default is /etc/lvsm/lvsm.conf
   -d, --debug           Enable debug messages during runtime
   -m, --monochrome      Disable color display
   -n, --numeric         Enable numeric host names, and avoid using DNS
@@ -31,7 +31,7 @@ from lvsm import utils
 from lvsm import shell
 
 logging.basicConfig(format='[%(levelname)s]: %(message)s')
-logger = logging.getLogger('lvsm')  
+logger = logging.getLogger('lvsm')
 
 def usage(code, msg=''):
     if code:
@@ -51,7 +51,7 @@ def usage(code, msg=''):
 
 
 def main():
-    CONFFILE = "/etc/lvsm.conf"
+    CONFFILE = "/etc/lvsm/lvsm.conf"
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "hvc:dmn",
