@@ -5,7 +5,7 @@ lvsm (0.5.2) unstable; urgency=low
 
  -- Khosrow Ebrahimpour <khosrow@khosrow.ca> Thu, 10 Mar 2016 21:10:45 +0500
 
- lvsm (0.5.1-1) precise; urgency=low
+lvsm (0.5.1-1) precise; urgency=low
 
   * Fixes for displaying FWMark
   * Syntax parsing now optional
