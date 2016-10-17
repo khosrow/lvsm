@@ -47,7 +47,7 @@ class CommandPrompt(cmd.Cmd):
                                     self.config['director_cmd'],
                                     self.config['nodes'],
                                     args)
-         
+
         self.rawprompt = rawprompt
         # disable color if the terminal doesn't support it
         if not sys.stdout.isatty():
@@ -60,7 +60,7 @@ class CommandPrompt(cmd.Cmd):
             c = None
             a = None
         self.prompt = termcolor.colored(self.rawprompt, color=c,
-                                        attrs=a) 
+                                        attrs=a)
         if logger.getEffectiveLevel() < 30:
             self.settings['commands'] = True
 
@@ -106,7 +106,7 @@ class CommandPrompt(cmd.Cmd):
                 modified.append(self.config['director_config'])
 
             if (self.config['firewall_config'] and
-                scm.modified(self.config['firewall_config'])):                
+                scm.modified(self.config['firewall_config'])):
                 modified.append(self.config['firewall_config'])
 
             # If any files are modified ask user if they want to quit
@@ -237,7 +237,7 @@ class LivePrompt(CommandPrompt):
 
     def do_virtual(self, line):
         """
-        \rVirtual IP level. 
+        \rVirtual IP level.
         \rLevel providing information on virtual IPs
         """
         commands = line.split()
@@ -251,7 +251,7 @@ class LivePrompt(CommandPrompt):
             virtualshell = keepalivedprompts.VirtualPrompt(self.config)
         else:
             virtualshell = VirtualPrompt(self.config)
-        
+
         if not line:
             virtualshell.cmdloop()
         else:
@@ -339,7 +339,7 @@ class LivePrompt(CommandPrompt):
             director = utils.check_output(args)
 
         print director
-        print 
+        print
 
         args = [self.config['iptables'], '--version']
         iptables = utils.check_output(args)
@@ -348,7 +348,7 @@ class LivePrompt(CommandPrompt):
 
         print '\n'.join(header)
         print iptables
-        print 
+        print
 
     def help_configure(self):
         print ""
@@ -489,7 +489,7 @@ class ConfigurePrompt(CommandPrompt):
             else:
                 # make a temp copy of the config
                 try:
-                    temp = tempfile.NamedTemporaryFile(prefix='keepalived.conf.')                    
+                    temp = tempfile.NamedTemporaryFile(prefix='keepalived.conf.')
                     shutil.copyfile(configfile, temp.name)
                 except IOError as e:
                     logger.error(e.strerror)
@@ -503,7 +503,7 @@ class ConfigurePrompt(CommandPrompt):
                         logger.error("Something happened during the edit of %s" % self.config[key])
 
                     try:
-                        template = self.config['template_lang'] 
+                        template = self.config['template_lang']
                     except KeyError:
                         template = None
 
@@ -517,9 +517,9 @@ class ConfigurePrompt(CommandPrompt):
 
                     # Parse the config file and verify the changes
                     # If successful, copy changes back to original file
-                    
+
                     # If a template language is defined, run it against the config
-                    # before parsing the configuration. 
+                    # before parsing the configuration.
                     if template:
                         try:
                             output = tempfile.NamedTemporaryFile()
@@ -602,20 +602,28 @@ class ConfigurePrompt(CommandPrompt):
                     nodes = None
                 hostname = socket.gethostname()
 
+                # simple variable, to show users that no mods were made
+                modified = False
+                
                 # check to see if the files have changed
                 if (self.config['director_config'] and
                     scm.modified(self.config['director_config'])):
                     scm.commit(self.config['director_config'])
+                    modified = True
                     for node in nodes:
                         if node != hostname:
                             scm.update(self.config['director_config'], node)
 
                 if (self.config['firewall_config'] and
-                    scm.modified(self.config['firewall_config'])):                
+                    scm.modified(self.config['firewall_config'])):
                     scm.commit(self.config['firewall_config'])
+                    modified = True
                     for node in nodes:
                         if node != hostname:
                             scm.update(self.config['director_config'], node)
+
+                if modified:
+                    print "Configurations not modified. No sync necessary."
 
             else:
                 logger.error("'version_control' not defined correctly in lvsm.conf")
@@ -648,7 +656,7 @@ class VirtualPrompt(CommandPrompt):
             d.append('')
             utils.pager(self.config['pager'], d)
         else:
-            print syntax            
+            print syntax
 
     def do_show(self, line):
         """
@@ -659,7 +667,7 @@ class VirtualPrompt(CommandPrompt):
         commands = line.split()
         numeric = self.settings['numeric']
         color = self.settings['color']
-        
+
         if len(commands) == 3 or len(commands) == 2:
             protocol = commands[0]
             vip = commands[1]
@@ -699,7 +707,7 @@ class RealPrompt(CommandPrompt):
             import readline
             readline.set_completer_delims(' ')
         except ImportError:
-            pass            
+            pass
         # super(CommandPrompt, self).__init__()
         CommandPrompt.__init__(self, config, rawprompt="lvsm(live)(real)# ")
 
