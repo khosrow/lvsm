@@ -22,13 +22,13 @@ IP Packet filter rules
 ======================
 Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
+ACCEPT     tcp  --  anywhere             192.0.2.2 tcp dpt:80
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination
 
 Chain OUTPUT (policy ACCEPT)
-target     prot opt source               destination"""  
+target     prot opt source               destination"""
         lines = self.firewall.show(numeric=False, color=False)
         result = ''
         for line in lines:
@@ -42,8 +42,8 @@ target     prot opt source               destination"""
 IP Packet filter rules
 ======================
 ACCEPT     tcp  --  anywhere\
-             dinsdale.python.org tcp dpt:http"""
-        lines = self.firewall.show_virtual('dinsdale.python.org', 'http', 'tcp',
+             192.0.2.2 tcp dpt:80"""
+        lines = self.firewall.show_virtual('192.0.2.2', 'http', 'tcp',
                                            numeric=False, color=False)
         result = ''
         for line in lines:
@@ -67,7 +67,7 @@ target     prot opt source               destination
 
 Chain POSTROUTING (policy ACCEPT)
 target     prot opt source               destination"""
-        
+
         lines = self.firewall.show_nat(numeric=False)
 
         result = ''

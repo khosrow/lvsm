@@ -18,8 +18,8 @@ class GenericDirector(unittest.TestCase):
         self.maxDiff = None
 
     def test_convertfilename(self):
-        filename = 'slashdot.org:http'
-        expected_result = '216.34.181.45:80'
+        filename = 'localhost:http'
+        expected_result = '127.0.0.1:80'
         self.assertEqual(self.director.convert_filename(filename),
                          expected_result)
 
@@ -27,15 +27,15 @@ class GenericDirector(unittest.TestCase):
         expected_result = ["",
                            "Layer 4 Load balancing",
                            "======================",
-                           "TCP  dinsdale.python.org:http                 rr     ",
-                           "  -> slashdot.org:http                        Masq    1      0          0         ",
+                           "TCP  192.0.2.2:80                             rr     ",
+                           "  -> 192.0.2.200:80                           Masq    1      0          0         ",
                            "",
-                           "UDP  dinsdale.python.org:domain               rr     ",
-                           "  -> resolver1.opendns.com:domain             Masq    1      0          0         ",
-                           "  -> resolver2.opendns.com:domain             Masq    1      0          0         ",
+                           "UDP  192.0.2.2:53                             rr     ",
+                           "  -> 192.0.2.202:53                           Masq    1      0          0         ",
+                           "  -> 192.0.2.203:53                           Masq    1      0          0         ",
                            "",
                            ""]
-        result = self.director.show(False, False)
+        result = self.director.show(True, False)
         self.assertEqual(result, expected_result)
         
 

@@ -5,24 +5,24 @@ import getopt
 import os
 
 header=['IP Virtual Server version 1.2.1 (size=4096)',
-        'Prot LocalAddress:Port Scheduler Flags', 
+        'Prot LocalAddress:Port Scheduler Flags',
         '  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn']
 
-alpha_tcp=['TCP  dinsdale.python.org:http     rr',
-           '  -> google.com:http              Masq    1      0          0',
-           '  -> slashdot.org:http            Masq    1      0          0']
+alpha_tcp=['TCP  192.0.2.2:http               rr',
+             '  -> 192.0.2.200:http             Masq    1      0          0',
+             '  -> 192.0.2.201:http             Masq    1      0          0']
 
-alpha_udp=['UDP  dinsdale.python.org:domain   rr',
-           '  -> resolver1.opendns.com:domain Masq    1      0          0',
-           '  -> resolver2.opendns.com:domain Masq    1      0          0']
+alpha_udp=['UDP  192.0.2.2:domain             rr',
+             '  -> 192.0.2.202:domain           Masq    1      0          0',
+             '  -> 192.0.2.203:domain           Masq    1      0          0']
 
-numeric_tcp=['TCP  82.94.164.162:80             rr',
-             '  -> 173.194.43.3:80              Masq    1      0          0',
-             '  -> 216.34.181.45:80             Masq    1      0          0']
+numeric_tcp=['TCP  192.0.2.2:80                 rr',
+             '  -> 192.0.2.200:80               Masq    1      0          0',
+             '  -> 192.0.2.201:80               Masq    1      0          0']
 
-numeric_udp=['UDP  82.94.164.162:53             rr',
-             '  -> 208.67.222.222:53            Masq    1      0          0',
-             '  -> 208.67.220.220:53            Masq    1      0          0']
+numeric_udp=['UDP  192.0.2.2:53                 rr',
+             '  -> 192.0.2.202:53               Masq    1      0          0',
+             '  -> 192.0.2.203:53               Masq    1      0          0']
 
 def main():
   try:
@@ -31,7 +31,7 @@ def main():
   except getopt.error, msg:
     print msg
     sys.exit(1)
-  
+
   listing = True
   tcp = False
   udp = False
@@ -42,12 +42,10 @@ def main():
     if opt in ("-L", "--list"):
       listing = True
     elif opt == "-t":
-      if (arg == "dinsdale.python.org:80" or arg == "82.94.164.162:80"
-          or arg == "dinsdale.python.org:http"):
+      if (arg == "192.0.2.2:80" or arg == "192.0.2.2:http"):
         tcp = True
     elif opt == "-u":
-      if (arg == "dinsdale.python.org:53" or arg == "82.94.164.162:53"
-          or arg == "dinsdale.python.org:domain"):
+      if (arg == "192.0.2.2:53" or arg == "192.0.2.2:domain"):
         udp = True
     elif opt == "-f":
       fwm = True
@@ -73,7 +71,7 @@ def main():
         old = alpha_tcp[num]
         new = old.replace("Masq    1", "Masq    0")
         alpha_tcp[num] = new
-        
+
       elif i == 2:
         old = numeric_udp[num]
         new = old.replace("Masq    1", "Masq    0")

@@ -5,16 +5,16 @@ import getopt
 import os
 
 header=['IP Virtual Server version 1.2.1 (size=4096)',
-        'Prot LocalAddress:Port Scheduler Flags', 
+        'Prot LocalAddress:Port Scheduler Flags',
         '  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn']
 
-numeric_tcp=['TCP  10.10.1.1:80                 rr',
-             '  -> 10.10.10.2:80                Masq    1      0          0',
-             '  -> 10.10.10.3:80                Masq    1      0          0']
+numeric_tcp=['TCP  192.0.2.2:80                 rr',
+             '  -> 192.0.2.200:80               Masq    1      0          0',
+             '  -> 192.0.2.201:80               Masq    1      0          0']
 
-numeric_udp=['UDP  10.10.1.1:53                 rr',
-             '  -> 10.10.10.10:53               Masq    1      0          0',
-             '  -> 10.10.10.11:53               Masq    1      0          0']
+numeric_udp=['UDP  192.0.2.2:53                 rr',
+             '  -> 192.0.2.202:53               Masq    1      0          0',
+             '  -> 192.0.2.203:53               Masq    1      0          0']
 
 def main():
   try:
@@ -23,7 +23,7 @@ def main():
   except getopt.error, msg:
     print msg
     sys.exit(1)
-  
+
   listing = True
   tcp = False
   udp = False
@@ -34,10 +34,10 @@ def main():
     if opt in ("-L", "--list"):
       listing = True
     elif opt == "-t":
-      if arg == "10.10.1.1:80":
+      if arg == "192.0.2.2:80":
         tcp = True
     elif opt == "-u":
-      if arg == "10.10.1.1:53":
+      if arg == "192.0.2.2:53":
         udp = True
     elif opt == "-f":
       fwm = True

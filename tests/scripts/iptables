@@ -13,10 +13,10 @@ target     prot opt source               destination
 
 Chain POSTROUTING (policy ACCEPT)
 target     prot opt source               destination"
-else 
+else
     echo "Chain INPUT (policy ACCEPT)
 target     prot opt source               destination
-ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http
+ACCEPT     tcp  --  anywhere             192.0.2.2 tcp dpt:80
 
 Chain FORWARD (policy ACCEPT)
 target     prot opt source               destination

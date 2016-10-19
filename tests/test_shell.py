@@ -25,7 +25,7 @@ class Configure(unittest.TestCase):
               'snmp_community': '',
               'snmp_host': '',
               'snmp_user': '',
-              'snmp_password': ''            
+              'snmp_password': ''
               }
     shell = shell.ConfigurePrompt(config)
 
@@ -71,30 +71,30 @@ class Virtual(unittest.TestCase):
               'snmp_community': '',
               'snmp_host': '',
               'snmp_user': '',
-              'snmp_password': ''            
+              'snmp_password': ''
               }
     shell = shell.VirtualPrompt(config)
     shell.settings['color'] = False
     maintenance_dir = path + '/maintenance'
 
     def test_status1(self):
-        self.shell.settings['numeric'] = False
+        self.shell.settings['numeric'] = True
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """
 Layer 4 Load balancing
 ======================
-TCP  dinsdale.python.org:http                 rr     
-  -> slashdot.org:http                        Masq    1      0          0         
+TCP  192.0.2.2:80                             rr     
+  -> 192.0.2.200:80                           Masq    1      0          0         
 
-UDP  dinsdale.python.org:domain               rr     
-  -> resolver1.opendns.com:domain             Masq    1      0          0         
-  -> resolver2.opendns.com:domain             Masq    1      0          0         
+UDP  192.0.2.2:53                             rr     
+  -> 192.0.2.202:53                           Masq    1      0          0         
+  -> 192.0.2.203:53                           Masq    1      0          0         
 
 
 Disabled real servers:
 ----------------------
-lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
+192.0.2.201:80\t\tReason: Disabled for testing"""
         self.shell.onecmd(' status')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
@@ -104,20 +104,20 @@ lga15s34-in-f3.1e100.net:http\t\tReason: Disabled for testing"""
         self.assertTrue(True)
 
     def test_showvirtualtcp1(self):
-        self.shell.settings['numeric'] = False
+        self.shell.settings['numeric'] = True
         output = StringIO.StringIO()
         sys.stdout = output
         expected_result = """
 Layer 4 Load balancing
 ======================
-TCP  dinsdale.python.org:http                 rr     
-  -> slashdot.org:http                        Masq    1      0          0         
+TCP  192.0.2.2:80                             rr     
+  -> 192.0.2.200:80                           Masq    1      0          0         
 
 
 IP Packet filter rules
 ======================
-ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http"""
-        self.shell.onecmd(' show tcp dinsdale.python.org http')
+ACCEPT     tcp  --  anywhere             192.0.2.2 tcp dpt:80"""
+        self.shell.onecmd(' show tcp 192.0.2.2 http')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
@@ -132,10 +132,10 @@ ACCEPT     tcp  --  anywhere             dinsdale.python.org tcp dpt:http"""
         expected_result = """
 Layer 4 Load balancing
 ======================
-UDP  dinsdale.python.org:domain               rr     
-  -> resolver1.opendns.com:domain             Masq    1      0          0         
-  -> resolver2.opendns.com:domain             Masq    1      0          0"""
-        self.shell.onecmd(' show udp dinsdale.python.org 53')
+UDP  192.0.2.2:domain                         rr     
+  -> 192.0.2.202:domain                       Masq    1      0          0         
+  -> 192.0.2.203:domain                       Masq    1      0          0"""
+        self.shell.onecmd(' show udp 192.0.2.2 53')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
@@ -203,7 +203,7 @@ class Real(unittest.TestCase):
               'snmp_community': '',
               'snmp_host': '',
               'snmp_user': '',
-              'snmp_password': ''            
+              'snmp_password': ''
               }
     shell = shell.RealPrompt(config)
     shell.settings['color'] = False
@@ -220,12 +220,12 @@ Layer 4 Load balancing
 
 Active servers:
 ---------------
-UDP  82.94.164.162:53                         rr     
-  -> 208.67.222.222:53                        Masq    1      0          0
+UDP  192.0.2.2:53                             rr     
+  -> 192.0.2.202:53                           Masq    1      0          0
 """
-        self.shell.onecmd(' show resolver1.opendns.com')
+        self.shell.onecmd(' show 192.0.2.202')
         result = output.getvalue()
-        self.assertEqual(result.rstrip(), expected_result.rstrip())      
+        self.assertEqual(result.rstrip(), expected_result.rstrip())
 
 #     def test_showrealdisabled(self):
 #         # Test 'show real' on a disabled host
@@ -242,5 +242,5 @@ UDP  82.94.164.162:53                         rr
 # """
 #         self.shell.onecmd(' show 173.194.43.3')
 #         result = output.getvalue()
-#         # self.assertEqual(result.rstrip(), expected_result.rstrip()) 
+#         # self.assertEqual(result.rstrip(), expected_result.rstrip())
 #         self.assertTrue(True)
