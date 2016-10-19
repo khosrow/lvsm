@@ -51,7 +51,7 @@ class Virtual(Server):
 
         sched = self.sched.ljust(7)
 
-        if self.persistence:            
+        if self.persistence:
             line = "%s %s %s persistence %s" % (proto, ipport, sched, self.persistence)
         else:
             line = "%s %s %s" % (proto, ipport, sched)
@@ -106,7 +106,7 @@ class Virtual(Server):
         # output.append('')
         # return '\n'.join(output)
 
-        
+
 class Real(Server):
     def __init__(self, ip, port, weight, method, active, inactive):
         Server.__init__(self, ip,port)
@@ -189,7 +189,7 @@ class GenericDirector(object):
                     # there's no port number in fwm mode
                     ip = tokens[1]
                     port = ''
-                else:    
+                else:
                     # second token will be ip:port
                     ip, sep, port = tokens[1].rpartition(':')
                 # 3rd is the scheduler
@@ -244,6 +244,8 @@ class GenericDirector(object):
         if disabled:
             header = ["", "Disabled real servers:", "----------------------"]
             disabled = header + disabled
+        else:
+            disabled = list()
 
         return result + disabled + ['']
 
@@ -330,7 +332,7 @@ class GenericDirector(object):
         result = list()
 
         for v in self.virtuals:
-            # for real in v.realServers: 
+            # for real in v.realServers:
                 # if real.ip == hostip:
                 #     logger.debug("real port type: %s" % type(real.port))
                 #     logger.debug("port num type: %s" % type(portnum))
@@ -345,7 +347,7 @@ class GenericDirector(object):
     def show_real_disabled(self, host, port, numeric):
         """
         Show status of disabled real server across multiple VIPs.
-        To be implemented by inheriting classes. 
+        To be implemented by inheriting classes.
         Return value must be a list
         """
         return list()
@@ -385,14 +387,14 @@ class GenericDirector(object):
             print "[ERROR] 'director_cmd' not defined in config!"
 
     def parse_config(self, configfile):
-        """Parse config file, and syntax check. 
+        """Parse config file, and syntax check.
         Returns True on success, False on failure.
         To be implemented by inheriting classes.
         """
         return True
 
     def get_virtual(self, protocol):
-        """return a list of the virtual servers by protocol. 
+        """return a list of the virtual servers by protocol.
         Used for autocomplete mode in the shell.
         """
         args = [self.ipvsadm, '-L']
@@ -428,7 +430,7 @@ class GenericDirector(object):
         for line in lines[3:]:
             if line[0:3] in ['TCP', 'UDP', 'FWM']:
                 prot = line[0:3]
-            elif (line.startswith("  ->") 
+            elif (line.startswith("  ->")
                   and (not protocol or protocol.upper() == prot)):
                 r, sep , temp = line.partition(':')
                 real = r[5:]
@@ -438,7 +440,7 @@ class GenericDirector(object):
 
     def filesync_nodes(self, op, filename):
         """
-        Sync a file between nodes in the cluste. 
+        Sync a file between nodes in the cluste.
         op has to be one of 'remove' or 'copy'.
         filename is the name of the file to be copied/removed
         The method return True/False
