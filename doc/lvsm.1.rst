@@ -8,8 +8,8 @@ Linux Virtual Server Manager
 
 :Author: Khosrow E.
 :Manual section: 1
-:Date: February 10, 2014
-:Version: 0.5.0
+:Date: October 18, 2016
+:Version: 0.5.3
 
 Synopsis
 ========
