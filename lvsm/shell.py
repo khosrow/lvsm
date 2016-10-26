@@ -622,7 +622,7 @@ class ConfigurePrompt(CommandPrompt):
                         if node != hostname:
                             scm.update(self.config['director_config'], node)
 
-                if modified:
+                if not modified:
                     print "Configurations not modified. No sync necessary."
 
             else:
