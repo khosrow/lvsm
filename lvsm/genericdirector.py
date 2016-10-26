@@ -29,10 +29,8 @@ class Virtual(Server):
         host = self.ip
         service = self.port
 
-        logger.debug("proto: %s" % proto)
-        logger.debug("host: %s" % host)
-        logger.debug("service: %s" % service)
-
+        logger.debug("Virtual:__str__ proto=%s,host=%s,service=%s" % (proto, host, service))
+        
         if self.proto.upper() == 'FWM':
             pass
         elif not numeric:
@@ -264,15 +262,24 @@ class GenericDirector(object):
     def show_virtual(self, host, port, proto, numeric, color):
         """Show status of virtual server.
         """
-        # make sure we have a valid host
-        hostips = utils.gethostbyname_ex(host)
-        if not hostips:
-            return list()
+
+        logger.debug("GenericDirector:show_virtual Parameters: Host %s Port %s Proto %s" % (host, port, proto))
+
+        # if the protocol is FWM, don't convert the "host" IP
+        if proto.upper() == "FWM":
+            hostips = ['1']
+        else:
+            # make sure we have a valid host
+            hostips = utils.gethostbyname_ex(host)
+            if not hostips:
+                logger.debug("GenericDirector:show_virtual invalid host IP")
+                return list()
 
         # make sure the port is valid
         if port:
             portnum = utils.getportnum(port)
             if portnum == -1:
+                logger.debug("GenericDirector:show_virtual invalid port number")
                 return list()
 
         # Update the ipvs table
