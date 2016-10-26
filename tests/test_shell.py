@@ -91,6 +91,9 @@ UDP  192.0.2.2:53                             rr
   -> 192.0.2.202:53                           Masq    1      0          0         
   -> 192.0.2.203:53                           Masq    1      0          0         
 
+FWM  1                                        rr     
+  -> 192.0.2.204:0                            Masq    1      0          0         
+
 
 Disabled real servers:
 ----------------------
@@ -122,7 +125,7 @@ ACCEPT     tcp  --  anywhere             192.0.2.2 tcp dpt:80"""
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 
     def test_showvirtualtcp2(self):
-        # Verify error checking
+        # TODO: Verify error checking
         self.assertTrue(True)
 
     def test_showvirtualudp(self):
@@ -136,6 +139,19 @@ UDP  192.0.2.2:domain                         rr
   -> 192.0.2.202:domain                       Masq    1      0          0         
   -> 192.0.2.203:domain                       Masq    1      0          0"""
         self.shell.onecmd(' show udp 192.0.2.2 53')
+        result = output.getvalue()
+        self.assertEqual(result.rstrip(), expected_result.rstrip())
+
+    def test_showvirtualfwm(self):
+        self.shell.settings['numeric'] = True
+        output = StringIO.StringIO()
+        sys.stdout = output
+        expected_result = """
+Layer 4 Load balancing
+======================
+FWM  1                                        rr     
+  -> 192.0.2.204:0                            Masq    1      0          0"""
+        self.shell.onecmd(' show fwm 1')
         result = output.getvalue()
         self.assertEqual(result.rstrip(), expected_result.rstrip())
 

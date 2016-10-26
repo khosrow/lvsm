@@ -34,6 +34,9 @@ class GenericDirector(unittest.TestCase):
                            "  -> 192.0.2.202:53                           Masq    1      0          0         ",
                            "  -> 192.0.2.203:53                           Masq    1      0          0         ",
                            "",
+                           "FWM  1                                        rr     ",
+                           "  -> 192.0.2.204:0                            Masq    1      0          0         ",
+                           "",
                            ""]
         result = self.director.show(True, False)
         self.assertEqual(result, expected_result)

@@ -16,6 +16,9 @@ numeric_udp=['UDP  192.0.2.2:53                 rr',
              '  -> 192.0.2.202:53               Masq    1      0          0',
              '  -> 192.0.2.203:53               Masq    1      0          0']
 
+numeric_fwm=['FWM  1                            rr',
+             '  -> 192.0.2.204:0                Masq    1      0          0']
+
 def main():
   try:
     opts, args = getopt.getopt(sys.argv[1:], "Lnt:u:f:",
@@ -40,10 +43,14 @@ def main():
       if arg == "192.0.2.2:53":
         udp = True
     elif opt == "-f":
-      fwm = True
+      if ags == "1":    
+        fwm = True
     elif opt == "-n":
       numeric = True
 
+  # This section is for ldirectord 
+  # check if a file for a real server is in the maintenance dir
+  # If yes, disable that RIP
   path = os.path.abspath(os.path.dirname(__file__))
   maintenance = path + "/../maintenance"
   filenames = os.listdir(maintenance)
@@ -58,15 +65,19 @@ def main():
       if filename in item:
         del numeric_udp[index]
 
+  # Now display the result
   if tcp:
     if numeric:
       full_list = numeric_tcp
   elif udp:
     if numeric:
       full_list = numeric_udp
+  elif fwm: 
+    if numeric:
+      full_list = numeric_fwm
   else:
     if numeric:
-      full_list = numeric_tcp + numeric_udp
+      full_list = numeric_tcp + numeric_udp + numeric_fwm
 
   for item in header:
     print item
