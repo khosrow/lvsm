@@ -44,6 +44,18 @@ class Keepalived(genericdirector.GenericDirector):
  
         self.cache_dir = args['cache_dir']
 
+    def rmfile(self, filepath):
+        """
+        A safe way to remove files in keepalived
+        """
+        try:
+            logger.debug("Keeplived.rmfile(): removing file %s" % filepath)
+            os.unlink(filepath)
+        except OSError as e:
+            logger.error(e)
+            logger.error('Please make sure %s is writable!' % self.cache_dir)
+            logger.error('%s needs to be manually deleted to avoid future problems.' % filepath)
+
     def disable(self, protocol, host, port='', vhost='', vport='', reason=''):
         """
         Disable a real server in keepalived. This command rellies on snimpy
@@ -283,6 +295,7 @@ class Keepalived(genericdirector.GenericDirector):
 
                                         # Now remove the placeholder file locally
                                         try:
+                                            logger.debug("Keeplived.enable(): removing placehodler file")
                                             os.unlink(fullpath)
                                         except OSError as e:
                                             logger.error(e)
@@ -293,6 +306,7 @@ class Keepalived(genericdirector.GenericDirector):
                                         rfilename = "realServerReason.%s.%s" % (i, idx)
                                         rfullpath = '%s/%s' % (self.cache_dir, rfilename)
                                         try:
+                                            logger.debug("Keeplived.enable(): removing reason file")
                                             os.unlink(rfullpath)
                                         except OSError as e:
                                             logger.error(e)
@@ -322,17 +336,16 @@ class Keepalived(genericdirector.GenericDirector):
         self.build_ipvs()
         for i, v in enumerate(self.virtuals):
             for j, r in enumerate(v.realServers):
-                if r.weight == "0":
-                    h = utils.gethostbyname_ex(host)
-                    # if user enters an invalid hostname, just return
-                    if not h:
-                        return ''
-                    if not host or h[0] == r.ip:
+                if r.weight == "0": 
+                    if not host or utils.gethostbyname_ex(host)[0] == r.ip:
                         if not port or utils.getportnum(port) == r.port:
                             if numeric:
                                 output.append("%s:%s" % (r.ip, r.port))
-                            else:
-                                host, aliaslist, ipaddrlist = socket.gethostbyaddr(r.ip)
+                            else: 
+                                try:
+                                    host, aliaslist, ipaddrlist = socket.gethostbyaddr(r.ip)
+                                except socket.herror as e:
+                                    host = r.ip 
                                 portname = socket.getservbyport(int(r.port))
                                 output.append("%s:%s" % (host, portname))
                             
