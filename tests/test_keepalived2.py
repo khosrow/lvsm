@@ -27,6 +27,7 @@ class Keepalived(unittest.TestCase):
                                               args=args)
 
     def test_show(self):
+        self.maxDiff = None
         # Testing show on non-standard ports
         expected_result =   ['',
                             'Layer 4 Load balancing',
