@@ -111,7 +111,7 @@ class CommandPrompt(cmd.Cmd):
 
             # If any files are modified ask user if they want to quit
             if modified:
-                print "The following config file(s) were not comitted to svn:"
+                print "The following config file(s) were not committed:"
                 for filename in modified:
                     print filename
                 print
