@@ -9,6 +9,14 @@ for unit testing
 # UDP  82.94.164.162:53
 #   -> 208.67.222.222:53
 #   -> 208.67.220.220:53
+
+# TCP  192.0.2.2:80  
+#   -> 192.0.2.200:80
+#   -> 192.0.2.201:80
+# UDP  192.0.2.2:53  
+#   -> 192.0.2.202:53
+#   -> 192.0.2.203:53
+
 import socket
 
 
@@ -46,18 +54,18 @@ class Manager(object):
                  privprotocol=None,
                  privpassword=None):
         """dummy init method"""
-        self.virtualServerAddress = {'1': socket.inet_aton('82.94.164.162'),
-                                     '2': socket.inet_aton('82.94.164.162')}
+        self.virtualServerAddress = {'1': socket.inet_aton('192.0.2.2'),
+                                     '2': socket.inet_aton('192.0.2.2')}
         self.virtualServerRealServersTotal = {'1': 2, '2': 2}
         self.virtualServerPort = {'1': 80, '2': 53}
 
         self.virtualServerProtocol = {'1': 'tcp', '2': 'udp'}
 
         self.realServerAddress = TupleArray()
-        self.realServerAddress[1,1] = socket.inet_aton('216.34.181.45')
-        self.realServerAddress[1,2] = socket.inet_aton('173.194.43.3')
-        self.realServerAddress[2,1] = socket.inet_aton('208.67.222.222')
-        self.realServerAddress[2,2] = socket.inet_aton('208.67.220.220')
+        self.realServerAddress[1,1] = socket.inet_aton('192.0.2.200')
+        self.realServerAddress[1,2] = socket.inet_aton('192.0.2.201')
+        self.realServerAddress[2,1] = socket.inet_aton('192.0.2.202')
+        self.realServerAddress[2,2] = socket.inet_aton('192.0.2.203')
 
         self.realServerPort = TupleArray()
         self.realServerPort[1, 1] = 80
