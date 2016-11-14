@@ -346,7 +346,10 @@ class Keepalived(genericdirector.GenericDirector):
                                     host, aliaslist, ipaddrlist = socket.gethostbyaddr(r.ip)
                                 except socket.herror as e:
                                     host = r.ip 
-                                portname = socket.getservbyport(int(r.port))
+                                try:
+                                    portname = socket.getservbyport(int(r.port))
+                                except socket.error as e:
+                                    portname = r.port
                                 output.append("%s:%s" % (host, portname))
                             
                             try:
