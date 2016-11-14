@@ -26,15 +26,21 @@ class Keepalived(unittest.TestCase):
                                               nodes='',
                                               args=args)
 
-    def test_parseconfig1(self):
-        # Testing parser on a valid config file
-        configfile = path + '/etc/keepalived.conf'
-        self.assertTrue(self.director.parse_config(configfile))
+    def tearDown(self):
+        filepath1 = self.director.cache_dir + '/realServerWeight.2.1'
+        filepath2 = self.director.cache_dir + '/realServerReason.2.1' 
+        os.unlink(filepath1)
+        os.unlink(filepath2)
 
-    def test_parseconfig2(self):
-        # Testing parser on an invalid config file
-        configfile = path + '/etc/keepalived.conf-bad'
-        self.assertFalse(self.director.parse_config(configfile))
-
+    def test_disablehost(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
+        self.assertTrue(self.director.disable('udp', '192.0.2.202'))
+        
+    def test_disablehostport(self):
+        output = StringIO.StringIO()
+        sys.stdout = output
+        self.assertTrue(self.director.disable('udp', '192.0.2.202', 'domain'))
+        
 if __name__ == "__main__":
     unittest.main()
