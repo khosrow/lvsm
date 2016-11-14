@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+import sys
+import getopt
+import os
+
+header=['IP Virtual Server version 1.2.1 (size=4096)',
+        'Prot LocalAddress:Port Scheduler Flags',
+        '  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn']
+
+alpha_tcp=['TCP  192.0.2.2:8888               rr',
+             '  -> 192.0.2.200:8888             Masq    1      0          0',
+             '  -> 192.0.2.201:8888             Masq    1      0          0']
+
+alpha_udp=['UDP  192.0.2.2:domain             rr',
+             '  -> 192.0.2.202:domain           Masq    1      0          0',
+             '  -> 192.0.2.203:domain           Masq    1      0          0']
+
+numeric_tcp=['TCP  192.0.2.2:8888               rr',
+             '  -> 192.0.2.200:8888             Masq    1      0          0',
+             '  -> 192.0.2.201:8888             Masq    1      0          0']
+
+numeric_udp=['UDP  192.0.2.2:53                 rr',
+             '  -> 192.0.2.202:53               Masq    1      0          0',
+             '  -> 192.0.2.203:53               Masq    1      0          0']
+
+def main():
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "Lnt:u:f:",
+                               ["list"])
+  except getopt.error, msg:
+    print msg
+    sys.exit(1)
+
+  listing = True
+  tcp = False
+  udp = False
+  fwm = False
+  numeric = False
+
+  for opt, arg in opts:
+    if opt in ("-L", "--list"):
+      listing = True
+    elif opt == "-t":
+      if (arg == "192.0.2.2:80" or arg == "192.0.2.2:8888"):
+        tcp = True
+    elif opt == "-u":
+      if (arg == "192.0.2.2:53" or arg == "192.0.2.2:domain"):
+        udp = True
+    elif opt == "-f":
+      fwm = True
+    elif opt == "-n":
+      numeric = True
+
+  path = os.path.abspath(os.path.dirname(__file__))
+  maintenance = path + "/../cache"
+  filenames = os.listdir(maintenance)
+
+  for filename in filenames:
+    parts = filename.split('.')
+    if parts[0] == "realServerWeight":
+      i = int(parts[1])
+      j = int(parts[2])
+      num = j
+
+      if i == 1:
+        old = numeric_tcp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        numeric_tcp[num] = new
+
+        old = alpha_tcp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        alpha_tcp[num] = new
+
+      elif i == 2:
+        old = numeric_udp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        numeric_udp[num] = new
+
+        old = alpha_udp[num]
+        new = old.replace("Masq    1", "Masq    0")
+        alpha_udp[num] = new
+
+  if tcp:
+    if numeric:
+      full_list = numeric_tcp
+    else:
+      full_list = alpha_tcp
+  elif udp:
+    if numeric:
+      full_list = numeric_udp
+    else:
+      full_list = alpha_udp
+  else:
+    if numeric:
+      full_list = numeric_tcp + numeric_udp
+    else:
+      full_list = alpha_tcp + alpha_udp
+
+  for item in header:
+    print item
+  for item in full_list:
+    print item
+
+if __name__ == '__main__':
+  main()
